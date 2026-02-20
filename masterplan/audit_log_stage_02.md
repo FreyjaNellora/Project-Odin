@@ -48,36 +48,71 @@
 ---
 
 ## Post-Audit
-**Date:**
-**Auditor:**
+**Date:** 2026-02-20
+**Auditor:** Claude Opus 4.6
 
 ### Deliverables Check
 
+| Deliverable | Status | Notes |
+|---|---|---|
+| Pre-computed attack tables (rays, knight, king) | DONE | `tables.rs` — 196-square indexed, rays stop at corners. Pawn attack tables per player. Lazy global init via `OnceLock`. |
+| Attack query API | DONE | `attacks.rs` — `is_square_attacked_by`, `attackers_of`, `is_in_check`. Uses reverse pawn lookup `(player + 2) % 4`. |
+| Pseudo-legal generation | DONE | `generate.rs` — all piece types, 4-direction pawns, double step, en passant, promotion (4 options), castling (4 players). |
+| Legal move filtering | DONE | `generate.rs` — make/check-king/unmake. Checks all 3 opponents. |
+| Move encoding | DONE | `moves.rs` — compact u32 with from/to/piece/captured/promotion/flags. Debug/Display via algebraic notation. |
+| Make/unmake with undo | DONE | `moves.rs` — `MoveUndo` stores captured piece, castling rights, en passant, halfmove, zobrist_before. Zobrist round-trip verified. |
+| Perft validation depths 1-4 | DONE | Pinned: depth 1=20, 2=395, 3=7800, 4=152050. Integration tests assert exact values. |
+
+**Acceptance criteria:**
+- [x] Perft at depths 1-4 matches established values (permanent invariants)
+- [x] All special moves tested: castling for 4 players, en passant, promotions
+- [x] Make -> unmake returns board to identical state (Zobrist matches)
+- [x] Stress test: 1000 random game playouts at 100 ply each without crashes
 
 ### Code Quality
 #### Uniformity
+- Consistent naming: `generate_*` for move gen, `compute_*` for table building, `is_*`/`has_*` for queries
+- All movegen files follow same structure: module doc comment, imports, constants, functions, tests
+- Square/piece/player types used consistently from `board` module
 
 #### Bloat
+- No unnecessary abstractions. Each file has a single clear responsibility.
+- `get_castling_config` returns a tuple — slightly unwieldy but avoids exposing internal `CastlingConfig` struct. Acceptable for now.
 
 #### Efficiency
+- Not a goal per spec. Legal move gen uses make/check/unmake (expensive but correct).
+- Attack tables use `Vec<Vec<Square>>` — heap-allocated but simple. Performance optimization deferred to later stages if needed.
+- Perft(4) = 152,050 nodes in ~0.56s (debug build). Acceptable.
 
 #### Dead Code
+- **NOTE:** Huginn gates listed in spec (move_generation, make_unmake, legality_filter, perft) are not yet wired. Deferred per pre-audit finding #7 — will add when Huginn gates become relevant.
+- `prev_player` in `moves.rs` is an internal utility. No dead public API.
 
 #### Broken Code
+- No known broken code. All 125 tests pass.
 
 #### Temporary Code
-
+- None. All code is production-intent for this stage.
 
 ### Search/Eval Integrity
-
+- N/A for Stage 2. Search and eval not yet implemented.
+- Attack query API (`is_square_attacked_by`, `attackers_of`) is the formal boundary per ADR-001. Future stages must use this, not read `board.squares[]` directly.
 
 ### Future Conflict Analysis
-
+1. **Stage 3 (Game State):** Will consume `is_in_check`, `generate_legal`, `make_move`/`unmake_move`. All are pub and stable. No conflicts expected.
+2. **Stage 8 (Delta Refresh):** Will need to know "what changed" from a move. `Move` + `MoveUndo` expose from/to/piece_type/captured/promotion/flags. The spec says "make it easily derivable" — this is sufficient.
+3. **Stage 14 (NNUE Accumulator):** Will need piece placement/removal deltas. `Move` encoding has from/to/captured, which is sufficient for feature diff computation.
+4. **En passant semantics:** The `en_passant_captured_sq` function uses `prev_player(capturing_player)` to determine the pushing player. This assumes EP only lasts one turn (cleared at start of every make_move). If game rules change to allow multi-turn EP persistence, this breaks. Current FFA rules confirm one-turn EP.
+5. **Castling configurations are hardcoded** in `castling_config()`. If the starting position layout changes, these need updating. The FEN4 starting position and castling config must stay in sync.
 
 ### Unaccounted Concerns
-
+1. **WARNING:** Perft values have not been independently verified against another 4PC engine. No reference implementation exists for FFA 4-player chess perft. Values are self-consistent (board restored, zobrist round-trips, 1000 random playouts pass) but could contain a systematic error that preserves consistency while producing wrong move counts. The most likely source would be incorrect pawn promotion ranks or castling configurations.
+2. **NOTE:** The `en_passant` unit test in `generate.rs::test_en_passant_move_generated` uses a manually-set EP state that wouldn't arise in normal play (Red capturing Yellow's EP when prev_player(Red) = Green). This test only verifies pseudo-legal generation (not make/unmake), so it passes, but the game state is technically invalid. The integration test `test_en_passant_capture` uses a valid state.
 
 ### Reasoning & Methods
+- **Pawn attack reverse lookup:** The attack query needs to find pawns that attack a target square. Pawn attacks are asymmetric (forward only). To check "does player P's pawn attack square S?", we look at squares from which player P could capture to S. This is the reverse of P's capture direction, which equals the opposite-facing player's capture direction: `(P + 2) % 4`.
+- **En passant captured square:** In 4PC, the capturing player may face a different direction than the pushing player. The captured pawn is always at `ep_target + pushing_player's forward`. The pushing player is `prev_player(capturing_player)` since EP lasts exactly one turn.
+- **Perft verification:** Board state restoration verified via Zobrist hash comparison at every depth. Piece list integrity verified. 1000 random playouts (deterministic PRNG) exercise diverse game lines. No reference values exist for 4PC FFA, so values are established as permanent invariants from this implementation.
 
 
 ---
