@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
 **Last Updated:** 2026-02-20
-**Updated By:** Claude Opus 4.6 (Stage 2 implementation session)
+**Updated By:** Claude Opus 4.6 (Stage 3 implementation session)
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 2 complete, ready for Stage 3 |
-| **Current Build-Order Step** | Stage 2 complete (all 8 steps) |
+| **Current Stage** | Stage 3 complete, ready for Stage 4 |
+| **Current Build-Order Step** | Stage 3 complete (all steps) |
 | **Build Compiles** | Yes (`cargo build` and `cargo build --features huginn`) |
-| **Tests Pass** | Yes (125 total: 87 unit + 2 stage-00 + 18 stage-01 + 18 stage-02) |
+| **Tests Pass** | Yes (164 total: 108 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03) |
 | **Blocking Issues** | None |
 
 ---
@@ -22,9 +22,9 @@
 | Stage | Name | Status | Audited | Git Tag | Notes |
 |-------|------|--------|---------|---------|-------|
 | 0 | Skeleton + Huginn Core | complete | post-audit done | stage-00-complete / v1.0 | |
-| 1 | Board Representation | complete | post-audit done | — | Tag pending human confirmation |
-| 2 | Move Generation + Attack Query API | complete | post-audit done | — | Tag pending human confirmation |
-| 3 | Game State & Rules | not-started | — | — | |
+| 1 | Board Representation | complete | post-audit done | stage-01-complete / v1.1 | |
+| 2 | Move Generation + Attack Query API | complete | post-audit done | stage-02-complete / v1.2 | |
+| 3 | Game State & Rules | complete | post-audit done | — | Tag pending human confirmation |
 | 4 | Odin Protocol | not-started | — | — | |
 | 5 | Basic UI Shell | not-started | — | — | |
 | 6 | Bootstrap Eval + Evaluator Trait | not-started | — | — | |
@@ -55,7 +55,7 @@
 | AGENT_CONDUCT.md | current | v1.0 complete. |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
 | DECISIONS.md | current | 11 ADRs from planning sessions. |
-| HANDOFF.md | current | Stage 2 session state captured. |
+| HANDOFF.md | current | Stage 3 session state captured. |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
 | audit_log_stage_00.md | current | Pre-audit + post-audit complete. |
@@ -64,13 +64,15 @@
 | downstream_log_stage_01.md | current | All sections filled. |
 | audit_log_stage_02.md | current | Pre-audit + post-audit complete. |
 | downstream_log_stage_02.md | current | All sections filled. |
+| audit_log_stage_03.md | current | Pre-audit + post-audit complete. |
+| downstream_log_stage_03.md | current | All sections filled. |
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Create `stage-01-complete` / `v1.1` and `stage-02-complete` / `v1.2` git tags
-2. Begin Stage 3: Game State & Rules
+1. Create `stage-03-complete` / `v1.3` git tag
+2. Begin Stage 4: Odin Protocol
 3. Follow Stage Entry Protocol (AGENT_CONDUCT 1.1)
 
 ---
@@ -100,6 +102,9 @@ None.
 | perft(3) | 7,800 | 2 | Permanent invariant |
 | perft(4) | 152,050 / ~0.56s | 2 | Permanent invariant (debug build) |
 | 1000 random games @ 100 ply | ~15s | 2 | Debug build |
+| Test count (no huginn) | 164 | 3 | 108 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 |
+| 1000 random games via GameState | ~104s | 3 | Normal mode, debug build (permanent invariant) |
+| 1000 random games via GameState (terrain) | ~104s | 3 | Terrain mode, debug build (permanent invariant) |
 
 ---
 

@@ -2,7 +2,7 @@
 type: moc
 tags:
   - type/moc
-last_updated: 2026-02-19
+last_updated: 2026-02-20
 ---
 
 # Wikilink Registry
@@ -118,26 +118,43 @@ Single source of truth for all `[[wikilink]]` targets in the vault. Before creat
 These sections grow as agents create notes during development. Add entries here immediately when creating new files.
 
 ### Components
-<!-- Example: | `[[Component-Board]]` | `components/Component-Board.md` | Board representation implementation details | -->
 
-_None yet._
+| Target | File | Purpose |
+|---|---|---|
+| `[[Component-Board]]` | `components/Component-Board.md` | Board representation: 14x14 array, piece lists, Zobrist, FEN4 |
+| `[[Component-MoveGen]]` | `components/Component-MoveGen.md` | Move generation, attack queries, make/unmake, perft |
+| `[[Component-GameState]]` | `components/Component-GameState.md` | Game state, scoring, rules, elimination, DKW, terrain, game-over |
 
 ### Connections
-<!-- Example: | `[[Connection-Board-to-MoveGen]]` | `connections/Connection-Board-to-MoveGen.md` | How Board feeds into MoveGen | -->
 
-_None yet._
+| Target | File | Purpose |
+|---|---|---|
+| `[[Connection-Board-to-MoveGen]]` | `connections/Connection-Board-to-MoveGen.md` | How Board feeds position state into MoveGen |
+| `[[Connection-MoveGen-to-GameState]]` | `connections/Connection-MoveGen-to-GameState.md` | How MoveGen provides legal moves, attack queries, and make_move to GameState |
+| `[[Connection-Board-to-GameState]]` | `connections/Connection-Board-to-GameState.md` | How Board is wrapped and accessed by GameState |
 
 ### Sessions
-<!-- Example: | `[[Session-2026-02-19-Stage-0-Kickoff]]` | `sessions/Session-2026-02-19-Stage-0-Kickoff.md` | First implementation session | -->
 
-_None yet._
+| Target | File | Purpose |
+|---|---|---|
+| `[[Session-2026-02-20-Stage01]]` | `sessions/session-2026-02-20-stage01.md` | Stage 1 implementation session |
+| `[[Session-2026-02-20-Stage02]]` | `sessions/session-2026-02-20-stage02.md` | Stage 2 implementation session |
+| `[[Session-2026-02-20-Stage03]]` | `sessions/session-2026-02-20-stage03.md` | Stage 3 implementation session |
 
 ### Issues
-<!-- Example: | `[[Issue-Zobrist-Hash-Mismatch]]` | `issues/Issue-Zobrist-Hash-Mismatch.md` | Zobrist hash diverges after castling unmake | -->
 
-_None yet._
+| Target | File | Purpose |
+|---|---|---|
+| `[[Issue-EP-Representation-4PC]]` | `issues/Issue-EP-Representation-4PC.md` | En passant file→square fix for 4PC (resolved) |
+| `[[Issue-Perft-Values-Unverified]]` | `issues/Issue-Perft-Values-Unverified.md` | Perft values lack external verification (open) |
+| `[[Issue-Huginn-Gates-Unwired]]` | `issues/Issue-Huginn-Gates-Unwired.md` | Stages 1-2 Huginn gates not wired (open) |
+| `[[Issue-DKW-Halfmove-Clock]]` | `issues/Issue-DKW-Halfmove-Clock.md` | DKW instant moves increment halfmove clock (open) |
 
 ### Patterns
-<!-- Example: | `[[Pattern-Huginn-Gate-Wiring]]` | `patterns/Pattern-Huginn-Gate-Wiring.md` | How to add a new Huginn observation point | -->
 
-_None yet._
+| Target | File | Purpose |
+|---|---|---|
+| `[[Pattern-Pawn-Reverse-Lookup]]` | `patterns/Pattern-Pawn-Reverse-Lookup.md` | Use (player+2)%4 for reverse pawn attack detection in 4PC |
+| `[[Pattern-EP-Captured-Square-4PC]]` | `patterns/Pattern-EP-Captured-Square-4PC.md` | Use prev_player's forward direction for EP captured pawn location |
+| `[[Pattern-Terrain-Awareness]]` | `patterns/Pattern-Terrain-Awareness.md` | Terrain pieces block movement and don't give check at MoveGen level |
+| `[[Pattern-DKW-Instant-Moves]]` | `patterns/Pattern-DKW-Instant-Moves.md` | DKW king moves happen instantly between turns via side_to_move swap |
