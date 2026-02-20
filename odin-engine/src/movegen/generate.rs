@@ -14,20 +14,28 @@ use super::moves::{
 };
 use super::tables::{global_attack_tables, AttackTables, NUM_DIRECTIONS};
 
+use crate::board::BOARD_SIZE;
+
+/// Check if (file, rank) is within board bounds.
+#[inline]
+fn in_bounds(f: i8, r: i8) -> bool {
+    (0..BOARD_SIZE as i8).contains(&f) && (0..BOARD_SIZE as i8).contains(&r)
+}
+
 /// Pawn forward direction delta per player: (file_delta, rank_delta).
 const PAWN_FORWARD: [(i8, i8); 4] = [
-    (0, 1),   // Red: +rank
-    (1, 0),   // Blue: +file
-    (0, -1),  // Yellow: -rank
-    (-1, 0),  // Green: -file
+    (0, 1),  // Red: +rank
+    (1, 0),  // Blue: +file
+    (0, -1), // Yellow: -rank
+    (-1, 0), // Green: -file
 ];
 
 /// Pawn starting rank/file and promotion rank/file per player.
 /// (start_coord, double_step_target_coord, promotion_coord)
 /// For Red/Yellow: these are ranks. For Blue/Green: these are files.
 const PAWN_CONFIG: [(u8, u8, u8); 4] = [
-    (1, 3, 8),  // Red: start rank 1, double to rank 3, promote at rank 8
-    (1, 3, 8),  // Blue: start file 1, double to file 3, promote at file 8
+    (1, 3, 8),   // Red: start rank 1, double to rank 3, promote at rank 8
+    (1, 3, 8),   // Blue: start file 1, double to file 3, promote at file 8
     (12, 10, 5), // Yellow: start rank 12, double to rank 10, promote at rank 5
     (12, 10, 5), // Green: start file 12, double to file 10, promote at file 5
 ];
@@ -42,15 +50,15 @@ pub fn generate_pseudo_legal(board: &Board) -> Vec<Move> {
         match piece_type {
             PieceType::Pawn => generate_pawn_moves(board, player, sq, &mut moves),
             PieceType::Knight => generate_knight_moves(board, player, sq, tables, &mut moves),
-            PieceType::Bishop => {
-                generate_sliding_moves(board, player, sq, piece_type, tables, &mut moves, true, false)
-            }
-            PieceType::Rook => {
-                generate_sliding_moves(board, player, sq, piece_type, tables, &mut moves, false, true)
-            }
-            PieceType::Queen | PieceType::PromotedQueen => {
-                generate_sliding_moves(board, player, sq, piece_type, tables, &mut moves, true, true)
-            }
+            PieceType::Bishop => generate_sliding_moves(
+                board, player, sq, piece_type, tables, &mut moves, true, false,
+            ),
+            PieceType::Rook => generate_sliding_moves(
+                board, player, sq, piece_type, tables, &mut moves, false, true,
+            ),
+            PieceType::Queen | PieceType::PromotedQueen => generate_sliding_moves(
+                board, player, sq, piece_type, tables, &mut moves, true, true,
+            ),
             PieceType::King => generate_king_moves(board, player, sq, tables, &mut moves),
         }
     }
@@ -108,7 +116,7 @@ fn generate_pawn_moves(board: &Board, player: Player, sq: Square, moves: &mut Ve
     let fwd_file = file + df;
     let fwd_rank = rank + dr;
 
-    if fwd_file >= 0 && fwd_file < 14 && fwd_rank >= 0 && fwd_rank < 14 {
+    if in_bounds(fwd_file, fwd_rank) {
         let fwd_sq = square_from(fwd_file as u8, fwd_rank as u8).unwrap();
         if is_valid_square(fwd_sq) && board.piece_at(fwd_sq).is_none() {
             // Check if this is a promotion square
@@ -120,7 +128,12 @@ fn generate_pawn_moves(board: &Board, player: Player, sq: Square, moves: &mut Ve
 
             if is_promotion {
                 // In FFA: promote to PromotedQueen (1-pt queen)
-                moves.push(Move::new_promotion(sq, fwd_sq, None, PieceType::PromotedQueen));
+                moves.push(Move::new_promotion(
+                    sq,
+                    fwd_sq,
+                    None,
+                    PieceType::PromotedQueen,
+                ));
                 // Also allow underpromotion to knight, bishop, rook
                 moves.push(Move::new_promotion(sq, fwd_sq, None, PieceType::Knight));
                 moves.push(Move::new_promotion(sq, fwd_sq, None, PieceType::Rook));
@@ -133,7 +146,7 @@ fn generate_pawn_moves(board: &Board, player: Player, sq: Square, moves: &mut Ve
             if is_on_start {
                 let dbl_file = fwd_file + df;
                 let dbl_rank = fwd_rank + dr;
-                if dbl_file >= 0 && dbl_file < 14 && dbl_rank >= 0 && dbl_rank < 14 {
+                if in_bounds(dbl_file, dbl_rank) {
                     let dbl_sq = square_from(dbl_file as u8, dbl_rank as u8).unwrap();
                     if is_valid_square(dbl_sq) && board.piece_at(dbl_sq).is_none() {
                         moves.push(Move::new_double_push(sq, dbl_sq));
@@ -212,20 +225,19 @@ fn generate_knight_moves(
     for &target in tables.knight_destinations(sq) {
         match board.piece_at(target) {
             None => moves.push(Move::new(sq, target, PieceType::Knight)),
-            Some(piece) if piece.owner != player => {
-                moves.push(Move::new_capture(
-                    sq,
-                    target,
-                    PieceType::Knight,
-                    piece.piece_type,
-                ))
-            }
+            Some(piece) if piece.owner != player => moves.push(Move::new_capture(
+                sq,
+                target,
+                PieceType::Knight,
+                piece.piece_type,
+            )),
             _ => {} // Own piece — blocked
         }
     }
 }
 
 /// Generate sliding piece moves (bishop, rook, queen, promoted queen).
+#[allow(clippy::too_many_arguments)]
 fn generate_sliding_moves(
     board: &Board,
     player: Player,
@@ -269,9 +281,12 @@ fn generate_king_moves(
     for &target in tables.king_destinations(sq) {
         match board.piece_at(target) {
             None => moves.push(Move::new(sq, target, PieceType::King)),
-            Some(piece) if piece.owner != player => {
-                moves.push(Move::new_capture(sq, target, PieceType::King, piece.piece_type))
-            }
+            Some(piece) if piece.owner != player => moves.push(Move::new_capture(
+                sq,
+                target,
+                PieceType::King,
+                piece.piece_type,
+            )),
             _ => {} // Own piece — blocked
         }
     }
@@ -361,7 +376,11 @@ pub fn perft_divide(board: &mut Board, depth: u32) -> Vec<(Move, u64)> {
 
     for mv in moves {
         let undo = make_move(board, mv);
-        let nodes = if depth <= 1 { 1 } else { perft(board, depth - 1) };
+        let nodes = if depth <= 1 {
+            1
+        } else {
+            perft(board, depth - 1)
+        };
         unmake_move(board, mv, undo);
         results.push((mv, nodes));
     }
@@ -387,10 +406,7 @@ mod tests {
         );
 
         let moves = generate_pseudo_legal(&board);
-        let pawn_moves: Vec<_> = moves
-            .iter()
-            .filter(|m| m.from_sq() == sq)
-            .collect();
+        let pawn_moves: Vec<_> = moves.iter().filter(|m| m.from_sq() == sq).collect();
 
         // Should have single step (e3) and double step (e4)
         assert!(pawn_moves.len() >= 2, "pawn should have at least 2 moves");

@@ -12,8 +12,8 @@ mod tables;
 pub use attacks::{attackers_of, is_in_check, is_square_attacked_by};
 pub use generate::{generate_legal, generate_pseudo_legal, perft, perft_divide};
 pub use moves::{
-    make_move, unmake_move, Move, MoveUndo, FLAG_CASTLE_KING, FLAG_CASTLE_QUEEN,
-    FLAG_DOUBLE_PUSH, FLAG_EN_PASSANT, FLAG_NORMAL,
+    make_move, unmake_move, Move, MoveUndo, FLAG_CASTLE_KING, FLAG_CASTLE_QUEEN, FLAG_DOUBLE_PUSH,
+    FLAG_EN_PASSANT, FLAG_NORMAL,
 };
 pub use tables::{
     global_attack_tables, is_diagonal, is_orthogonal, DIR_EAST, DIR_NORTH, DIR_NORTHEAST,

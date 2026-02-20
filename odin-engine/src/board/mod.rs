@@ -17,8 +17,8 @@ pub use board_struct::{
     MAX_PIECES_PER_PLAYER,
 };
 pub use square::{
-    file_char, file_of, is_valid_square, parse_square, rank_of, square_from, square_name, Square,
-    valid_squares, BOARD_SIZE, INVALID_CORNER_COUNT, TOTAL_SQUARES, VALID_SQUARE_COUNT,
+    file_char, file_of, is_valid_square, parse_square, rank_of, square_from, square_name,
+    valid_squares, Square, BOARD_SIZE, INVALID_CORNER_COUNT, TOTAL_SQUARES, VALID_SQUARE_COUNT,
 };
 pub use types::{Piece, PieceStatus, PieceType, Player, PIECE_TYPE_COUNT, PLAYER_COUNT};
 pub use zobrist::ZobristKeys;

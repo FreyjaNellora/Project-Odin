@@ -68,7 +68,11 @@ fn test_make_unmake_preserves_zobrist_all_depth1_moves() {
     for mv in &moves {
         let undo = make_move(&mut board, *mv);
         assert!(board.verify_zobrist(), "zobrist invalid after make: {}", mv);
-        assert!(board.verify_piece_lists(), "piece lists invalid after make: {}", mv);
+        assert!(
+            board.verify_piece_lists(),
+            "piece lists invalid after make: {}",
+            mv
+        );
 
         unmake_move(&mut board, *mv, undo);
         assert_eq!(
@@ -77,7 +81,11 @@ fn test_make_unmake_preserves_zobrist_all_depth1_moves() {
             "zobrist not restored after unmake: {}",
             mv
         );
-        assert!(board.verify_piece_lists(), "piece lists invalid after unmake: {}", mv);
+        assert!(
+            board.verify_piece_lists(),
+            "piece lists invalid after unmake: {}",
+            mv
+        );
     }
 }
 
@@ -94,7 +102,12 @@ fn test_make_unmake_preserves_zobrist_depth2() {
 
         for mv2 in &moves2 {
             let undo2 = make_move(&mut board, *mv2);
-            assert!(board.verify_zobrist(), "zobrist invalid at depth 2: {} {}", mv1, mv2);
+            assert!(
+                board.verify_zobrist(),
+                "zobrist invalid at depth 2: {} {}",
+                mv1,
+                mv2
+            );
 
             unmake_move(&mut board, *mv2, undo2);
             assert_eq!(
@@ -276,7 +289,11 @@ fn test_promotion_make_unmake() {
 fn test_no_check_at_start() {
     let board = Board::starting_position();
     for &player in &Player::ALL {
-        assert!(!is_in_check(player, &board), "{:?} should not be in check at start", player);
+        assert!(
+            !is_in_check(player, &board),
+            "{:?} should not be in check at start",
+            player
+        );
     }
 }
 
@@ -401,7 +418,9 @@ fn test_random_playouts_no_crash() {
             }
 
             // Pseudo-random move selection
-            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            seed = seed
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
             let idx = (seed >> 33) as usize % legal_moves.len();
             let mv = legal_moves[idx];
 
@@ -437,7 +456,11 @@ fn test_board_fully_restored_after_perft() {
 
     let _ = perft(&mut board, 3);
 
-    assert_eq!(board.zobrist(), hash_before, "zobrist not restored after perft");
+    assert_eq!(
+        board.zobrist(),
+        hash_before,
+        "zobrist not restored after perft"
+    );
     assert_eq!(
         board.piece_count(),
         piece_count_before,

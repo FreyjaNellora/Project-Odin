@@ -305,8 +305,16 @@ mod tests {
         board.place_piece(king_sq, Piece::new(PieceType::King, Player::Red));
 
         // King attacks all 8 adjacent squares
-        for &(df, dr) in &[(0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1)]
-        {
+        for &(df, dr) in &[
+            (0, 1),
+            (1, 1),
+            (1, 0),
+            (1, -1),
+            (0, -1),
+            (-1, -1),
+            (-1, 0),
+            (-1, 1),
+        ] {
             let target = square_from((6 + df) as u8, (6 + dr) as u8).unwrap();
             assert!(
                 is_square_attacked_by(target, Player::Red, &board),
@@ -361,7 +369,12 @@ mod tests {
         let attackers = attackers_of(target, Player::Red, &board2);
         // Rook on f3 attacks f5 orthogonally (same file)
         // Bishop on d3 attacks f5 diagonally (NE ray: e4, f5)
-        assert_eq!(attackers.len(), 2, "expected 2 attackers, got {}", attackers.len());
+        assert_eq!(
+            attackers.len(),
+            2,
+            "expected 2 attackers, got {}",
+            attackers.len()
+        );
     }
 
     #[test]

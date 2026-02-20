@@ -8,7 +8,9 @@
 //
 // All tables respect board boundaries and invalid corner squares.
 
-use crate::board::{file_of, is_valid_square, rank_of, square_from, Square, BOARD_SIZE, TOTAL_SQUARES};
+use crate::board::{
+    file_of, is_valid_square, rank_of, square_from, Square, BOARD_SIZE, TOTAL_SQUARES,
+};
 
 /// Direction deltas as (file_delta, rank_delta).
 /// Order: N, NE, E, SE, S, SW, W, NW.
@@ -189,9 +191,9 @@ impl AttackTables {
         // Green (-file): captures at (-1 file, +1 rank) and (-1 file, -1 rank)
         let capture_deltas: [(i8, i8); 2] = match player_idx {
             0 => [(-1, 1), (1, 1)],   // Red
-            1 => [(1, -1), (1, 1)],    // Blue
-            2 => [(-1, -1), (1, -1)],  // Yellow
-            3 => [(-1, -1), (-1, 1)],  // Green
+            1 => [(1, -1), (1, 1)],   // Blue
+            2 => [(-1, -1), (1, -1)], // Yellow
+            3 => [(-1, -1), (-1, 1)], // Green
             _ => unreachable!(),
         };
 
@@ -239,7 +241,7 @@ pub fn is_diagonal(dir: usize) -> bool {
 /// Whether a direction is orthogonal (straight).
 #[inline]
 pub fn is_orthogonal(dir: usize) -> bool {
-    dir % 2 == 0
+    dir.is_multiple_of(2)
 }
 
 /// Lazily-initialized global attack tables.
@@ -268,7 +270,10 @@ mod tests {
         // Neighbors: c1 (invalid!), d2 (valid), e1 (valid), e2 (valid), c2 (invalid!)
         let sq = square_from(3, 0).unwrap();
         let moves = tables.king_destinations(sq);
-        assert!(moves.len() < 8, "should have fewer than 8 moves near corner");
+        assert!(
+            moves.len() < 8,
+            "should have fewer than 8 moves near corner"
+        );
         // Specifically: d2, e1, e2 = 3 valid neighbors
         assert_eq!(moves.len(), 3);
     }
