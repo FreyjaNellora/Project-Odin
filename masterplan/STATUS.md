@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
 **Last Updated:** 2026-02-19
-**Updated By:** Planning session (pre-implementation)
+**Updated By:** Claude Opus 4.6 (Stage 0 implementation session)
 
 ---
 
@@ -9,12 +9,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Version** | Pre-v1.0 |
-| **Current Stage** | Pre-Stage 0 (planning and documentation) |
-| **Current Build-Order Step** | N/A — no code yet |
-| **Build Compiles** | N/A — no project initialized |
-| **Tests Pass** | N/A |
-| **Blocking Issues** | None — documentation complete, ready for git init + Stage 0 |
+| **Current Stage** | Stage 0 complete, ready for Stage 1 |
+| **Current Build-Order Step** | Stage 0 complete (all 5 steps) |
+| **Build Compiles** | Yes (`cargo build` and `cargo build --features huginn`) |
+| **Tests Pass** | Yes (2 without huginn, 11 with huginn) |
+| **Blocking Issues** | None |
 
 ---
 
@@ -22,7 +21,7 @@
 
 | Stage | Name | Status | Audited | Git Tag | Notes |
 |-------|------|--------|---------|---------|-------|
-| 0 | Skeleton + Huginn Core | not-started | — | — | |
+| 0 | Skeleton + Huginn Core | complete | post-audit done | — | Tag pending |
 | 1 | Board Representation | not-started | — | — | |
 | 2 | Move Generation + Attack Query API | not-started | — | — | |
 | 3 | Game State & Rules | not-started | — | — | |
@@ -53,34 +52,40 @@
 | Document | Status | Notes |
 |----------|--------|-------|
 | MASTERPLAN.md | current | v3.0 complete. 20 stages (0-19) in 6 tiers. |
-| AGENT_CONDUCT.md | current | v1.0 complete. Uses new stage numbering (0-19). |
+| AGENT_CONDUCT.md | current | v1.0 complete. |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
 | DECISIONS.md | current | 11 ADRs from planning sessions. |
-| HANDOFF.md | current | Session state captured. |
+| HANDOFF.md | current | Stage 0 session state captured. |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
-| Stage files (20) | current | 20 files (00-19) with correct naming. |
-| Audit log files (20) | current | 20 files (00-19) with correct headers. |
-| Downstream log files (20) | current | 20 files (00-19) with correct headers. |
+| audit_log_stage_00.md | current | Pre-audit + post-audit complete. |
+| downstream_log_stage_00.md | current | All sections filled. |
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Initialize git repo
-2. Begin Stage 0 implementation (project skeleton + Huginn core)
+1. Create `stage-00-complete` git tag
+2. Begin Stage 1: Board Representation
+3. Follow Stage Entry Protocol (AGENT_CONDUCT 1.1)
 
 ---
 
 ## Known Regressions
 
-None — no code exists yet.
+None.
 
 ---
 
 ## Performance Baselines
 
-None established yet. Will be recorded starting at Stage 2 (perft NPS).
+| Metric | Value | Stage | Notes |
+|---|---|---|---|
+| `cargo build` (dev) | 0.70s | 0 | Empty project baseline |
+| `cargo build --features huginn` (dev) | 0.97s | 0 | |
+| `cargo build --release` | 1.30s | 0 | Binary: 129,024 bytes |
+| Test count (no huginn) | 2 | 0 | |
+| Test count (with huginn) | 11 | 0 | |
 
 ---
 
