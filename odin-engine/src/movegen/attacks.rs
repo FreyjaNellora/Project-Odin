@@ -37,9 +37,7 @@ fn is_square_attacked_by_with_tables(
     let reverse_pawn_idx = (attacker.index() + 2) % 4;
     for &pawn_sq in tables.pawn_attack_squares(reverse_pawn_idx, sq) {
         if let Some(piece) = board.piece_at(pawn_sq) {
-            if piece.owner == attacker
-                && piece.piece_type == PieceType::Pawn
-                && !piece.is_terrain()
+            if piece.owner == attacker && piece.piece_type == PieceType::Pawn && !piece.is_terrain()
             {
                 return true;
             }
@@ -61,9 +59,7 @@ fn is_square_attacked_by_with_tables(
     // Check king attacks (terrain kings do not attack)
     for &king_sq in tables.king_destinations(sq) {
         if let Some(piece) = board.piece_at(king_sq) {
-            if piece.owner == attacker
-                && piece.piece_type == PieceType::King
-                && !piece.is_terrain()
+            if piece.owner == attacker && piece.piece_type == PieceType::King && !piece.is_terrain()
             {
                 return true;
             }
@@ -116,9 +112,7 @@ pub fn attackers_of(sq: Square, attacker: Player, board: &Board) -> Vec<(PieceTy
     let reverse_pawn_idx = (attacker.index() + 2) % 4;
     for &pawn_sq in tables.pawn_attack_squares(reverse_pawn_idx, sq) {
         if let Some(piece) = board.piece_at(pawn_sq) {
-            if piece.owner == attacker
-                && piece.piece_type == PieceType::Pawn
-                && !piece.is_terrain()
+            if piece.owner == attacker && piece.piece_type == PieceType::Pawn && !piece.is_terrain()
             {
                 result.push((PieceType::Pawn, pawn_sq));
             }
@@ -140,9 +134,7 @@ pub fn attackers_of(sq: Square, attacker: Player, board: &Board) -> Vec<(PieceTy
     // Check king attacks (terrain kings do not attack)
     for &king_sq in tables.king_destinations(sq) {
         if let Some(piece) = board.piece_at(king_sq) {
-            if piece.owner == attacker
-                && piece.piece_type == PieceType::King
-                && !piece.is_terrain()
+            if piece.owner == attacker && piece.piece_type == PieceType::King && !piece.is_terrain()
             {
                 result.push((PieceType::King, king_sq));
             }
