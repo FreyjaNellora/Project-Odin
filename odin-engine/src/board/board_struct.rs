@@ -35,8 +35,10 @@ pub struct Board {
     zobrist: u64,
     /// Castling rights: 8 bits, 2 per player.
     castling_rights: u8,
-    /// En passant target file (if a pawn just double-stepped).
-    en_passant: Option<u8>,
+    /// En passant target square (the square a capturing pawn lands on).
+    /// In 4PC, this is a full square index because Blue/Green pawns move
+    /// along files, not ranks, so a file alone doesn't identify the target.
+    en_passant: Option<Square>,
     /// Which player moves next.
     side_to_move: Player,
     /// Half-move clock for 50-move rule (resets on pawn move or capture).
@@ -209,9 +211,9 @@ impl Board {
         self.castling_rights
     }
 
-    /// Current en passant target file, if any.
+    /// Current en passant target square, if any.
     #[inline]
-    pub fn en_passant(&self) -> Option<u8> {
+    pub fn en_passant(&self) -> Option<Square> {
         self.en_passant
     }
 
@@ -308,17 +310,17 @@ impl Board {
         }
     }
 
-    /// Set the en passant target file. Updates Zobrist hash.
-    pub fn set_en_passant(&mut self, file: Option<u8>) {
+    /// Set the en passant target square. Updates Zobrist hash.
+    pub fn set_en_passant(&mut self, sq: Option<Square>) {
         // XOR out old en passant
-        if let Some(old_file) = self.en_passant {
-            self.zobrist ^= self.zobrist_keys.en_passant_key(old_file);
+        if let Some(old_sq) = self.en_passant {
+            self.zobrist ^= self.zobrist_keys.en_passant_key(old_sq);
         }
         // XOR in new en passant
-        if let Some(new_file) = file {
-            self.zobrist ^= self.zobrist_keys.en_passant_key(new_file);
+        if let Some(new_sq) = sq {
+            self.zobrist ^= self.zobrist_keys.en_passant_key(new_sq);
         }
-        self.en_passant = file;
+        self.en_passant = sq;
     }
 
     /// Set the side to move. Updates Zobrist hash.
@@ -358,8 +360,8 @@ impl Board {
         hash ^= self.zobrist_keys.castling_key(self.castling_rights);
 
         // En passant
-        if let Some(file) = self.en_passant {
-            hash ^= self.zobrist_keys.en_passant_key(file);
+        if let Some(ep_sq) = self.en_passant {
+            hash ^= self.zobrist_keys.en_passant_key(ep_sq);
         }
 
         // Side to move
@@ -567,7 +569,9 @@ mod tests {
         let mut board = Board::empty();
         let hash1 = board.zobrist();
 
-        board.set_en_passant(Some(5));
+        // Use a valid square as ep target (f3 = file 5, rank 2)
+        let ep_sq = square_from(5, 2).unwrap();
+        board.set_en_passant(Some(ep_sq));
         let hash2 = board.zobrist();
         assert_ne!(hash1, hash2);
         assert!(board.verify_zobrist());

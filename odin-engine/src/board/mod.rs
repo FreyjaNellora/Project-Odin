@@ -11,10 +11,14 @@ mod square;
 mod types;
 mod zobrist;
 
-pub use board_struct::Board;
+pub use board_struct::{
+    Board, CASTLE_BLUE_KING, CASTLE_BLUE_QUEEN, CASTLE_GREEN_KING, CASTLE_GREEN_QUEEN,
+    CASTLE_RED_KING, CASTLE_RED_QUEEN, CASTLE_YELLOW_KING, CASTLE_YELLOW_QUEEN,
+    MAX_PIECES_PER_PLAYER,
+};
 pub use square::{
-    file_of, is_valid_square, rank_of, square_from, Square, BOARD_SIZE, INVALID_CORNER_COUNT,
-    TOTAL_SQUARES, VALID_SQUARE_COUNT,
+    file_char, file_of, is_valid_square, parse_square, rank_of, square_from, square_name, Square,
+    valid_squares, BOARD_SIZE, INVALID_CORNER_COUNT, TOTAL_SQUARES, VALID_SQUARE_COUNT,
 };
 pub use types::{Piece, PieceStatus, PieceType, Player, PIECE_TYPE_COUNT, PLAYER_COUNT};
 pub use zobrist::ZobristKeys;

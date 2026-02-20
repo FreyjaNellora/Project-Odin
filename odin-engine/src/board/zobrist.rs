@@ -2,10 +2,10 @@
 //
 // Keys: random u64 per (square, piece_type, owner),
 // plus castling rights (256 entries for 8-bit key),
-// en passant (14 files), and side to move (4 players).
+// en passant (196 squares), and side to move (4 players).
 // Fixed seed for reproducibility.
 
-use super::square::{BOARD_SIZE, TOTAL_SQUARES};
+use super::square::TOTAL_SQUARES;
 use super::types::{PIECE_TYPE_COUNT, PLAYER_COUNT};
 
 /// Total piece-square keys: 196 squares x 7 types x 4 owners.
@@ -14,8 +14,11 @@ const PIECE_SQUARE_KEYS: usize = TOTAL_SQUARES * PIECE_TYPE_COUNT * PLAYER_COUNT
 /// Castling rights are 8 bits (2 per player), so 256 possible states.
 const CASTLING_KEYS: usize = 256;
 
-/// En passant keys: one per file (14 files).
-const EN_PASSANT_KEYS: usize = BOARD_SIZE;
+/// En passant keys: one per square index (196 squares).
+/// In 4PC, en passant targets can be on any rank or file depending on the player
+/// (Red/Yellow pawns move along ranks, Blue/Green along files), so we key by
+/// the full square index rather than just file.
+const EN_PASSANT_KEYS: usize = TOTAL_SQUARES;
 
 /// Side to move keys: one per player (4).
 const SIDE_TO_MOVE_KEYS: usize = PLAYER_COUNT;
@@ -87,10 +90,10 @@ impl ZobristKeys {
         self.castling[rights as usize]
     }
 
-    /// Key for en passant on a given file (0-13).
+    /// Key for en passant on a given target square.
     #[inline]
-    pub fn en_passant_key(&self, file: u8) -> u64 {
-        self.en_passant[file as usize]
+    pub fn en_passant_key(&self, square: u8) -> u64 {
+        self.en_passant[square as usize]
     }
 
     /// Key for the side to move (player index 0-3).

@@ -10,14 +10,14 @@
 //
 // Side to move: r/b/y/g
 // Castling: A/a=Red K/Q, B/b=Blue K/Q, C/c=Yellow K/Q, D/d=Green K/Q. "-" = none.
-// En passant: file letter or "-"
+// En passant: target square (e.g. "e3") or "-"
 // Halfmove/fullmove: decimal integers.
 
 use super::board_struct::{
     Board, CASTLE_BLUE_KING, CASTLE_BLUE_QUEEN, CASTLE_GREEN_KING, CASTLE_GREEN_QUEEN,
     CASTLE_RED_KING, CASTLE_RED_QUEEN, CASTLE_YELLOW_KING, CASTLE_YELLOW_QUEEN,
 };
-use super::square::{file_char, is_valid_square, square_from, BOARD_SIZE};
+use super::square::{file_char, file_of, is_valid_square, rank_of, square_from, BOARD_SIZE};
 use super::types::{Piece, PieceType, Player};
 
 /// Errors that can occur during FEN4 parsing.
@@ -158,14 +158,11 @@ impl Board {
             board.set_castling_rights(rights);
         }
 
-        // Parse en passant
+        // Parse en passant (full square, e.g. "e3" or "-")
         if fields[3] != "-" {
-            let ep_file = fields[3]
-                .chars()
-                .next()
-                .and_then(super::square::parse_file)
+            let ep_sq = super::square::parse_square(fields[3])
                 .ok_or_else(|| Fen4Error::InvalidEnPassant(fields[3].to_string()))?;
-            board.set_en_passant(Some(ep_file));
+            board.set_en_passant(Some(ep_sq));
         }
 
         // Parse halfmove clock
@@ -266,10 +263,13 @@ impl Board {
             }
         }
 
-        // En passant
+        // En passant (full square name, e.g. "e3")
         result.push(' ');
         match self.en_passant() {
-            Some(file) => result.push(file_char(file)),
+            Some(sq) => {
+                result.push(file_char(file_of(sq)));
+                result.push_str(&(rank_of(sq) + 1).to_string());
+            }
             None => result.push('-'),
         }
 
@@ -339,12 +339,15 @@ mod tests {
 
     #[test]
     fn test_fen4_en_passant() {
+        use super::super::square::square_from;
         let mut board = Board::empty();
-        board.set_en_passant(Some(5)); // file f
+        // En passant at f3 (file 5, rank 2) — square index for a Red pawn double-step
+        let ep_sq = square_from(5, 2).unwrap();
+        board.set_en_passant(Some(ep_sq));
         let fen = board.to_fen4();
-        assert!(fen.contains(" f "), "FEN should contain ep=f");
+        assert!(fen.contains(" f3 "), "FEN should contain ep=f3");
         let parsed = Board::from_fen4(&fen).expect("should parse");
-        assert_eq!(parsed.en_passant(), Some(5));
+        assert_eq!(parsed.en_passant(), Some(ep_sq));
     }
 
     #[test]
