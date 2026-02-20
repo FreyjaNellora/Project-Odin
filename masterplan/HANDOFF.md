@@ -1,37 +1,38 @@
 # PROJECT ODIN — SESSION HANDOFF
 
-**Last Updated:** 2026-02-19
-**Session:** Stage 0 implementation — COMPLETE
+**Last Updated:** 2026-02-20
+**Session:** Stage 1 implementation — COMPLETE
 
 ---
 
 ## Current Work In Progress
 
-**Stage:** Stage 0 — Skeleton + Huginn Core — COMPLETE
-**Task:** All 5 build order steps completed. Audit log and downstream log filled.
+**Stage:** Stage 1 — Board Representation — COMPLETE
+**Task:** All 6 build order steps completed. Pre-audit, post-audit, and downstream log filled.
 
 ### What Was Completed This Session
 
-1. Installed Rust toolchain (rustup, cargo 1.93.1, rustc 1.93.1)
-2. Created full directory structure per stage spec
-3. Initialized Cargo workspace with `odin-engine` member
-4. Created `odin-engine/Cargo.toml` with `huginn` feature flag (default off)
-5. Created all module directories with stub `mod.rs` files (board, movegen, gamestate, protocol, eval, search, huginn, variants)
-6. Implemented `huginn_observe!` macro (both feature-on and feature-off branches)
-7. Implemented `HuginnBuffer` ring buffer (pre-allocated, wraps silently, zero allocation during record)
-8. Implemented `TraceEvent`, `Phase`, `Level` types
-9. Created React+TypeScript UI scaffold with Vite in `odin-ui/`
-10. Created `odin-nnue/` and `tools/` placeholders
-11. Wrote 8 unit tests + 3 integration tests (all pass in both configurations)
-12. Verified `cargo fmt` clean, `cargo clippy` zero warnings
-13. Verified binary without huginn contains zero Huginn symbols
-14. Filled `audit_log_stage_00.md` (pre-audit and post-audit)
-15. Filled `downstream_log_stage_00.md`
+1. Created `stage-00-complete` and `v1.0` git tags
+2. Filled pre-audit section of `audit_log_stage_01.md` (reviewed Stage 0 audit + downstream logs)
+3. Implemented square indexing + validity table (`square.rs`)
+4. Implemented Piece and Player enums (`types.rs`)
+5. Implemented Board struct with array + piece lists + king tracking (`board_struct.rs`)
+6. Implemented Zobrist hash generation and accumulation (`zobrist.rs`)
+7. Implemented FEN4 parser/serializer (`fen4.rs`)
+8. Implemented make/unmake infrastructure stubs (place/remove/move methods)
+9. Wired board module into `lib.rs` (`pub mod board`)
+10. Wrote 18 integration tests in `stage_01_board.rs`
+11. Fixed all clippy warnings (collapsible_if, manual_range_contains, new_without_default)
+12. Verified `cargo fmt` clean
+13. Committed implementation: `[Stage 01] Board representation: square indexing, types, Zobrist, FEN4, Board struct`
+14. Filled post-audit section of `audit_log_stage_01.md` (all deliverables PASS, no blocking issues)
+15. Filled `downstream_log_stage_01.md` with full API contracts and limitations
 
 ### What Was NOT Completed
 
-1. **CI configuration** — No CI pipeline (GitHub Actions, etc.) was set up. The stage spec mentions CI but no CI service is configured for this repo.
-2. **Stage tag** — `stage-00-complete` tag not yet created (should be created after post-audit confirmation per AGENT_CONDUCT 1.11).
+1. **Stage tags** — `stage-01-complete` and `v1.1` tags not yet created (should be created after human confirms post-audit, per AGENT_CONDUCT 1.11).
+2. **Huginn gates** — The 4 Huginn observation gates (board_mutation, zobrist_update, fen4_roundtrip, piece_list_sync) are not wired as `huginn_observe!` calls. Deferred to Stage 2 when make/unmake becomes active. Debug verification methods (`verify_zobrist`, `verify_piece_lists`) exist instead.
+3. **CI configuration** — Still not set up.
 
 ### Open Issues
 
@@ -39,33 +40,26 @@ None.
 
 ### Files Modified
 
-- `Cargo.toml` (workspace root)
-- `Cargo.lock`
-- `.gitignore` (added .claude/)
-- `odin-engine/Cargo.toml`
-- `odin-engine/src/lib.rs`
-- `odin-engine/src/main.rs`
-- `odin-engine/src/huginn/mod.rs`
-- `odin-engine/src/huginn/buffer.rs`
-- `odin-engine/src/board/mod.rs` (stub)
-- `odin-engine/src/movegen/mod.rs` (stub)
-- `odin-engine/src/gamestate/mod.rs` (stub)
-- `odin-engine/src/protocol/mod.rs` (stub)
-- `odin-engine/src/eval/mod.rs` (stub)
-- `odin-engine/src/search/mod.rs` (stub)
-- `odin-engine/src/variants/mod.rs` (stub)
-- `odin-engine/tests/stage_00_proof_of_life.rs`
-- `odin-ui/` (full Vite React-TS scaffold)
-- `odin-nnue/README.md`
-- `tools/README.md`
-- `masterplan/audit_log_stage_00.md`
-- `masterplan/downstream_log_stage_00.md`
+- `odin-engine/src/lib.rs` (changed `mod board` to `pub mod board`)
+- `odin-engine/src/board/mod.rs` (rewrote from stub to full module wiring)
+- `odin-engine/src/board/square.rs` (new)
+- `odin-engine/src/board/types.rs` (new)
+- `odin-engine/src/board/board_struct.rs` (new)
+- `odin-engine/src/board/zobrist.rs` (new)
+- `odin-engine/src/board/fen4.rs` (new)
+- `odin-engine/tests/stage_01_board.rs` (new)
+- `masterplan/audit_log_stage_01.md` (filled pre-audit + post-audit)
+- `masterplan/downstream_log_stage_01.md` (filled all sections)
+- `masterplan/HANDOFF.md` (this file)
+- `masterplan/STATUS.md` (updated)
 
 ### Recommendations for Next Session
 
-1. Create `stage-00-complete` git tag
-2. Begin Stage 1: Board Representation (read stage_01_board.md and MASTERPLAN Section 4 Stage 1)
-3. Consider setting up CI (GitHub Actions) if the repo is pushed to GitHub
+1. Create `stage-01-complete` and `v1.1` git tags
+2. Begin Stage 2: Move Generation + Attack Query API
+3. Follow Stage Entry Protocol (AGENT_CONDUCT 1.1)
+4. Consider adding `Clone` to Board if needed for make/unmake testing
+5. Wire Huginn gates when make/unmake is active
 
 ---
 
