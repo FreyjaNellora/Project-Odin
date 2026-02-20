@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "a99f8ec1afeead09",
+        "id": "a31a0df31f7952a6",
         "type": "tabs",
         "children": [
           {
-            "id": "99a5949b8b773402",
+            "id": "6341e45ca076c854",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -49,7 +49,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "[\"tags\"]",
+                "query": "[\"date_opened\"]",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -75,8 +75,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "right": {
     "id": "c782b59512939c5c",
@@ -152,8 +151,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -165,16 +163,36 @@
       "bases:Create new base": false
     }
   },
-  "active": "99a5949b8b773402",
+  "active": "6341e45ca076c854",
   "lastOpenFiles": [
-    "STATUS.md.tmp.12676.1771565507627",
-    "_index/Wikilink-Registry.md",
-    "AGENT_CONDUCT.md.tmp.3292.1771561357116",
-    "_templates/component.md",
-    "_templates/connection.md",
+    "sessions/session-2026-02-20-stage01.md",
     "MASTERPLAN.md",
-    "4PC_RULES_REFERENCE.md",
-    "audit_log_stage_00.md",
-    "Untitled.md"
+    "_index/MOC-Tier-3-Strengthen-Search.md",
+    "Untitled.canvas",
+    "stage_19_polish.md",
+    "stage_18_full_ui.md",
+    "stage_17_variants.md",
+    "stage_16_nnue_integration.md",
+    "stage_15_nnue_training.md",
+    "stage_14_nnue_design.md",
+    "stage_13_time_management.md",
+    "stage_12_self_play.md",
+    "stage_11_hybrid_integration.md",
+    "stage_10_mcts.md",
+    "stage_09_tt_ordering.md",
+    "stage_08_brs_hybrid.md",
+    "stage_07_plain_brs.md",
+    "stage_06_bootstrap_eval.md",
+    "stage_05_basic_ui.md",
+    "stage_04_protocol.md",
+    "stage_03_gamestate.md",
+    "stage_02_movegen.md",
+    "stage_01_board.md",
+    "stage_00_skeleton.md",
+    "downstream_log_stage_19.md",
+    "downstream_log_stage_18.md",
+    "downstream_log_stage_17.md",
+    "STATUS.md.tmp.12676.1771565507627",
+    "AGENT_CONDUCT.md.tmp.3292.1771561357116"
   ]
 }
