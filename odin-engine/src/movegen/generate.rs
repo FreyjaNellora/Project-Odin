@@ -157,9 +157,10 @@ fn generate_pawn_moves(board: &Board, player: Player, sq: Square, moves: &mut Ve
     }
 
     // Captures (diagonal in the pawn's forward direction)
+    // Terrain pieces cannot be captured — skip them.
     for &target_sq in tables.pawn_attack_squares(pidx, sq) {
         if let Some(target_piece) = board.piece_at(target_sq) {
-            if target_piece.owner != player {
+            if target_piece.owner != player && !target_piece.is_terrain() {
                 // Check if this is a promotion capture
                 let target_file = file_of(target_sq);
                 let target_rank = rank_of(target_sq);
@@ -225,6 +226,7 @@ fn generate_knight_moves(
     for &target in tables.knight_destinations(sq) {
         match board.piece_at(target) {
             None => moves.push(Move::new(sq, target, PieceType::Knight)),
+            Some(piece) if piece.is_terrain() => {} // Terrain — impassable
             Some(piece) if piece.owner != player => moves.push(Move::new_capture(
                 sq,
                 target,
@@ -260,6 +262,7 @@ fn generate_sliding_moves(
         for &target in tables.ray(sq, dir) {
             match board.piece_at(target) {
                 None => moves.push(Move::new(sq, target, piece_type)),
+                Some(piece) if piece.is_terrain() => break, // Terrain — blocks ray
                 Some(piece) if piece.owner != player => {
                     moves.push(Move::new_capture(sq, target, piece_type, piece.piece_type));
                     break; // Can't go past a capture
@@ -281,6 +284,7 @@ fn generate_king_moves(
     for &target in tables.king_destinations(sq) {
         match board.piece_at(target) {
             None => moves.push(Move::new(sq, target, PieceType::King)),
+            Some(piece) if piece.is_terrain() => {} // Terrain — impassable
             Some(piece) if piece.owner != player => moves.push(Move::new_capture(
                 sq,
                 target,

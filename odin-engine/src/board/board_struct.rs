@@ -406,27 +406,19 @@ impl Board {
         true
     }
 
+    /// Change a piece's status in-place (e.g. Alive → Dead for DKW, Alive → Terrain).
+    /// Does NOT affect the Zobrist hash — hash keys are indexed by (square, piece_type, owner)
+    /// and do not include a status dimension.
+    pub fn set_piece_status(&mut self, sq: Square, new_status: super::types::PieceStatus) {
+        if let Some(ref mut piece) = self.squares[sq as usize] {
+            piece.status = new_status;
+        }
+    }
+
     /// Count total pieces on the board.
     pub fn piece_count(&self) -> usize {
         self.piece_lists.iter().map(|l| l.len()).sum()
     }
-
-    // --- Make/Unmake stubs (Stage 2 fills in the logic) ---
-
-    // The Move type, MoveUndo struct, and make_move/unmake_move methods
-    // will be implemented in Stage 2 (Move Generation).
-    //
-    // Stage 2 will define:
-    //   - Move: compact u32 encoding (from, to, piece_type, captured, promotion, flags)
-    //   - MoveUndo: state needed to reverse a move (captured piece, old castling,
-    //               old en passant, old halfmove clock, old Zobrist hash)
-    //   - fn make_move(&mut self, mv: Move) -> MoveUndo
-    //   - fn unmake_move(&mut self, mv: Move, undo: MoveUndo)
-    //
-    // The Board struct already has the primitives needed:
-    //   - place_piece / remove_piece / move_piece for board mutations
-    //   - set_castling_rights / set_en_passant / set_side_to_move for state changes
-    //   - All mutations maintain Zobrist hash incrementally
 }
 
 #[cfg(test)]

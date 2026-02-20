@@ -33,37 +33,49 @@ fn is_square_attacked_by_with_tables(
     // We need the REVERSE of the pawn's capture direction. If attacker's pawns capture
     // at deltas D, the reverse lookup uses -D, which is the opposite-facing player's
     // capture deltas: Red(0)↔Yellow(2), Blue(1)↔Green(3).
+    // Terrain pieces are inert — they do not attack.
     let reverse_pawn_idx = (attacker.index() + 2) % 4;
     for &pawn_sq in tables.pawn_attack_squares(reverse_pawn_idx, sq) {
         if let Some(piece) = board.piece_at(pawn_sq) {
-            if piece.owner == attacker && piece.piece_type == PieceType::Pawn {
+            if piece.owner == attacker
+                && piece.piece_type == PieceType::Pawn
+                && !piece.is_terrain()
+            {
                 return true;
             }
         }
     }
 
-    // Check knight attacks
+    // Check knight attacks (terrain knights do not attack)
     for &knight_sq in tables.knight_destinations(sq) {
         if let Some(piece) = board.piece_at(knight_sq) {
-            if piece.owner == attacker && piece.piece_type == PieceType::Knight {
+            if piece.owner == attacker
+                && piece.piece_type == PieceType::Knight
+                && !piece.is_terrain()
+            {
                 return true;
             }
         }
     }
 
-    // Check king attacks
+    // Check king attacks (terrain kings do not attack)
     for &king_sq in tables.king_destinations(sq) {
         if let Some(piece) = board.piece_at(king_sq) {
-            if piece.owner == attacker && piece.piece_type == PieceType::King {
+            if piece.owner == attacker
+                && piece.piece_type == PieceType::King
+                && !piece.is_terrain()
+            {
                 return true;
             }
         }
     }
 
     // Check sliding piece attacks (bishop, rook, queen, promoted queen)
+    // Terrain pieces block rays but do not attack.
     for dir in 0..NUM_DIRECTIONS {
         for &ray_sq in tables.ray(sq, dir) {
             match board.piece_at(ray_sq) {
+                Some(piece) if piece.is_terrain() => break, // Terrain blocks ray
                 Some(piece) if piece.owner == attacker => {
                     let pt = piece.piece_type;
                     // Diagonal: bishop, queen, promoted queen
@@ -100,37 +112,48 @@ pub fn attackers_of(sq: Square, attacker: Player, board: &Board) -> Vec<(PieceTy
     let mut result = Vec::new();
 
     // Check pawn attacks (reverse lookup — see is_square_attacked_by_with_tables)
+    // Terrain pieces are inert — they do not attack.
     let reverse_pawn_idx = (attacker.index() + 2) % 4;
     for &pawn_sq in tables.pawn_attack_squares(reverse_pawn_idx, sq) {
         if let Some(piece) = board.piece_at(pawn_sq) {
-            if piece.owner == attacker && piece.piece_type == PieceType::Pawn {
+            if piece.owner == attacker
+                && piece.piece_type == PieceType::Pawn
+                && !piece.is_terrain()
+            {
                 result.push((PieceType::Pawn, pawn_sq));
             }
         }
     }
 
-    // Check knight attacks
+    // Check knight attacks (terrain knights do not attack)
     for &knight_sq in tables.knight_destinations(sq) {
         if let Some(piece) = board.piece_at(knight_sq) {
-            if piece.owner == attacker && piece.piece_type == PieceType::Knight {
+            if piece.owner == attacker
+                && piece.piece_type == PieceType::Knight
+                && !piece.is_terrain()
+            {
                 result.push((PieceType::Knight, knight_sq));
             }
         }
     }
 
-    // Check king attacks
+    // Check king attacks (terrain kings do not attack)
     for &king_sq in tables.king_destinations(sq) {
         if let Some(piece) = board.piece_at(king_sq) {
-            if piece.owner == attacker && piece.piece_type == PieceType::King {
+            if piece.owner == attacker
+                && piece.piece_type == PieceType::King
+                && !piece.is_terrain()
+            {
                 result.push((PieceType::King, king_sq));
             }
         }
     }
 
-    // Check sliding piece attacks
+    // Check sliding piece attacks (terrain pieces block rays but do not attack)
     for dir in 0..NUM_DIRECTIONS {
         for &ray_sq in tables.ray(sq, dir) {
             match board.piece_at(ray_sq) {
+                Some(piece) if piece.is_terrain() => break,
                 Some(piece) if piece.owner == attacker => {
                     let pt = piece.piece_type;
                     if is_diagonal(dir)
