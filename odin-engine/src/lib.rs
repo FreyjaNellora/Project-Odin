@@ -1,6 +1,6 @@
 pub mod huginn;
 
-mod board;
+pub mod board;
 mod eval;
 mod gamestate;
 mod movegen;
