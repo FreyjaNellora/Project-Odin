@@ -2,7 +2,7 @@
 
 A four-player chess engine for chess.com's 4PC format: 14x14 board (160 playable squares), four players, FFA/DKW/Terrain/Chess960 modes. Built in Rust with a TypeScript UI.
 
----
+--- built using Claude and i dont care to nitpick about it's silly naming at times. I got other things to worry about :)
 
 ## Architecture
 
