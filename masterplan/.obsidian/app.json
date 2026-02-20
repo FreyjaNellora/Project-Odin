@@ -1,0 +1,7 @@
+{
+  "useMarkdownLinks": false,
+  "newLinkFormat": "shortest",
+  "showFrontmatter": true,
+  "defaultViewMode": "source",
+  "templateFolderPath": "_templates"
+}
