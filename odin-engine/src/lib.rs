@@ -3,7 +3,7 @@ pub mod huginn;
 pub mod board;
 mod eval;
 mod gamestate;
-mod movegen;
+pub mod movegen;
 mod protocol;
 mod search;
 mod variants;
