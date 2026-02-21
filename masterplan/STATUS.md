@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
-**Last Updated:** 2026-02-20
-**Updated By:** Claude Opus 4.6 (Stage 5 bugfix & play modes session)
+**Last Updated:** 2026-02-21
+**Updated By:** Claude Opus 4.6 (Stage 6 session)
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 5 complete, ready for Stage 6 |
-| **Current Build-Order Step** | Stage 5 complete (all steps) |
+| **Current Stage** | Stage 6 complete, ready for Stage 7 |
+| **Current Build-Order Step** | Stage 6 complete (all steps) |
 | **Build Compiles** | Yes (engine: `cargo build`, `cargo build --features huginn`; UI: `cargo build` in src-tauri, `tsc --noEmit`) |
-| **Tests Pass** | Yes (engine: 229 total; UI: 45 Vitest) |
+| **Tests Pass** | Yes (engine: 275 total; UI: 45 Vitest) |
 | **Blocking Issues** | None |
 
 ---
@@ -26,8 +26,8 @@
 | 2 | Move Generation + Attack Query API | complete | post-audit done | stage-02-complete / v1.2 | |
 | 3 | Game State & Rules | complete | post-audit done | stage-03-complete / v1.3 | |
 | 4 | Odin Protocol | complete | post-audit done | stage-04-complete / v1.4 | |
-| 5 | Basic UI Shell | complete | post-audit done | — | Tag pending. Bugfixes + play modes added post-audit (see addendum). |
-| 6 | Bootstrap Eval + Evaluator Trait | not-started | — | — | |
+| 5 | Basic UI Shell | complete | post-audit done | stage-05-complete / v1.5 | |
+| 6 | Bootstrap Eval + Evaluator Trait | complete | post-audit done | — | Tag pending per AGENT_CONDUCT 1.11. |
 | 7 | Plain BRS + Searcher Trait | not-started | — | — | |
 | 8 | BRS/Paranoid Hybrid Layer | not-started | — | — | |
 | 9 | TT & Move Ordering | not-started | — | — | |
@@ -55,7 +55,7 @@
 | AGENT_CONDUCT.md | current | v1.0 complete. |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
 | DECISIONS.md | current | 11 ADRs from planning sessions. |
-| HANDOFF.md | current | Stage 5 bugfix session state captured. |
+| HANDOFF.md | current | Stage 6 session state captured. |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
 | audit_log_stage_00.md | current | Pre-audit + post-audit complete. |
@@ -70,15 +70,17 @@
 | downstream_log_stage_04.md | current | All sections filled. |
 | audit_log_stage_05.md | current | Pre-audit + post-audit + bugfix addendum complete. |
 | downstream_log_stage_05.md | current | All sections filled. Play mode API contracts added. |
+| audit_log_stage_06.md | current | Pre-audit + post-audit complete. |
+| downstream_log_stage_06.md | current | All sections filled. Evaluator trait API contracts. |
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Create `stage-05-complete` / `v1.5` git tag
-2. Begin Stage 6: Bootstrap Eval + Evaluator Trait
+1. Create `stage-06-complete` / `v1.6` git tag
+2. Begin Stage 7: Plain BRS + Searcher Trait
 3. Follow Stage Entry Protocol (AGENT_CONDUCT 1.1)
-4. Note: Stage 6 is independent of Stage 5 in the dependency chain (both depend on Stage 3)
+4. Stage 7 depends on Stage 6 (→ 3 → 2 → 1 → 0)
 
 ---
 
@@ -113,6 +115,9 @@ None.
 | Test count (no huginn) | 229 | 4 | 156 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 |
 | Vitest test count | 45 | 5 | 29 board-constants + 16 protocol-parser |
 | Tauri backend compile (fresh) | ~11s | 5 | Debug profile |
+| Test count (no huginn) | 275 | 6 | 191 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 + 11 stage-06 |
+| eval_scalar per call | <10us | 6 | Release build, starting position |
+| Starting material per player | 4300cp | 6 | 8P + 2N + 2B + 2R + Q + K |
 
 ---
 
