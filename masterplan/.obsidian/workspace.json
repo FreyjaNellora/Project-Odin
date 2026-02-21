@@ -165,6 +165,9 @@
   },
   "active": "686d229470594c43",
   "lastOpenFiles": [
+    "sessions/Session-2026-02-20-Stage04.md",
+    "connections/Connection-GameState-to-Protocol.md",
+    "components/Component-Protocol.md",
     "sessions/session-2026-02-20-stage03.md",
     "issues/Issue-DKW-Halfmove-Clock.md",
     "patterns/Pattern-DKW-Instant-Moves.md",
@@ -190,9 +193,6 @@
     "stage_19_polish.md",
     "stage_18_full_ui.md",
     "stage_17_variants.md",
-    "stage_16_nnue_integration.md",
-    "stage_15_nnue_training.md",
-    "stage_14_nnue_design.md",
     "STATUS.md.tmp.12676.1771565507627",
     "AGENT_CONDUCT.md.tmp.3292.1771561357116"
   ]
