@@ -1,7 +1,7 @@
 // Parse engine stdout lines into typed messages.
 // Matches exact formats from odin-engine/src/protocol/emitter.rs.
 
-import { EngineMessage, InfoData } from '../types/protocol';
+import type { EngineMessage, InfoData } from '../types/protocol';
 
 /** Parse a single engine output line into a structured message. */
 export function parseEngineOutput(line: string): EngineMessage {

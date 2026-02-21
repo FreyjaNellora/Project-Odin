@@ -19,14 +19,6 @@ function App() {
     engine.onMessage(game.handleEngineMessage);
   }, [engine.onMessage, game.handleEngineMessage]);
 
-  // Auto-spawn engine on mount
-  useEffect(() => {
-    engine.spawnEngine().catch((e) => {
-      console.error('Failed to spawn engine:', e);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   return (
     <div className="app">
       <StatusBar
@@ -42,8 +34,17 @@ function App() {
             scores={game.scores}
             isGameOver={game.isGameOver}
             error={game.error}
+            playMode={game.playMode}
+            humanPlayer={game.humanPlayer}
+            engineDelay={game.engineDelay}
+            isPaused={game.isPaused}
+            gameInProgress={game.gameInProgress}
             onNewGame={game.newGame}
             onEngineMove={game.requestEngineMove}
+            onSetPlayMode={game.setPlayMode}
+            onSetHumanPlayer={game.setHumanPlayer}
+            onSetEngineDelay={game.setEngineDelay}
+            onTogglePause={game.togglePause}
           />
         </div>
 

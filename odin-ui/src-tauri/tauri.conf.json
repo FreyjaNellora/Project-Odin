@@ -1,5 +1,4 @@
 {
-  "$schema": "https://raw.githubusercontent.com/nicegui-org/nicegui/refs/heads/main/nicegui/tauri-v2/tauri.conf.json",
   "productName": "Odin UI",
   "version": "0.5.0",
   "identifier": "com.project-odin.ui",

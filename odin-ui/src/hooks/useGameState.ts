@@ -2,9 +2,10 @@
 // Maintains a local board (rendering cache), move list, and turn tracking.
 // Contains ZERO game logic — the engine validates all moves.
 
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { Piece, Player, PLAYERS } from '../types/board';
-import { EngineMessage, InfoData } from '../types/protocol';
+import { useState, useCallback, useRef } from 'react';
+import type { Piece, Player } from '../types/board';
+import { PLAYERS } from '../types/board';
+import type { EngineMessage, InfoData } from '../types/protocol';
 import {
   startingPosition,
   squareName,
@@ -13,6 +14,8 @@ import {
   rankOf,
   squareFrom,
 } from '../lib/board-constants';
+
+export type PlayMode = 'manual' | 'semi-auto' | 'full-auto';
 
 export interface UseGameStateResult {
   board: (Piece | null)[];
@@ -25,10 +28,19 @@ export interface UseGameStateResult {
   lastMoveTo: number | null;
   latestInfo: InfoData | null;
   error: string | null;
+  playMode: PlayMode;
+  humanPlayer: Player | null;
+  engineDelay: number;
+  isPaused: boolean;
+  gameInProgress: boolean;
   handleSquareClick: (sq: number) => void;
   requestEngineMove: () => void;
   newGame: (terrain: boolean) => void;
   handleEngineMessage: (msg: EngineMessage) => void;
+  setPlayMode: (mode: PlayMode) => void;
+  setHumanPlayer: (player: Player | null) => void;
+  setEngineDelay: (ms: number) => void;
+  togglePause: () => void;
 }
 
 export function useGameState(
@@ -45,27 +57,97 @@ export function useGameState(
   const [latestInfo, setLatestInfo] = useState<InfoData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Play mode state
+  const [playMode, setPlayModeState] = useState<PlayMode>('manual');
+  const [humanPlayer, setHumanPlayerState] = useState<Player | null>(null);
+  const [engineDelay, setEngineDelayState] = useState(500);
+  const [isPaused, setIsPaused] = useState(false);
+
   // Track pending move validation state
   const pendingMoveRef = useRef<string | null>(null);
   const awaitingBestmoveRef = useRef(false);
+  // Ref mirror of moveList for use in async chains (avoids stale closures)
+  const moveListRef = useRef<string[]>([]);
+  // Auto-play: when true, engine plays continuously
+  const autoPlayRef = useRef(false);
+  // Ref mirrors for play mode settings (accessed in async/timeout callbacks)
+  const playModeRef = useRef<PlayMode>('manual');
+  const humanPlayerRef = useRef<Player | null>(null);
+  const engineDelayRef = useRef(500);
+  // Track current player in a ref for async access
+  const currentPlayerRef = useRef<Player>('Red');
 
-  /** Advance to the next player in rotation. */
-  const advancePlayer = useCallback(() => {
-    setCurrentPlayer((prev) => {
-      const idx = PLAYERS.indexOf(prev);
-      return PLAYERS[(idx + 1) % 4];
-    });
+  // Setters that sync state + ref
+  const setPlayMode = useCallback((mode: PlayMode) => {
+    setPlayModeState(mode);
+    playModeRef.current = mode;
+    // Stop any in-flight auto-play when mode changes
+    autoPlayRef.current = false;
+    setIsPaused(false);
   }, []);
+
+  const setHumanPlayer = useCallback((player: Player | null) => {
+    setHumanPlayerState(player);
+    humanPlayerRef.current = player;
+  }, []);
+
+  const setEngineDelay = useCallback((ms: number) => {
+    setEngineDelayState(ms);
+    engineDelayRef.current = ms;
+  }, []);
+
+  /** Advance to the next player in rotation. Returns the new player. */
+  const advancePlayer = useCallback((): Player => {
+    const idx = PLAYERS.indexOf(currentPlayerRef.current);
+    const nextPlayer = PLAYERS[(idx + 1) % 4];
+    currentPlayerRef.current = nextPlayer;
+    setCurrentPlayer(nextPlayer);
+    return nextPlayer;
+  }, []);
+
+  /** Check if the engine should auto-play the given player's turn. */
+  const shouldEnginePlay = useCallback((player: Player): boolean => {
+    if (playModeRef.current === 'full-auto') return true;
+    if (playModeRef.current === 'semi-auto' && humanPlayerRef.current !== player) return true;
+    return false;
+  }, []);
+
+  /** Send position + go using the ref-based move list (for auto-play chains). */
+  const sendGoFromRef = useCallback(() => {
+    const moves = moveListRef.current;
+    const posCmd =
+      moves.length > 0
+        ? `position startpos moves ${moves.join(' ')}`
+        : 'position startpos';
+
+    awaitingBestmoveRef.current = true;
+    sendCommand(posCmd)
+      .then(() => sendCommand('go'))
+      .catch(() => {
+        setError('Failed to request engine move');
+        awaitingBestmoveRef.current = false;
+        autoPlayRef.current = false;
+      });
+  }, [sendCommand]);
+
+  /** Schedule the engine to play the next turn if auto-play is active. */
+  const maybeChainEngineMove = useCallback((nextPlayer: Player) => {
+    if (autoPlayRef.current && shouldEnginePlay(nextPlayer)) {
+      setTimeout(() => {
+        if (autoPlayRef.current) {
+          sendGoFromRef();
+        }
+      }, engineDelayRef.current);
+    }
+  }, [shouldEnginePlay, sendGoFromRef]);
 
   /** Apply a move to the local board display (rendering cache only). */
   const applyMoveToBoard = useCallback((moveStr: string) => {
-    const fromName = moveStr.slice(0, 2);
-    // Handle moves like "d2d4" (4 chars) or "d7d8q" (5 chars, promotion)
-    const toName = moveStr.slice(2, 4);
-    const promotionChar = moveStr.length > 4 ? moveStr[4] : null;
+    const parsed = parseMoveString(moveStr);
+    if (!parsed) return;
 
-    const from = parseSquare(fromName);
-    const to = parseSquare(toName);
+    const from = parseSquare(parsed.from);
+    const to = parseSquare(parsed.to);
     if (from === -1 || to === -1) return;
 
     setBoard((prev) => {
@@ -77,8 +159,8 @@ export function useGameState(
       next[from] = null;
 
       // Handle promotion
-      if (promotionChar) {
-        const promotionType = charToPieceType(promotionChar);
+      if (parsed.promo) {
+        const promotionType = charToPieceType(parsed.promo);
         if (promotionType) {
           next[to] = { pieceType: promotionType, owner: piece.owner };
         } else {
@@ -88,34 +170,54 @@ export function useGameState(
         next[to] = piece;
       }
 
-      // Display-side castling: king moved 2+ files, also move the rook
+      // Display-side castling: king moved 2+ squares along its back rank
       if (piece.pieceType === 'King') {
-        const fileDiff = fileOf(to) - fileOf(from);
-        if (Math.abs(fileDiff) >= 2) {
-          const rank = rankOf(from);
-          if (fileDiff > 0) {
-            // Kingside: rook from the far side moves next to king
-            const rookFrom = findRookForCastle(next, piece.owner, rank, true);
-            if (rookFrom !== -1) {
-              const rookTo = squareFrom(fileOf(to) - 1, rank);
-              next[rookTo] = next[rookFrom];
-              next[rookFrom] = null;
+        const isVertical = piece.owner === 'Red' || piece.owner === 'Yellow';
+        const moveDist = isVertical
+          ? fileOf(to) - fileOf(from)
+          : rankOf(to) - rankOf(from);
+
+        if (Math.abs(moveDist) >= 2) {
+          if (isVertical) {
+            // Red/Yellow: king moves along file, rook swaps file
+            const rank = rankOf(from);
+            if (moveDist > 0) {
+              const rookFrom = findRookForCastle(next, piece.owner, rank, true);
+              if (rookFrom !== -1) {
+                next[squareFrom(fileOf(to) - 1, rank)] = next[rookFrom];
+                next[rookFrom] = null;
+              }
+            } else {
+              const rookFrom = findRookForCastle(next, piece.owner, rank, false);
+              if (rookFrom !== -1) {
+                next[squareFrom(fileOf(to) + 1, rank)] = next[rookFrom];
+                next[rookFrom] = null;
+              }
             }
           } else {
-            // Queenside
-            const rookFrom = findRookForCastle(next, piece.owner, rank, false);
-            if (rookFrom !== -1) {
-              const rookTo = squareFrom(fileOf(to) + 1, rank);
-              next[rookTo] = next[rookFrom];
-              next[rookFrom] = null;
+            // Blue/Green: king moves along rank, rook swaps rank
+            const file = fileOf(from);
+            if (moveDist > 0) {
+              const rookFrom = findRookForCastle(next, piece.owner, rankOf(from), true);
+              if (rookFrom !== -1) {
+                next[squareFrom(file, rankOf(to) - 1)] = next[rookFrom];
+                next[rookFrom] = null;
+              }
+            } else {
+              const rookFrom = findRookForCastle(next, piece.owner, rankOf(from), false);
+              if (rookFrom !== -1) {
+                next[squareFrom(file, rankOf(to) + 1)] = next[rookFrom];
+                next[rookFrom] = null;
+              }
             }
           }
         }
       }
 
-      // Display-side en passant: pawn moved diagonally to empty square
-      if (piece.pieceType === 'Pawn' && fileOf(from) !== fileOf(to) && prev[to] === null) {
-        // The captured pawn is on the same file as destination but same rank as source
+      // Display-side en passant: pawn moved diagonally to empty square.
+      // Diagonal means BOTH file and rank changed (handles all 4 orientations).
+      const isDiagonal = fileOf(from) !== fileOf(to) && rankOf(from) !== rankOf(to);
+      if (piece.pieceType === 'Pawn' && isDiagonal && prev[to] === null) {
         const capturedSq = squareFrom(fileOf(to), rankOf(from));
         next[capturedSq] = null;
       }
@@ -133,11 +235,24 @@ export function useGameState(
       if (isGameOver) return;
       setError(null);
 
+      // In full-auto mode, clicking stops auto-play but doesn't allow manual moves
+      if (playMode === 'full-auto') {
+        autoPlayRef.current = false;
+        setIsPaused(true);
+        return;
+      }
+
+      // In semi-auto mode, only allow clicks on the human player's turn
+      if (playMode === 'semi-auto' && humanPlayer !== null && currentPlayer !== humanPlayer) {
+        return;
+      }
+
+      // User interaction stops auto-play chain
+      autoPlayRef.current = false;
+
       if (selectedSquare === null) {
-        // First click: select a square with a piece
         setSelectedSquare(sq);
       } else if (selectedSquare === sq) {
-        // Click same square: deselect
         setSelectedSquare(null);
       } else {
         // Second click: attempt move
@@ -155,54 +270,70 @@ export function useGameState(
             (piece.owner === 'Blue' && toFile === 13) ||
             (piece.owner === 'Green' && toFile === 0);
           if (isPromoRank) {
-            finalMove += 'q'; // Auto-promote to queen
+            finalMove += 'q';
           }
         }
 
-        // Send position with the new move to engine for validation
+        // Send position with the new move to engine for validation.
+        // Follow with `isready` — if no error arrives before `readyok`,
+        // the move was accepted.
         pendingMoveRef.current = finalMove;
-        const posCmd =
-          moveList.length > 0
-            ? `position startpos moves ${moveList.join(' ')} ${finalMove}`
-            : `position startpos moves ${finalMove}`;
+        const allMoves = [...moveListRef.current, finalMove];
+        const posCmd = `position startpos moves ${allMoves.join(' ')}`;
 
-        sendCommand(posCmd).catch(() => {
-          setError('Failed to send command to engine');
-          pendingMoveRef.current = null;
-        });
+        sendCommand(posCmd)
+          .then(() => sendCommand('isready'))
+          .catch(() => {
+            setError('Failed to send command to engine');
+            pendingMoveRef.current = null;
+          });
 
         setSelectedSquare(null);
       }
     },
-    [selectedSquare, board, moveList, isGameOver, sendCommand],
+    [selectedSquare, board, isGameOver, sendCommand, playMode, humanPlayer, currentPlayer],
   );
 
   /** Request the engine to play a move for the current player. */
   const requestEngineMove = useCallback(() => {
     if (isGameOver) return;
     setError(null);
+    setIsPaused(false);
+    autoPlayRef.current = true;
+    sendGoFromRef();
+  }, [isGameOver, sendGoFromRef]);
 
-    // Re-send position then go
-    const posCmd =
-      moveList.length > 0
-        ? `position startpos moves ${moveList.join(' ')}`
-        : 'position startpos';
-
-    awaitingBestmoveRef.current = true;
-    sendCommand(posCmd)
-      .then(() => sendCommand('go'))
-      .catch(() => {
-        setError('Failed to send command to engine');
-        awaitingBestmoveRef.current = false;
-      });
-  }, [moveList, isGameOver, sendCommand]);
+  /** Toggle pause/resume for auto-play. */
+  const togglePause = useCallback(() => {
+    setIsPaused((prev) => {
+      if (prev) {
+        // Resuming: restart auto-play if mode requires it
+        const player = currentPlayerRef.current;
+        if (shouldEnginePlay(player)) {
+          autoPlayRef.current = true;
+          setTimeout(() => {
+            if (autoPlayRef.current) {
+              sendGoFromRef();
+            }
+          }, engineDelayRef.current);
+        }
+        return false;
+      } else {
+        // Pausing: stop auto-play
+        autoPlayRef.current = false;
+        return true;
+      }
+    });
+  }, [shouldEnginePlay, sendGoFromRef]);
 
   /** Start a new game. */
   const newGame = useCallback(
     (terrain: boolean) => {
       setBoard(startingPosition());
       setMoveList([]);
+      moveListRef.current = [];
       setCurrentPlayer('Red');
+      currentPlayerRef.current = 'Red';
       setScores([0, 0, 0, 0]);
       setIsGameOver(false);
       setSelectedSquare(null);
@@ -212,13 +343,26 @@ export function useGameState(
       setError(null);
       pendingMoveRef.current = null;
       awaitingBestmoveRef.current = false;
+      autoPlayRef.current = false;
+      setIsPaused(false);
 
       sendCommand(`setoption name Terrain value ${terrain ? 'true' : 'false'}`)
         .then(() => sendCommand('position startpos'))
         .then(() => sendCommand('isready'))
+        .then(() => {
+          // After new game is ready, auto-start if mode requires engine to play Red
+          if (shouldEnginePlay('Red')) {
+            autoPlayRef.current = true;
+            setTimeout(() => {
+              if (autoPlayRef.current) {
+                sendGoFromRef();
+              }
+            }, engineDelayRef.current);
+          }
+        })
         .catch(() => setError('Failed to start new game'));
     },
-    [sendCommand],
+    [sendCommand, shouldEnginePlay, sendGoFromRef],
   );
 
   /** Process engine messages for game state updates. */
@@ -227,13 +371,13 @@ export function useGameState(
       switch (msg.type) {
         case 'error': {
           setError(msg.message);
-          // If we had a pending move, it was rejected — restore engine state
           if (pendingMoveRef.current) {
             pendingMoveRef.current = null;
             // Re-send the valid position to restore engine state
+            const moves = moveListRef.current;
             const posCmd =
-              moveList.length > 0
-                ? `position startpos moves ${moveList.join(' ')}`
+              moves.length > 0
+                ? `position startpos moves ${moves.join(' ')}`
                 : 'position startpos';
             sendCommand(posCmd).catch(() => {});
           }
@@ -244,22 +388,25 @@ export function useGameState(
           if (msg.data.values) {
             setScores(msg.data.values);
           }
-
-          // If we have a pending user move and got an info response (not error),
-          // the position was accepted. Commit the move.
-          if (pendingMoveRef.current && !awaitingBestmoveRef.current) {
+          break;
+        }
+        case 'readyok': {
+          // If we have a pending user move, `readyok` confirms the position
+          // was accepted (no error arrived before it).
+          if (pendingMoveRef.current) {
             const move = pendingMoveRef.current;
             pendingMoveRef.current = null;
-            setMoveList((prev) => [...prev, move]);
+            const newMoves = [...moveListRef.current, move];
+            moveListRef.current = newMoves;
+            setMoveList(newMoves);
             applyMoveToBoard(move);
-            advancePlayer();
+            const nextPlayer = advancePlayer();
 
-            // Now ask the engine for its response move
-            awaitingBestmoveRef.current = true;
-            sendCommand('go').catch(() => {
-              setError('Failed to request engine move');
-              awaitingBestmoveRef.current = false;
-            });
+            // In semi-auto mode, after user's move, auto-play opponent turns
+            if (shouldEnginePlay(nextPlayer)) {
+              autoPlayRef.current = true;
+              maybeChainEngineMove(nextPlayer);
+            }
           }
           break;
         }
@@ -267,11 +414,14 @@ export function useGameState(
           if (awaitingBestmoveRef.current) {
             awaitingBestmoveRef.current = false;
             const engineMove = msg.move;
-            // If this was a response to the user's move validation,
-            // commit the engine's reply
-            setMoveList((prev) => [...prev, engineMove]);
+            const newMoves = [...moveListRef.current, engineMove];
+            moveListRef.current = newMoves;
+            setMoveList(newMoves);
             applyMoveToBoard(engineMove);
-            advancePlayer();
+            const nextPlayer = advancePlayer();
+
+            // Chain next engine move if auto-play is active
+            maybeChainEngineMove(nextPlayer);
           }
           break;
         }
@@ -279,7 +429,7 @@ export function useGameState(
           break;
       }
     },
-    [moveList, sendCommand, applyMoveToBoard, advancePlayer],
+    [sendCommand, applyMoveToBoard, advancePlayer, sendGoFromRef, shouldEnginePlay, maybeChainEngineMove],
   );
 
   return {
@@ -293,14 +443,31 @@ export function useGameState(
     lastMoveTo,
     latestInfo,
     error,
+    playMode,
+    humanPlayer,
+    engineDelay,
+    isPaused,
+    gameInProgress: moveList.length > 0,
     handleSquareClick,
     requestEngineMove,
     newGame,
     handleEngineMessage,
+    setPlayMode,
+    setHumanPlayer,
+    setEngineDelay,
+    togglePause,
   };
 }
 
 // --- Helpers ---
+
+/** Parse a move string like "e2e4", "a10c9", "d13d12", "d7d8q" into components.
+ *  Handles multi-digit ranks (10-14) on a 14x14 board. */
+function parseMoveString(moveStr: string): { from: string; to: string; promo?: string } | null {
+  const match = moveStr.match(/^([a-n]\d{1,2})([a-n]\d{1,2})([qrbnw])?$/);
+  if (!match) return null;
+  return { from: match[1], to: match[2], promo: match[3] };
+}
 
 /** Map a promotion character to a PieceType. */
 function charToPieceType(c: string): Piece['pieceType'] | null {
@@ -321,8 +488,6 @@ function findRookForCastle(
   rank: number,
   kingside: boolean,
 ): number {
-  // For vertical players (Red/Yellow), scan along the rank
-  // For horizontal players (Blue/Green), scan along the file
   const isVertical = owner === 'Red' || owner === 'Yellow';
 
   if (isVertical) {
@@ -337,7 +502,6 @@ function findRookForCastle(
       }
     }
   } else {
-    // Blue: file 0, Green: file 13. Rank is the "file" for them.
     const file = owner === 'Blue' ? 0 : 13;
     const startRank = kingside ? 10 : 3;
     const endRank = kingside ? 13 : 0;

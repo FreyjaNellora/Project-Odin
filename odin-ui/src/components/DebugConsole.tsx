@@ -1,7 +1,7 @@
 // Debug console showing raw engine output with parsed info summary.
 
 import { useRef, useEffect, useState } from 'react';
-import { InfoData } from '../types/protocol';
+import type { InfoData } from '../types/protocol';
 import '../styles/DebugConsole.css';
 
 interface DebugConsoleProps {

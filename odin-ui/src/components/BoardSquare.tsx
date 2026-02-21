@@ -1,6 +1,6 @@
 // Renders a single board square with optional piece and highlighting.
 
-import { Piece } from '../types/board';
+import type { Piece } from '../types/board';
 import {
   isLightSquare,
   LIGHT_SQUARE,

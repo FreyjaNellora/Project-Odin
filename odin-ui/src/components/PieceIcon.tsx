@@ -1,7 +1,7 @@
 // Renders a chess piece as an SVG text element.
 // Uses Unicode chess symbols colored by player.
 
-import { Piece } from '../types/board';
+import type { Piece } from '../types/board';
 import { PLAYER_COLORS, pieceSymbol } from '../lib/board-constants';
 
 interface PieceIconProps {

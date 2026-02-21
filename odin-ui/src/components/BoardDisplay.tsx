@@ -2,7 +2,8 @@
 // Renders 160 valid squares (skips 36 invalid corners) with pieces.
 // Handles click events for move input — no game logic.
 
-import { Piece, BOARD_SIZE } from '../types/board';
+import type { Piece } from '../types/board';
+import { BOARD_SIZE } from '../types/board';
 import { isValidSquare, squareFrom, fileOf, rankOf } from '../lib/board-constants';
 import BoardSquare from './BoardSquare';
 
@@ -63,8 +64,6 @@ export default function BoardDisplay({
     <div className="board-container">
       <svg
         viewBox={`-20 -20 ${SVG_SIZE + 40} ${SVG_SIZE + 40}`}
-        width={SVG_SIZE + 40}
-        height={SVG_SIZE + 40}
         xmlns="http://www.w3.org/2000/svg"
       >
         {/* Board background */}

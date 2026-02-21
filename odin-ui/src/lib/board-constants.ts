@@ -1,7 +1,8 @@
 // Board geometry constants mirroring odin-engine/src/board/square.rs.
 // Display logic only — no game rules.
 
-import { Piece, Player, PieceType, BOARD_SIZE, TOTAL_SQUARES } from '../types/board';
+import type { Piece, Player, PieceType } from '../types/board';
+import { BOARD_SIZE, TOTAL_SQUARES } from '../types/board';
 
 // --- Square validity ---
 

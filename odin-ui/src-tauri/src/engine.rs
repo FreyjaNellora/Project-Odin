@@ -103,10 +103,16 @@ impl EngineManager {
     fn resolve_engine_path() -> Result<String, String> {
         // Development mode: look for the engine binary relative to the project
         let dev_paths = [
+            // Cargo workspace: binary in project root target/
             // From odin-ui/src-tauri/ (where the Tauri binary runs during dev)
+            "../../target/debug/odin-engine.exe",
+            "../../target/debug/odin-engine",
+            // From project root
+            "target/debug/odin-engine.exe",
+            "target/debug/odin-engine",
+            // Per-crate target (non-workspace fallback)
             "../../odin-engine/target/debug/odin-engine.exe",
             "../../odin-engine/target/debug/odin-engine",
-            // From project root
             "odin-engine/target/debug/odin-engine.exe",
             "odin-engine/target/debug/odin-engine",
         ];
