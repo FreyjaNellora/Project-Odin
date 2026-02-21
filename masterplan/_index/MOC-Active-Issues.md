@@ -16,6 +16,7 @@ _None._
 ## Warning
 
 - [[Issue-Perft-Values-Unverified]] -- Stage 2 perft values self-consistent but no external reference exists to cross-check
+- [[Issue-Vec-Clone-Cost-Pre-MCTS]] -- Board.piece_lists (Vec) and GameState.position_history (Vec) cause heap allocation on every clone; must retrofit to fixed-size/Arc before Stage 10 (MCTS)
 
 ## Notes
 

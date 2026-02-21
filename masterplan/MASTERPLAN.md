@@ -646,6 +646,26 @@ struct SearchResult {
 
 10. **Info output.** Emit `info` strings with depth, score, nodes, NPS, PV, `phase brs`.
 
+**BRS Tree Structure (4-Player):**
+
+Standard BRS compresses the 4-player game tree into a 2-player-like structure by selecting one "best reply" at each opponent node. In Odin's 4-player context, one full BRS ply consists of:
+
+1. **Root player (MAX node):** Red considers all legal moves.
+2. **Opponent 1 reply (MIN node):** For each Red move, Blue's single best reply is selected.
+3. **Root player again (MAX node):** Red considers responses to Blue's reply.
+4. **Opponent 2 reply (MIN node):** Yellow's single best reply is selected.
+5. **Root player again (MAX node):** Red considers responses to Yellow's reply.
+6. **Opponent 3 reply (MIN node):** Green's single best reply is selected.
+7. **Root player again (MAX node):** This completes one full "round." Depth increments per node, not per round.
+
+This gives alpha-beta the two-player alternation it needs (MAX-MIN-MAX-MIN...) while capturing all three opponents' threats within each round. "Depth 6" means 6 nodes deep in this alternating tree, which covers at minimum one response from each opponent.
+
+The "best reply" at each MIN node is, in plain BRS (this stage), the objectively strongest move for that opponent. Stage 8 replaces this selection policy with hybrid scoring.
+
+**Why this works:** Alpha-beta pruning operates on the MAX/MIN alternation. It doesn't care that the MIN nodes cycle through different opponents — it just sees "maximize, minimize, maximize, minimize." The pruning is valid because each MIN node selects the move that minimizes Root's score (from that opponent's perspective), which satisfies the minimax assumption.
+
+**Eliminated players:** If a player has been eliminated, their MIN node is skipped (effectively a pass). The tree contracts dynamically as players are eliminated.
+
 **Build order:**
 1. Standard BRS with alpha-beta (MAX/MIN alternation, pick objectively strongest opponent reply)
 2. Iterative deepening
@@ -712,6 +732,9 @@ This stage adds the hybrid layer ON TOP of the working BRS from Stage 7. If the 
 - No opponent modeling. You're reading the board and asking "who has guns pointed at me right now."
 - No machine learning. Scoring weights are hand-tuned constants. Self-play refines them later (Stage 12).
 - No new data structures. Board context is a flat struct. Move classification uses existing attack tables.
+- **No opponent history or personality modeling.** The board scanner reads the current position, not past behavior. It does not track "Blue tends to attack aggressively" across moves or games. It asks "right now, based on piece positions, is Blue pointed at me?" History-based opponent modeling is a future feature, not a Stage 8 concern.
+- **No geometric or spatial analysis beyond piece positions.** The board scanner checks lines of attack and king exposure. It does not compute Voronoi diagrams, influence maps, or spatial control metrics. If those turn out to be useful, they belong in a future BoardContext extension, not the initial implementation.
+- **No tuned weights.** The hybrid scoring formula uses initial hand-set constants (likelihood base = 0.7, etc.). Do not spend time tuning these. Stage 12's self-play framework is the tuning tool. Get the formula structurally right, then tune later.
 
 **Build order (each step independently testable):**
 1. Board scanner. Run before search, print output, verify by hand on test positions.
@@ -729,7 +752,8 @@ struct BoardContext {
     weakest_player: Player,
     most_dangerous: [Player; 3],
     root_danger_level: f64,
-    high_value_targets: Vec<(Square, Player)>,
+    high_value_targets: [(Square, Player); 8],  // Fixed-size. 8 = practical max (queens + exposed rooks). Unused slots: Square = INVALID.
+    high_value_target_count: u8,
     convergence: Option<(Player, Player, Player)>,
     per_opponent: [OpponentProfile; 3],
 }
@@ -777,7 +801,11 @@ depth 7+:   top 3
 - Progressive narrowing reduces node count at depth 6+
 - Board context delta refresh matches full re-read
 - Pre-search board read completes in < 1ms
-- Hybrid BRS does not regress vs. plain BRS (measured by self-play or test position accuracy)
+- **Tactical position test suite (mandatory).** Create a file `tests/positions/tactical_suite.txt` containing at least 20 positions with known best moves (captures, forks, mate threats, defensive moves). These positions must cover: positions where all three opponents threaten Root, positions where only one opponent is relevant, positions where the best move is defensive, and positions where the best move exploits an opponent's weakness.
+- **A/B comparison on tactical suite.** Run the suite with hybrid BRS (Stage 8) and with plain BRS (Stage 7, accessible via `git checkout v1.7`). Record: how many positions each finds the best move, average search depth reached in 5 seconds, average node count. Hybrid must find the best move in at least as many positions as plain BRS. If hybrid finds fewer, the regression is BLOCKING.
+- **Smoke-play validation.** Run 5 games where the engine (hybrid BRS) controls Red and the other three players make random legal moves for 20 moves. Manually inspect the engine's first 5 moves per game. The engine must develop pieces, capture hanging material when available, and avoid moving its king into unnecessary danger. Record results in the audit log.
+
+**Build-order regression tracking:** After each build-order step (1-6), run the tactical position suite with the current state and record results. If any step causes a regression on the suite (fewer correct positions than the previous step), investigate before proceeding. This creates a step-by-step paper trail showing exactly when and where any regression was introduced.
 
 ---
 
@@ -1080,6 +1108,40 @@ fn search(position, time_budget) -> Move:
 5. Quantized inference
 6. .onnue file format load/save
 7. Integration with make/unmake (accumulator push/pop)
+7a. **Accumulator stack specification.** The accumulator state must be managed as a stack that mirrors the search tree. Define:
+
+```rust
+struct AccumulatorStack {
+    stack: [Accumulator; MAX_SEARCH_DEPTH + MAX_QSEARCH_DEPTH],
+    current_depth: usize,
+}
+
+impl AccumulatorStack {
+    fn push(&mut self, mv: Move, board: &Board) {
+        // Copy current accumulator to next slot
+        // Apply incremental update based on move
+        // If king move: mark for full recompute
+        self.current_depth += 1;
+    }
+
+    fn pop(&mut self) {
+        // Simply decrement depth. The previous accumulator is still in the stack.
+        // No computation needed — the old state was never modified.
+        self.current_depth -= 1;
+    }
+
+    fn current(&self) -> &Accumulator {
+        &self.stack[self.current_depth]
+    }
+}
+```
+
+**Critical invariant:** `pop` must restore the *exact* accumulator state that existed before the corresponding `push`. Because `push` copies forward (not modifies in place), `pop` is a simple depth decrement. This is the same copy-on-push pattern used by Stockfish's NNUE. Verify this invariant with a test: push 10 random moves, pop all 10, assert accumulator matches the original state bit-for-bit.
+
+**BRS interaction:** In the BRS tree, the alternation is MAX(Red)-MIN(Blue)-MAX(Red)-MIN(Yellow)-... Each make/unmake pair pushes/pops the accumulator regardless of which player is moving. The accumulator tracks all 4 perspectives simultaneously (4 accumulators), so opponent moves update all perspectives just like root moves do.
+
+**MCTS interaction:** At the start of each MCTS simulation, save `current_depth`. After the simulation (which may push many moves), restore `current_depth` to the saved value. This is equivalent to popping all moves made during the simulation.
+
 8. Implement `NnueEvaluator` against `Evaluator` trait
 
 **What you DON'T need:**
@@ -1100,6 +1162,9 @@ fn search(position, time_budget) -> Move:
 - Quantized inference matches float within acceptable tolerance
 - Inference speed: < 5us per incremental eval
 - `NnueEvaluator` implements `Evaluator` trait correctly
+- Accumulator push/pop round-trip: push N random moves, pop N, accumulator matches original bit-for-bit. Test with N = 1, 5, 10, 20.
+- Accumulator state after full BRS rotation (all 3 opponents reply): matches fresh computation from the resulting position.
+- Accumulator state after MCTS simulation + restore: matches pre-simulation state exactly.
 
 ---
 
@@ -1354,6 +1419,34 @@ These rules apply to every stage after the feature is introduced. They are not s
 | **Searcher trait is the search boundary** | Stage 7 | The hybrid controller composes through the `Searcher` trait. Never calls BRS or MCTS internals directly. |
 | **Engine finds forced mates** | Stage 7 | Engine finds mate-in-1 in all test positions, doesn't hang pieces within search depth. |
 | **TT produces no correctness regressions** | Stage 9 | Adding TT must not change the set of legal moves or corrupt search results. |
+
+---
+
+## 4.2 TACTICAL POSITION SUITE
+
+A shared test suite lives in `tests/positions/tactical_suite.txt`. Format: one position per line.
+
+```
+# Format: FEN4 | best_move | category | description
+<fen4> | d2d4 | fork | Red knight forks Blue king and Yellow rook
+<fen4> | e1g1 | defense | Red must castle to escape triple check threat
+```
+
+**Categories:** `mate` (forced checkmate), `fork` (tactical fork/skewer/pin), `capture` (winning capture), `defense` (must defend or lose material), `quiet` (best move is positional, not tactical), `trap` (best move avoids a trap)
+
+**Growth plan:**
+- Stage 7: 10 positions minimum (5 mate, 3 capture, 2 fork). Agent creates these from hand-constructed positions and verifies the best move by analysis.
+- Stage 8: Expand to 20 positions (add defense, quiet, trap categories). These become the A/B comparison suite for hybrid vs. plain BRS.
+- Stage 12: Expand to 50+ positions. These become the regression suite.
+- Stage 16: Expand to 100+ positions. These validate NNUE doesn't regress on tactics.
+
+**Rules:**
+- Positions are never removed, only added.
+- Best moves are verified by at least depth-8 search before being accepted as ground truth.
+- Each position must have exactly one clearly best move (not a position where two moves are equally good).
+- The suite is run as part of CI after Stage 7.
+
+**Seed positions:** The Stage 7 agent must create the initial 10 positions. Recommended approach: set up positions manually using FEN4, verify the best move by running the engine at high depth, then add positions where the engine initially failed (these are the most valuable regression tests). Positions should cover all four player perspectives (not just Red-to-move) and include at least one position near each corner zone of the board.
 
 ---
 

@@ -164,6 +164,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Issue-UI-EP-False-Positive]]` | `issues/Issue-UI-EP-False-Positive.md` | En passant false positive for Blue/Green UI display (resolved) |
 | `[[Issue-UI-Castling-Blue-Green]]` | `issues/Issue-UI-Castling-Blue-Green.md` | Castling display broken for Blue/Green UI (resolved) |
 | `[[Issue-UI-AdvancePlayer-React-Batching]]` | `issues/Issue-UI-AdvancePlayer-React-Batching.md` | advancePlayer wrong player from React 18 batching (resolved) |
+| `[[Issue-Vec-Clone-Cost-Pre-MCTS]]` | `issues/Issue-Vec-Clone-Cost-Pre-MCTS.md` | Vec clone cost in Board/GameState — retrofit before Stage 10 (open) |
 
 ### Patterns
 
