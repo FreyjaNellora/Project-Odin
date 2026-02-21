@@ -66,5 +66,6 @@ Templates for each type are in `_templates/`.
 
 ## At Session End
 
-1. Update [[HANDOFF]] and [[STATUS]] (per [[AGENT_CONDUCT]] 1.13)
+1. Update [[HANDOFF]] and [[STATUS]] (per [[AGENT_CONDUCT]] 1.14)
+2. Create vault notes per [[AGENT_CONDUCT]] 1.13 (issues, components, connections, patterns)
 2. Create a session note in `sessions/`

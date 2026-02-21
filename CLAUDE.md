@@ -34,7 +34,7 @@ Full vault instructions: `masterplan/CLAUDE.md`
 |---|---|---|
 | Stage specs, acceptance criteria | `masterplan/` | Authoritative. Never duplicate elsewhere. |
 | ADRs, audit logs, downstream logs | `masterplan/` | Formal records. |
-| Project state, session handoff | `masterplan/STATUS.md` + `HANDOFF.md` | Update per AGENT_CONDUCT.md 1.13. |
+| Project state, session handoff | `masterplan/STATUS.md` + `HANDOFF.md` | Update per AGENT_CONDUCT.md 1.14. |
 | Implementation knowledge, component docs | `masterplan/components/` | How things actually work at code level. |
 | Component relationships | `masterplan/connections/` | How things connect to each other. |
 | Session history | `masterplan/sessions/` | Preserved history (HANDOFF gets overwritten). |
@@ -43,5 +43,6 @@ Full vault instructions: `masterplan/CLAUDE.md`
 
 ## At Session End
 
-1. Update `masterplan/HANDOFF.md` and `masterplan/STATUS.md` (per AGENT_CONDUCT.md).
-2. Create a session note in `masterplan/sessions/`.
+1. Update `masterplan/HANDOFF.md` and `masterplan/STATUS.md` (per AGENT_CONDUCT.md 1.14).
+2. Create vault notes per AGENT_CONDUCT.md 1.13 (issues, components, connections, patterns).
+3. Create a session note in `masterplan/sessions/`.

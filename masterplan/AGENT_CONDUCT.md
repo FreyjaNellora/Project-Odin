@@ -309,7 +309,34 @@ If the auditor marks something BLOCKING but the implementor disagrees, the BLOCK
 
 ---
 
-### 1.13 Session-End Protocol
+### 1.13 Vault Note Protocol
+
+**Agents must create Obsidian vault notes to surface knowledge that would otherwise be buried inside audit logs, downstream logs, and session notes.** The graph only works if concepts exist as their own nodes.
+
+**Mandatory vault notes — create these as you work, not retroactively:**
+
+| Trigger | Note type | Folder | Example |
+|---|---|---|---|
+| Every WARNING or BLOCKING audit finding | Issue | `issues/` | `Issue-EP-Representation-4PC.md` |
+| Every component you implement or substantially modify | Component | `components/` | `Component-Board.md` |
+| Every cross-component interaction you discover or build | Connection | `connections/` | `Connection-Board-to-MoveGen.md` |
+| Every non-obvious pattern or trick worth reusing | Pattern | `patterns/` | `Pattern-Pawn-Reverse-Lookup.md` |
+
+**NOTE-level audit findings** do not require issue notes unless they affect future stages. Use judgment.
+
+**Resolved issues stay as notes.** When an issue is resolved, update its `status` to `resolved` and fill the Resolution section. Move it from the active section to Recently Resolved in [[MOC-Active-Issues]]. Do not delete the file — the graph link history is valuable.
+
+**Every vault note must:**
+1. Use the template from `_templates/` for its type
+2. Link back to the relevant stage spec, audit log, and downstream log using existing [[wikilinks]] from [[Wikilink-Registry]]
+3. Be added to [[Wikilink-Registry]] immediately after creation
+4. Be added to the relevant MOC ([[MOC-Active-Issues]] for issues, [[MOC-Sessions]] for sessions)
+
+**Tags in vault notes** use the frontmatter `tags:` field for broad categories only — not per-concept. Good: `stage/02`, `severity/warning`, `area/movegen`. Bad: `#en-passant-bug`, `#pawn-reverse-lookup`, `#zobrist-mismatch`. Tags group; wikilinks connect. If you need to find a concept, link to its note — don't create a tag.
+
+---
+
+### 1.14 Session-End Protocol
 
 Before ending any work session, complete these steps. This takes 5 minutes and saves the next session 30 minutes.
 
@@ -1413,7 +1440,7 @@ One-page summary for fast agent onboarding.
 
 **Naming (from MASTERPLAN Section 6):** modules = snake_case, types = PascalCase, functions = snake_case, constants = SCREAMING_SNAKE.
 
-**Before ending any session (Section 1.13):**
+**Before ending any session (Section 1.14):**
 1. Update HANDOFF.md (what was done, what wasn't, what's next)
 2. Update STATUS.md (stage progress, blocking issues)
 3. Update DECISIONS.md (if any decisions were made)
