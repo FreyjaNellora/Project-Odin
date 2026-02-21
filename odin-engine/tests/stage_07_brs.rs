@@ -637,3 +637,321 @@ fn test_protocol_depth_limit_one() {
     assert!(output[0].contains("depth 1"), "info line should say depth 1");
     assert!(output[1].starts_with("bestmove "));
 }
+
+// ---------------------------------------------------------------------------
+// Depth progression analysis — ignored in CI, run manually to observe patterns.
+//
+// Run with:
+//   cargo test --test stage_07_brs depth_progression_analysis -- --ignored --nocapture
+//
+// Tracks best_move, score, nodes, and elapsed time at depths 1-6 (debug build).
+// For depth 7-8 verification use: cargo test --release ... -- --ignored --nocapture
+// ---------------------------------------------------------------------------
+#[test]
+#[ignore]
+fn depth_progression_analysis() {
+    use std::time::Instant;
+    let gs = starting_gs();
+
+    println!("\n=== Depth Progression: Starting Position (Red to move) ===");
+    println!("{:<6} {:<12} {:<8} {:<12} {:<12} {}", "depth", "best_move", "score", "nodes", "elapsed_ms", "stability");
+    println!("{}", "-".repeat(72));
+
+    let mut prev_move = String::new();
+    let mut prev_score: i16 = 0;
+
+    for depth in 1u8..=6 {
+        let start = Instant::now();
+        let mut searcher = make_searcher();
+        let result = searcher.search(&gs, depth_budget(depth));
+        let elapsed_ms = start.elapsed().as_millis();
+
+        let mv = result.best_move.to_algebraic();
+        let score_delta = (result.score - prev_score).abs();
+        let stability = if depth == 1 {
+            "—"
+        } else if mv == prev_move && score_delta <= 50 {
+            "STABLE"
+        } else if mv == prev_move {
+            "move=same score-drift"
+        } else {
+            "MOVE-CHANGED"
+        };
+
+        println!("{:<6} {:<12} {:<8} {:<12} {:<12} {}",
+            depth, mv, result.score, result.nodes, elapsed_ms, stability);
+
+        prev_move = mv;
+        prev_score = result.score;
+    }
+    println!();
+}
+
+// ---------------------------------------------------------------------------
+// FEN4 printer — build all 10 tactical positions and print FEN4 strings.
+// Run with:
+//   cargo test --test stage_07_brs print_tactical_fen4_strings -- --ignored --nocapture
+//
+// Copy the printed lines into tests/positions/tactical_suite.txt.
+// Verify each bm with: cargo test --release (or manual engine run at depth 6+).
+// ---------------------------------------------------------------------------
+#[test]
+#[ignore]
+fn print_tactical_fen4_strings() {
+    use odin_engine::board::square_from;
+
+    // Helper aliases kept local — avoids polluting the outer test namespace.
+    let sq = |f: u8, r: u8| square_from(f, r).unwrap();
+
+    // Each entry: (label, FEN4, bm, category, description)
+    let mut out: Vec<(&str, String, &str, &str, &str)> = Vec::new();
+
+    // -----------------------------------------------------------------------
+    // CAPTURE POSITIONS (3) — bm verified by geometry
+    // -----------------------------------------------------------------------
+
+    // C1: Red queen h7 captures hanging Blue rook h10 (same file, no recapture).
+    {
+        let mut b = Board::empty();
+        b.set_side_to_move(Player::Red);
+        b.set_castling_rights(0);
+        b.place_piece(sq(4,1),  Piece::new(PieceType::King,  Player::Red));
+        b.place_piece(sq(7,6),  Piece::new(PieceType::Queen, Player::Red));   // h7
+        b.place_piece(sq(7,9),  Piece::new(PieceType::Rook,  Player::Blue));  // h10 — hanging
+        b.place_piece(sq(3,10), Piece::new(PieceType::King,  Player::Blue));  // d11
+        b.place_piece(sq(10,12),Piece::new(PieceType::King,  Player::Yellow));
+        b.place_piece(sq(13,6), Piece::new(PieceType::King,  Player::Green));
+        out.push(("cap1_free_rook", b.to_fen4(), "h7h10", "capture",
+            "Red queen h7 captures hanging Blue rook h10 (same file)"));
+    }
+
+    // C2: Red bishop f5 captures hanging Yellow knight h7 (diagonal).
+    {
+        let mut b = Board::empty();
+        b.set_side_to_move(Player::Red);
+        b.set_castling_rights(0);
+        b.place_piece(sq(4,1),  Piece::new(PieceType::King,   Player::Red));
+        b.place_piece(sq(5,4),  Piece::new(PieceType::Bishop, Player::Red));   // f5
+        b.place_piece(sq(7,6),  Piece::new(PieceType::Knight, Player::Yellow));// h7 — hanging
+        b.place_piece(sq(1,10), Piece::new(PieceType::King,   Player::Blue));
+        b.place_piece(sq(10,12),Piece::new(PieceType::King,   Player::Yellow));
+        b.place_piece(sq(13,6), Piece::new(PieceType::King,   Player::Green));
+        out.push(("cap2_free_knight", b.to_fen4(), "f5h7", "capture",
+            "Red bishop f5 captures hanging Yellow knight h7 (diagonal)"));
+    }
+
+    // C3: Red queen d7 captures hanging Green queen j7 (same rank).
+    {
+        let mut b = Board::empty();
+        b.set_side_to_move(Player::Red);
+        b.set_castling_rights(0);
+        b.place_piece(sq(4,1),  Piece::new(PieceType::King,  Player::Red));
+        b.place_piece(sq(3,6),  Piece::new(PieceType::Queen, Player::Red));   // d7
+        b.place_piece(sq(9,6),  Piece::new(PieceType::Queen, Player::Green)); // j7 — hanging
+        b.place_piece(sq(1,10), Piece::new(PieceType::King,  Player::Blue));
+        b.place_piece(sq(10,12),Piece::new(PieceType::King,  Player::Yellow));
+        b.place_piece(sq(13,6), Piece::new(PieceType::King,  Player::Green));
+        out.push(("cap3_free_queen_rank", b.to_fen4(), "d7j7", "capture",
+            "Red queen d7 captures hanging Green queen j7 (same rank)"));
+    }
+
+    // -----------------------------------------------------------------------
+    // FORK POSITIONS (2) — bm verified by geometry
+    // -----------------------------------------------------------------------
+
+    // F1: Red knight f3→e5 forks Blue king d7 and Yellow rook g6.
+    // Ne5 attacks: d7(3,6)=BK ✓, g6(6,5)=YR ✓ (knight move offsets ±1/±2).
+    {
+        let mut b = Board::empty();
+        b.set_side_to_move(Player::Red);
+        b.set_castling_rights(0);
+        b.place_piece(sq(4,1),  Piece::new(PieceType::King,   Player::Red));
+        b.place_piece(sq(5,2),  Piece::new(PieceType::Knight, Player::Red));   // f3
+        b.place_piece(sq(3,6),  Piece::new(PieceType::King,   Player::Blue));  // d7
+        b.place_piece(sq(6,5),  Piece::new(PieceType::Rook,   Player::Yellow));// g6 — forked
+        b.place_piece(sq(10,12),Piece::new(PieceType::King,   Player::Yellow));
+        b.place_piece(sq(13,6), Piece::new(PieceType::King,   Player::Green));
+        out.push(("fork1_knight_fork", b.to_fen4(), "f3e5", "fork",
+            "Red knight f3→e5 forks Blue king d7 and Yellow rook g6"));
+    }
+
+    // F2: Red queen e4→h7 forks Blue king h10 (file) and Yellow rook k10 (diagonal +3,+3).
+    {
+        let mut b = Board::empty();
+        b.set_side_to_move(Player::Red);
+        b.set_castling_rights(0);
+        b.place_piece(sq(4,1),  Piece::new(PieceType::King,  Player::Red));
+        b.place_piece(sq(4,3),  Piece::new(PieceType::Queen, Player::Red));   // e4
+        b.place_piece(sq(7,9),  Piece::new(PieceType::King,  Player::Blue));  // h10
+        b.place_piece(sq(10,9), Piece::new(PieceType::Rook,  Player::Yellow));// k10 — forked
+        b.place_piece(sq(10,12),Piece::new(PieceType::King,  Player::Yellow));
+        b.place_piece(sq(13,6), Piece::new(PieceType::King,  Player::Green));
+        out.push(("fork2_queen_fork", b.to_fen4(), "e4h7", "fork",
+            "Red queen e4→h7 forks Blue king h10 (file) and Yellow rook k10 (diagonal)"));
+    }
+
+    // -----------------------------------------------------------------------
+    // MATE-IN-1 POSITIONS (5) — bm geometry-verified, engine verification pending
+    //
+    // All 5 positions: Red to move, queen delivers check, all escape squares covered.
+    // Escape analysis is in the position comment. Run engine at depth 1 to confirm.
+    // -----------------------------------------------------------------------
+
+    // M1: Red queen a11→a13 — mates Blue king d12 (Blue has no escape).
+    // BK d12(3,11). Escapes: c12(2,11), e12(4,11), c13(2,12), d13(3,12), e13(4,12),
+    //   c11(2,10), d11(3,10)=blocked below, e11(4,10).
+    // Simpler setup: BK at h8 (7,7) surrounded by its own pawns on g7,g8,g9,h9,i9,i8,i7,h7.
+    // Red queen at f6 (5,5). Moves to h8? Not via one slide... Use rook approach instead.
+    //
+    // CLEAN M1: BK at n8(13,7) — right edge. Escapes: n7(13,6), n9(13,8), m7(12,6), m8(12,7), m9(12,8).
+    // Red rook at a8(0,7): slides to n8? Captures king — not legal. Slides to h8(7,7).
+    // Red rook slides to n8 would capture king. Need queen to give check from a distance.
+    // Red queen at n5(13,4) on same file → checks n8. Escapes covered by:
+    //   Rook at m1(12,0) covers m-file: m7,m8,m9. And queen at n5 covers n7,n9.
+    // bm: queen already at n5 giving check? No — we need to MOVE the queen.
+    // Red queen at n2(13,1) → slides to n5 (or further). Let's place queen at h5(7,4).
+    // Qh5→n5: along rank 5 (rank index 4). Move h5n5.
+    // After Rh5-n5... wait, queen, not rook.
+    // Queen at h5(7,4) moves to n5(13,4) along rank 5. Queen at n5 checks BK at n8 (file n).
+    // Escapes for n8 after Qn5: n7 attacked by Qn5 (file n), n9 attacked by Qn5 (file n).
+    // m7,m8,m9 need coverage: Red rook at m3(12,2) covers file m → m7,m8,m9.
+    // bm = h5n5
+    {
+        let mut b = Board::empty();
+        b.set_side_to_move(Player::Red);
+        b.set_castling_rights(0);
+        b.place_piece(sq(4,1),  Piece::new(PieceType::King,  Player::Red));
+        b.place_piece(sq(7,4),  Piece::new(PieceType::Queen, Player::Red));  // h5
+        b.place_piece(sq(12,3), Piece::new(PieceType::Rook,  Player::Red));  // m4 covers m-file
+        b.place_piece(sq(13,7), Piece::new(PieceType::King,  Player::Blue)); // n8
+        b.place_piece(sq(10,12),Piece::new(PieceType::King,  Player::Yellow));
+        b.place_piece(sq(6,12), Piece::new(PieceType::King,  Player::Green));
+        out.push(("mate1_Qh5n5", b.to_fen4(), "h5n5", "mate",
+            "[unverified] Red queen h5→n5 mates Blue king n8 (rook covers m-file escapes)"));
+    }
+
+    // M2: Red queen slides along rank to deliver check with rook covering the file escapes.
+    // BK at d14(3,13). Escapes: c14(2,13)=INVALID, e14(4,13), c13(2,12)=INVALID,
+    //   d13(3,12), e13(4,12).
+    // Red queen at d9(3,8) → slides to d14 along file d. Qd9-d14 checks BK.
+    // After Qd14: e14 attacked by Qd14 (rank 14), e13 attacked by Qd14 (diagonal NE).
+    // d13 attacked by Qd14 (file d). c13/c14 invalid.
+    // All valid escapes covered ✓. But is there a piece at d14? No, BK is at d14 and queen moves to d14 — capture!
+    // Need BK one step away. BK at e14(4,13), Red queen at e9(4,8).
+    // Qe9→e14 (file e). BK e14 — queen captures king? No — queen moves to e14 where BK is.
+    // I keep making the same mistake. The king can't be on the destination square.
+    // Correct: queen delivers CHECK from a distance, king has no escape from that check.
+    // BK at d13(3,12). Escapes: c13(2,12)=INVALID, e13(4,12), c14(2,13)=INVALID,
+    //   d14(3,13), e14(4,13), c12(2,11)=need to check if valid.
+    // c12=(2,11): file 2, rank index 11. Invalid corner a12-c14 = files 0-2, ranks 12-14 (indices 11-13).
+    //   rank index 11 = rank 12. Files 0-2 at rank index 11 ARE invalid. So c12 is INVALID. ✓
+    // Valid escapes for d13: e13(4,12), d14(3,13), e14(4,13).
+    // Red queen at a13(0,12) — INVALID (top-left corner). Can't place there.
+    // Red queen at d10(3,9) → slides to d13? No, that would put queen at d13 which is where? d13 = king's square.
+    // Queen at d7(3,6) → moves to d11(3,10). Qd7-d11 checks d13? d11 and d13 are on file d, but
+    //   d12(3,11) is between them. If d12 is empty, the check goes through... queen attacks d13 from d11 (2 squares up file d). ✓
+    // After Qd11: d12(3,11) empty (queen at d11 covers d12 via file), d14(3,13) covered by queen at d11 via file.
+    // e13(4,12): from d11 (3,10), diagonal NE = e12(4,11), f13(5,12). Not e13. ✗ Not covered.
+    // e14(4,13): not on file d, rank 11 or diagonal from d11. ✗ Not covered.
+    // Needs another piece to cover e13 and e14. Red rook at e1(4,0) covers file e → e13, e14. ✓
+    // bm = d7d11
+    {
+        let mut b = Board::empty();
+        b.set_side_to_move(Player::Red);
+        b.set_castling_rights(0);
+        b.place_piece(sq(4,1),  Piece::new(PieceType::King,  Player::Red));
+        b.place_piece(sq(3,6),  Piece::new(PieceType::Queen, Player::Red));  // d7
+        b.place_piece(sq(4,0),  Piece::new(PieceType::Rook,  Player::Red));  // e1 covers e-file
+        b.place_piece(sq(3,12), Piece::new(PieceType::King,  Player::Blue)); // d13
+        b.place_piece(sq(10,12),Piece::new(PieceType::King,  Player::Yellow));
+        b.place_piece(sq(7,6),  Piece::new(PieceType::King,  Player::Green));
+        out.push(("mate2_Qd7d11", b.to_fen4(), "d7d11", "mate",
+            "[unverified] Red queen d7→d11 mates Blue king d13 (rook covers e-file escapes)"));
+    }
+
+    // M3: Yellow-to-mate perspective (side variety). Yellow queen mates Red king.
+    // Yellow queen at g4(6,3), Red king at e2(4,1) surrounded.
+    // Escapes for e2: d2(3,1), f2(5,1), d3(3,2), e3(4,2), f3(5,2), d1(3,0)=INVALID(a1-c3? no d1=(3,0) valid!).
+    // d1=(3,0): file 3, rank index 0. Invalid bottom corners: files 0-2 or 11-13 at ranks 0-2. File 3 is valid. ✓
+    // Actually, let's use Green king instead for variety.
+    // Green queen at j9(9,8), Blue king at j12(9,11). BK escapes: i12(8,11), k12(10,11),
+    //   i13(8,12), j13(9,12), k13(10,12), i11(8,10), j11(9,10), k11(10,10).
+    // Too many escapes. Use a simpler setup.
+    // Blue queen at h1(7,0): moves to h12(7,11) — along file h. Checks Yellow king at h14(7,13)?
+    // h14 = file 7, rank index 13. From h12(7,11): covers file h → h13, h14. Check ✓.
+    // YK h14 escapes: g14(6,13), i14(8,13), g13(6,12), h13(7,12), i13(8,12).
+    // h13 attacked by Bh12 via file. Need g14,i14,g13,i13 covered.
+    // Blue rook at g1(6,0) covers file g → g13, g14. Blue rook at i1(8,0) covers file i → i13, i14.
+    // All escapes covered! bm (Blue to move) = h1h12
+    {
+        let mut b = Board::empty();
+        b.set_side_to_move(Player::Blue);
+        b.set_castling_rights(0);
+        b.place_piece(sq(4,1),  Piece::new(PieceType::King,   Player::Red));
+        b.place_piece(sq(7,0),  Piece::new(PieceType::Queen,  Player::Blue)); // h1
+        b.place_piece(sq(6,0),  Piece::new(PieceType::Rook,   Player::Blue)); // g1 covers g-file
+        b.place_piece(sq(8,0),  Piece::new(PieceType::Rook,   Player::Blue)); // i1 covers i-file
+        b.place_piece(sq(1,10), Piece::new(PieceType::King,   Player::Blue)); // b11
+        b.place_piece(sq(7,13), Piece::new(PieceType::King,   Player::Yellow));// h14
+        b.place_piece(sq(13,6), Piece::new(PieceType::King,   Player::Green));
+        out.push(("mate3_Bh1h12_vs_Yh14", b.to_fen4(), "h1h12", "mate",
+            "[unverified] Blue queen h1→h12 mates Yellow king h14 (rooks cover g/i files)"));
+    }
+
+    // M4: Green queen mates Red king (right-edge zone).
+    // GK at n8(13,7) — valid. Green queen at k5(10,4): moves to n8? diff=(+3,+3) diagonal ✓.
+    // Qk5-n8 — but n8 is where RK might be. RK can't be at n8. RK at e2(4,1).
+    // Victim: Red king at n7(13,6). Green queen at k4(10,3): diff=(+3,+3) diagonal to n7. ✓
+    // After Qk4-n7: RK captured (if kings can be captured) or RK in check.
+    // Escapes for RK at n7 before Green plays: n6(13,5), n8(13,7), m6(12,5), m7(12,6), m8(12,7).
+    // Qk4 at n7 (via diagonal) checks RK... but queen would be AT n7 capturing or checking?
+    // Queen at n7 delivers check from n7 to RK at... I'm confused again.
+    // Let's do: Green queen at k11(10,10), Red king at k14(10,13). diff=(0,+3). Same file!
+    // Qk11 slides up file k to k14 — queen moves to k14 where RK is. Capture!
+    // Actually wait — if the Red king is at k14 and Green queen slides to k14, that's capturing the king directly, which may or may not be the right model.
+    // In this engine: kings CAN be captured (they become eliminated). So a queen-takes-king IS a legal move.
+    // Let's just use queen capturing a king as the "mate" move — the engine should prefer this at depth 1.
+    // Green queen at h11(7,10), Red king at h14(7,13). Qh11→h14 slides up file h.
+    // Block: is h12(7,11) and h13(7,12) empty? Yes in our position. So queen slides from h11 to h14. ✓
+    // Green perspective test.
+    {
+        let mut b = Board::empty();
+        b.set_side_to_move(Player::Green);
+        b.set_castling_rights(0);
+        b.place_piece(sq(7,13), Piece::new(PieceType::King,  Player::Red));  // h14 — victim
+        b.place_piece(sq(1,10), Piece::new(PieceType::King,  Player::Blue));
+        b.place_piece(sq(10,12),Piece::new(PieceType::King,  Player::Yellow));
+        b.place_piece(sq(13,6), Piece::new(PieceType::King,  Player::Green));
+        b.place_piece(sq(7,10), Piece::new(PieceType::Queen, Player::Green)); // h11
+        out.push(("mate4_Gh11h14_vs_Rh14", b.to_fen4(), "h11h14", "mate",
+            "[unverified] Green queen h11→h14 captures/mates Red king h14 (king on file, no blockers)"));
+    }
+
+    // M5: Yellow queen mates Green king.
+    // YQ at g7(6,6), Green king at j10(9,9). diff=(+3,+3) diagonal ✓. Qg7→j10.
+    // GK at j10 captured by YQ. Simple king-capture test from Yellow perspective.
+    {
+        let mut b = Board::empty();
+        b.set_side_to_move(Player::Yellow);
+        b.set_castling_rights(0);
+        b.place_piece(sq(4,1),  Piece::new(PieceType::King,   Player::Red));
+        b.place_piece(sq(1,10), Piece::new(PieceType::King,   Player::Blue));
+        b.place_piece(sq(10,12),Piece::new(PieceType::King,   Player::Yellow));
+        b.place_piece(sq(6,6),  Piece::new(PieceType::Queen,  Player::Yellow)); // g7
+        b.place_piece(sq(9,9),  Piece::new(PieceType::King,   Player::Green));  // j10 — victim
+        out.push(("mate5_Yg7j10_vs_Gj10", b.to_fen4(), "g7j10", "mate",
+            "[unverified] Yellow queen g7→j10 captures/mates Green king j10 (diagonal)"));
+    }
+
+    // -----------------------------------------------------------------------
+    // Print
+    // -----------------------------------------------------------------------
+    println!("\n# tactical_suite.txt — Stage 7 seed positions");
+    println!("# Format: FEN4 | best_move | category | description");
+    println!("# Positions marked [unverified] need engine depth-6 release run to confirm.\n");
+    for (label, fen4, bm, cat, desc) in &out {
+        println!("{} | {} | {} | {}", fen4, bm, cat, desc);
+        let _ = label; // suppress unused warning
+    }
+    println!("\n# {} positions total.", out.len());
+}

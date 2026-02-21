@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
 **Last Updated:** 2026-02-21
-**Updated By:** Claude Opus 4.6 (Stage 6 session)
+**Updated By:** Claude Sonnet 4.6 (Stage 7 session)
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 6 complete, ready for Stage 7 |
-| **Current Build-Order Step** | Stage 6 complete (all steps) |
-| **Build Compiles** | Yes (engine: `cargo build`, `cargo build --features huginn`; UI: `cargo build` in src-tauri, `tsc --noEmit`) |
-| **Tests Pass** | Yes (engine: 275 total; UI: 45 Vitest) |
+| **Current Stage** | Stage 7 complete, ready for Stage 8 |
+| **Current Build-Order Step** | Stage 7 complete (all steps) |
+| **Build Compiles** | Yes — `cargo build`, `cargo build --features huginn` both pass |
+| **Tests Pass** | Yes — 302 total (engine); UI: 45 Vitest (untouched this session) |
 | **Blocking Issues** | None |
 
 ---
@@ -27,8 +27,8 @@
 | 3 | Game State & Rules | complete | post-audit done | stage-03-complete / v1.3 | |
 | 4 | Odin Protocol | complete | post-audit done | stage-04-complete / v1.4 | |
 | 5 | Basic UI Shell | complete | post-audit done | stage-05-complete / v1.5 | |
-| 6 | Bootstrap Eval + Evaluator Trait | complete | post-audit done | — | Tag pending per AGENT_CONDUCT 1.11. |
-| 7 | Plain BRS + Searcher Trait | not-started | — | — | |
+| 6 | Bootstrap Eval + Evaluator Trait | complete | post-audit done | stage-06-complete / v1.6 | Tagged this session |
+| 7 | Plain BRS + Searcher Trait | complete | post-audit done | stage-07-complete / v1.7 | Engine playable |
 | 8 | BRS/Paranoid Hybrid Layer | not-started | — | — | |
 | 9 | TT & Move Ordering | not-started | — | — | |
 | 10 | MCTS | not-started | — | — | |
@@ -51,36 +51,27 @@
 
 | Document | Status | Notes |
 |----------|--------|-------|
-| MASTERPLAN.md | current | v3.0 complete. 20 stages (0-19) in 6 tiers. |
+| MASTERPLAN.md | current | v3.1 (minor refinements applied per recent commit). |
 | AGENT_CONDUCT.md | current | v1.0 complete. |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
-| DECISIONS.md | current | 11 ADRs from planning sessions. |
-| HANDOFF.md | current | Stage 6 session state captured. |
+| DECISIONS.md | current | 12 ADRs (ADR-012 added Stage 7: BRS turn order). |
+| HANDOFF.md | current | Stage 7 session state captured. |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
-| audit_log_stage_00.md | current | Pre-audit + post-audit complete. |
-| downstream_log_stage_00.md | current | All sections filled. |
-| audit_log_stage_01.md | current | Pre-audit + post-audit complete. |
-| downstream_log_stage_01.md | current | All sections filled. |
-| audit_log_stage_02.md | current | Pre-audit + post-audit complete. |
-| downstream_log_stage_02.md | current | All sections filled. |
-| audit_log_stage_03.md | current | Pre-audit + post-audit complete. |
-| downstream_log_stage_03.md | current | All sections filled. |
-| audit_log_stage_04.md | current | Pre-audit + post-audit complete. |
-| downstream_log_stage_04.md | current | All sections filled. |
-| audit_log_stage_05.md | current | Pre-audit + post-audit + bugfix addendum complete. |
-| downstream_log_stage_05.md | current | All sections filled. Play mode API contracts added. |
-| audit_log_stage_06.md | current | Pre-audit + post-audit complete. |
-| downstream_log_stage_06.md | current | All sections filled. Evaluator trait API contracts. |
+| audit_log_stage_00.md through audit_log_stage_07.md | current | All complete. |
+| downstream_log_stage_00.md through downstream_log_stage_07.md | current | All complete. |
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Create `stage-06-complete` / `v1.6` git tag
-2. Begin Stage 7: Plain BRS + Searcher Trait
-3. Follow Stage Entry Protocol (AGENT_CONDUCT 1.1)
-4. Stage 7 depends on Stage 6 (→ 3 → 2 → 1 → 0)
+1. Read STATUS.md + HANDOFF.md (this file + HANDOFF.md)
+2. Follow Stage Entry Protocol (AGENT_CONDUCT 1.1) for Stage 8
+3. Stage 8: BRS/Paranoid Hybrid Layer
+   - Depends on Stage 7 (→ 6 → 3 → 2 → 1 → 0)
+   - Key task: improve eval's FFA strategic accuracy (lead penalty tuning)
+   - Key task: verify and remove `[unverified]` from tactical_suite.txt mate positions
+   - See [[downstream_log_stage_07]] for must-know items before modifying search or eval
 
 ---
 
@@ -118,6 +109,10 @@ None.
 | Test count (no huginn) | 275 | 6 | 191 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 + 11 stage-06 |
 | eval_scalar per call | <10us | 6 | Release build, starting position |
 | Starting material per player | 4300cp | 6 | 8P + 2N + 2B + 2R + Q + K |
+| Test count (no huginn) | 302 | 7 | 196 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 + 11 stage-06 + 22 stage-07 |
+| BRS depth 6 (debug, starting pos) | 1,547ms / 10,916 nodes | 7 | ~7k NPS debug |
+| BRS depth 6 best move | j1i3 | 7 | Score 4180cp at starting position |
+| BRS depth 4 (debug, CI cap) | 80ms / 356 nodes | 7 | Stable move e1f3 |
 
 ---
 

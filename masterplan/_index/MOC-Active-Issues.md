@@ -2,8 +2,7 @@
 type: moc
 tags:
   - type/moc
-last_updated: 2026-02-21
----
+last_updated: 2026-02-21---
 
 # Active Issues
 
@@ -20,7 +19,8 @@ _None._
 
 ## Notes
 
-- [[Issue-Huginn-Gates-Unwired]] -- Stages 1-6 Huginn observation gates not wired; deferred until buffer plumbing exists
+- [[Issue-Huginn-Gates-Unwired]] -- Stages 1-7 Huginn observation gates not wired; deferred until buffer plumbing exists
+- [[Issue-Bootstrap-Eval-Lead-Penalty-Tactical-Mismatch]] -- Lead-penalty heuristic causes BRS to prefer checks over captures in some positions; Stage 8 to fix
 - [[Issue-DKW-Halfmove-Clock]] -- DKW instant moves increment halfmove_clock via make_move; may cause premature 50-move rule triggers in DKW games
 - [[Issue-DKW-Invisible-Moves-UI]] -- DKW king instant moves not visible in UI rendering cache; visual desync after DKW events
 

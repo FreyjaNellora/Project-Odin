@@ -222,6 +222,24 @@ The user's directive: "get your steps in order! figure out what needs to be buil
 
 ---
 
+### ADR-012: BRS Turn Order — Natural Game Order, Not Alternating MAX-MIN
+
+**Date:** 2026-02-21
+**Status:** Active
+**Affects:** Stage 7 ([[stage_07_plain_brs]]), Stage 8 ([[stage_08_brs_hybrid]]), Stage 10 ([[stage_10_mcts]])
+
+**Decision:** BRS uses natural 4-player turn order (R→B→Y→G→R→...) rather than the MASTERPLAN's described alternating MAX-MIN-MAX-MIN model (Root, Opp1, Root, Opp2, Root, Opp3).
+
+**Alternatives considered:**
+- **MASTERPLAN alternating model (MAX-MIN-MAX-MIN):** Root player gets a MAX node, then each opponent gets a MIN node, then back to root. This requires manual `board.set_side_to_move()` between the root MAX node and each opponent MIN node.
+- **Natural turn order (chosen):** Each player takes one turn in R→B→Y→G order. Root player = MAX node (full branching, alpha-beta). Each opponent = MIN node (single best reply). The Board naturally advances `side_to_move` via `make_move`.
+
+**Why this was chosen:** `unmake_move(board, mv, undo)` infers the previous player via `prev_player(side_to_move)` — it does NOT save `side_to_move` in `MoveUndo`. If `set_side_to_move()` is called manually between `make_move` and `unmake_move`, it corrupts the restoration logic. The alternating model requires exactly this. The natural turn order avoids this entirely: `make_move` advances the player normally, `unmake_move` restores it normally. Alpha-beta still prunes effectively at MAX nodes; MIN nodes are single-branch and pass scores through without issue.
+
+**Consequence:** Any future code that calls `set_side_to_move()` inside the search loop (e.g., for null move or eliminated-player skip) must restore symmetrically before calling `unmake_move`. See [[downstream_log_stage_07]] for the explicit requirement and [[Component-Search]] for implementation notes.
+
+---
+
 ## How to Add a New Decision
 
 Copy this template:

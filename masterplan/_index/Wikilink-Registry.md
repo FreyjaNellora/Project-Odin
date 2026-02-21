@@ -127,6 +127,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Component-Protocol]]` | `components/Component-Protocol.md` | Odin Protocol: command parsing, response formatting, engine loop |
 | `[[Component-BasicUI]]` | `components/Component-BasicUI.md` | Basic UI Shell: Tauri v2, SVG board, engine IPC, debug console |
 | `[[Component-Eval]]` | `components/Component-Eval.md` | Bootstrap Evaluator: Evaluator trait, material, PST, king safety, multi-player eval |
+| `[[Component-Search]]` | `components/Component-Search.md` | Searcher trait, SearchBudget, SearchResult, BrsSearcher, BRS algorithm |
 
 ### Connections
 
@@ -139,6 +140,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Connection-Protocol-to-UI]]` | `connections/Connection-Protocol-to-UI.md` | How UI communicates with engine via Tauri IPC |
 | `[[Connection-GameState-to-Eval]]` | `connections/Connection-GameState-to-Eval.md` | How Eval reads GameState for position scoring |
 | `[[Connection-Eval-to-Search]]` | `connections/Connection-Eval-to-Search.md` | How Search calls Eval through the Evaluator trait |
+| `[[Connection-Search-to-Protocol]]` | `connections/Connection-Search-to-Protocol.md` | How Protocol wires BrsSearcher, info_cb, SearchLimits→SearchBudget conversion |
 
 ### Sessions
 
@@ -151,6 +153,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Session-2026-02-20-Stage05]]` | `sessions/Session-2026-02-20-Stage05.md` | Stage 5 implementation session |
 | `[[Session-2026-02-20-Stage05-Bugfix]]` | `sessions/Session-2026-02-20-Stage05-Bugfix.md` | Stage 5 bugfix session: en passant, castling, play modes, React batching |
 | `[[Session-2026-02-21-Stage06]]` | `sessions/Session-2026-02-21-Stage06.md` | Stage 6: Bootstrap Eval + Evaluator trait implementation |
+| `[[Session-2026-02-21-Stage07]]` | `sessions/Session-2026-02-21-Stage07.md` | Stage 7: Plain BRS + Searcher trait implementation |
 
 ### Issues
 
@@ -165,6 +168,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Issue-UI-Castling-Blue-Green]]` | `issues/Issue-UI-Castling-Blue-Green.md` | Castling display broken for Blue/Green UI (resolved) |
 | `[[Issue-UI-AdvancePlayer-React-Batching]]` | `issues/Issue-UI-AdvancePlayer-React-Batching.md` | advancePlayer wrong player from React 18 batching (resolved) |
 | `[[Issue-Vec-Clone-Cost-Pre-MCTS]]` | `issues/Issue-Vec-Clone-Cost-Pre-MCTS.md` | Vec clone cost in Board/GameState — retrofit before Stage 10 (open) |
+| `[[Issue-Bootstrap-Eval-Lead-Penalty-Tactical-Mismatch]]` | `issues/Issue-Bootstrap-Eval-Lead-Penalty-Tactical-Mismatch.md` | Lead-penalty causes BRS to prefer checks over captures (open, Stage 8 to fix) |
 
 ### Patterns
 

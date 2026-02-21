@@ -12,6 +12,7 @@ Chronological index of build sessions. Each session note captures what was attem
 ## Sessions
 
 <!-- Add newest sessions at the top -->
+- **2026-02-21** [[Session-2026-02-21-Stage07]] -- Stage 7: Plain BRS + Searcher trait. Alpha-beta, iterative deepening, quiescence, aspiration windows, null move, LMR, PV. Engine playable. 302 tests.
 - **2026-02-21** [[Session-2026-02-21-Stage06]] -- Stage 6: Bootstrap Eval + Evaluator trait. Material counting, PSTs with 4-player rotation, king safety, multi-player eval. 275 tests.
 - **2026-02-20** [[Session-2026-02-20-Stage05-Bugfix]] -- Stage 5 bugfixes: en passant/castling for Blue/Green, responsive board, play modes (Manual/Semi-Auto/Full Auto), speed control, advancePlayer React 18 batching fix.
 - **2026-02-20** [[Session-2026-02-20-Stage05]] -- Stage 5: Basic UI Shell. Tauri v2 scaffolding, SVG board renderer, engine subprocess IPC, click-to-move, debug console, game controls. 45 Vitest tests.
