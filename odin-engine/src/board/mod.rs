@@ -16,6 +16,7 @@ pub use board_struct::{
     CASTLE_RED_KING, CASTLE_RED_QUEEN, CASTLE_YELLOW_KING, CASTLE_YELLOW_QUEEN,
     MAX_PIECES_PER_PLAYER,
 };
+pub use fen4::Fen4Error;
 pub use square::{
     file_char, file_of, is_valid_square, parse_square, rank_of, square_from, square_name,
     valid_squares, Square, BOARD_SIZE, INVALID_CORNER_COUNT, TOTAL_SQUARES, VALID_SQUARE_COUNT,

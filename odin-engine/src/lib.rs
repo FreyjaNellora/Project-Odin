@@ -4,6 +4,6 @@ pub mod board;
 mod eval;
 pub mod gamestate;
 pub mod movegen;
-mod protocol;
+pub mod protocol;
 mod search;
 mod variants;

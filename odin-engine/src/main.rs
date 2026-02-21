@@ -1,3 +1,6 @@
+use odin_engine::protocol::OdinEngine;
+
 fn main() {
-    println!("Odin Engine v0.1.0");
+    let mut engine = OdinEngine::new();
+    engine.run();
 }

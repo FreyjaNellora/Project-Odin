@@ -48,19 +48,10 @@ pub struct SearchLimits {
 }
 
 /// Engine options set via `setoption`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct EngineOptions {
     /// Enable debug output
     pub debug: bool,
     /// Use terrain mode for new games
     pub terrain_mode: bool,
-}
-
-impl Default for EngineOptions {
-    fn default() -> Self {
-        Self {
-            debug: false,
-            terrain_mode: false,
-        }
-    }
 }
