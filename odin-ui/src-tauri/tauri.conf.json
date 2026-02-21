@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicegui-org/nicegui/refs/heads/main/nicegui/tauri-v2/tauri.conf.json",
+  "productName": "Odin UI",
+  "version": "0.5.0",
+  "identifier": "com.project-odin.ui",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Project Odin — 4-Player Chess",
+        "width": 1280,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": []
+  }
+}
