@@ -21,7 +21,7 @@ use std::cell::RefCell;
 use std::io::BufRead;
 use std::rc::Rc;
 
-use crate::board::Board;
+use crate::board::{Board, Player};
 use crate::eval::BootstrapEvaluator;
 use crate::gamestate::{GameMode, GameState};
 use crate::search::brs::BrsSearcher;
@@ -191,9 +191,30 @@ impl OdinEngine {
             BrsSearcher::with_info_callback(Box::new(BootstrapEvaluator::new()), cb);
         let result = searcher.search(&position, budget);
 
+        // Apply the best move to determine post-move state for UI synchronization.
+        let mut post_position = position;
+        let move_result = post_position.apply_move(result.best_move);
+
         for line in info_buf.borrow().iter() {
             self.send(line);
         }
+
+        // Emit elimination events before bestmove so the UI can process them first.
+        for (player, _reason) in &move_result.eliminations {
+            self.send(&format!("info string eliminated {}", player_color(*player)));
+        }
+
+        // Emit game-over or next-turn indicator so the UI can sync its turn tracker.
+        if post_position.is_game_over() {
+            let winner_str = post_position.winner().map_or("none", player_color);
+            self.send(&format!("info string gameover {winner_str}"));
+        } else {
+            self.send(&format!(
+                "info string nextturn {}",
+                player_color(post_position.current_player())
+            ));
+        }
+
         self.send(&format_bestmove(&result.best_move.to_algebraic(), None));
     }
 
@@ -285,6 +306,16 @@ impl OdinEngine {
 impl Default for OdinEngine {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Convert a player to its display color string (used in protocol events).
+fn player_color(player: Player) -> &'static str {
+    match player {
+        Player::Red => "Red",
+        Player::Blue => "Blue",
+        Player::Yellow => "Yellow",
+        Player::Green => "Green",
     }
 }
 

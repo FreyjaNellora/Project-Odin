@@ -2,6 +2,11 @@
 // Matches exact formats from odin-engine/src/protocol/emitter.rs.
 
 import type { EngineMessage, InfoData } from '../types/protocol';
+import type { Player } from '../types/board';
+
+function isValidPlayerColor(s: string): s is Player {
+  return s === 'Red' || s === 'Blue' || s === 'Yellow' || s === 'Green';
+}
 
 /** Parse a single engine output line into a structured message. */
 export function parseEngineOutput(line: string): EngineMessage {
@@ -34,6 +39,28 @@ export function parseEngineOutput(line: string): EngineMessage {
     const move = parts[1];
     const ponder = parts[2] === 'ponder' ? parts[3] : undefined;
     return { type: 'bestmove', move, ponder };
+  }
+
+  // info string eliminated <color>
+  if (trimmed.startsWith('info string eliminated ')) {
+    const color = trimmed.slice('info string eliminated '.length).trim();
+    if (isValidPlayerColor(color)) {
+      return { type: 'eliminated', player: color };
+    }
+  }
+
+  // info string nextturn <color>
+  if (trimmed.startsWith('info string nextturn ')) {
+    const color = trimmed.slice('info string nextturn '.length).trim();
+    if (isValidPlayerColor(color)) {
+      return { type: 'nextturn', player: color };
+    }
+  }
+
+  // info string gameover <color|none>
+  if (trimmed.startsWith('info string gameover ')) {
+    const winner = trimmed.slice('info string gameover '.length).trim();
+    return { type: 'gameover', winner: isValidPlayerColor(winner) ? winner : null };
   }
 
   // info string Error: <msg>

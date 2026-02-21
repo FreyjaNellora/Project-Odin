@@ -1,6 +1,8 @@
 // Protocol message types matching odin-engine's Odin Protocol.
 // Used to parse engine stdout responses.
 
+import type { Player } from './board';
+
 /** Parsed engine output line. */
 export type EngineMessage =
   | { type: 'id'; key: string; value: string }
@@ -9,6 +11,12 @@ export type EngineMessage =
   | { type: 'bestmove'; move: string; ponder?: string }
   | { type: 'info'; data: InfoData }
   | { type: 'error'; message: string }
+  /** A player was eliminated (checkmate/stalemate/DKW king captured). */
+  | { type: 'eliminated'; player: Player }
+  /** Whose turn comes next after the engine's move (skips eliminated players). */
+  | { type: 'nextturn'; player: Player }
+  /** Game has ended; winner is the surviving player or null for a draw. */
+  | { type: 'gameover'; winner: Player | null }
   | { type: 'unknown'; raw: string };
 
 /** Parsed search info data from `info` lines. */

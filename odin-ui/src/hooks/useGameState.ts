@@ -76,6 +76,10 @@ export function useGameState(
   const engineDelayRef = useRef(500);
   // Track current player in a ref for async access
   const currentPlayerRef = useRef<Player>('Red');
+  // Track eliminated players to skip them in turn advancement and remove their kings
+  const eliminatedPlayersRef = useRef<Set<Player>>(new Set());
+  // Next turn as reported by the engine (authoritative, beats local computation)
+  const pendingNextTurnRef = useRef<Player | null>(null);
 
   // Setters that sync state + ref
   const setPlayMode = useCallback((mode: PlayMode) => {
@@ -96,13 +100,17 @@ export function useGameState(
     engineDelayRef.current = ms;
   }, []);
 
-  /** Advance to the next player in rotation. Returns the new player. */
+  /** Advance to the next non-eliminated player in rotation. Returns the new player. */
   const advancePlayer = useCallback((): Player => {
-    const idx = PLAYERS.indexOf(currentPlayerRef.current);
-    const nextPlayer = PLAYERS[(idx + 1) % 4];
-    currentPlayerRef.current = nextPlayer;
-    setCurrentPlayer(nextPlayer);
-    return nextPlayer;
+    let candidate = PLAYERS[(PLAYERS.indexOf(currentPlayerRef.current) + 1) % 4];
+    // Skip over any eliminated players (at most 3 skips before wrapping back)
+    for (let i = 0; i < 3; i++) {
+      if (!eliminatedPlayersRef.current.has(candidate)) break;
+      candidate = PLAYERS[(PLAYERS.indexOf(candidate) + 1) % 4];
+    }
+    currentPlayerRef.current = candidate;
+    setCurrentPlayer(candidate);
+    return candidate;
   }, []);
 
   /** Check if the engine should auto-play the given player's turn. */
@@ -345,6 +353,8 @@ export function useGameState(
       awaitingBestmoveRef.current = false;
       autoPlayRef.current = false;
       setIsPaused(false);
+      eliminatedPlayersRef.current = new Set();
+      pendingNextTurnRef.current = null;
 
       sendCommand(`setoption name Terrain value ${terrain ? 'true' : 'false'}`)
         .then(() => sendCommand('position startpos'))
@@ -410,6 +420,31 @@ export function useGameState(
           }
           break;
         }
+        case 'eliminated': {
+          // Mark player as eliminated so future turn advancement skips them.
+          eliminatedPlayersRef.current.add(msg.player);
+          // Remove their king from the display board (engine called remove_king internally).
+          setBoard((prev) => {
+            const next = [...prev];
+            for (let i = 0; i < next.length; i++) {
+              if (next[i]?.owner === msg.player && next[i]?.pieceType === 'King') {
+                next[i] = null;
+              }
+            }
+            return next;
+          });
+          break;
+        }
+        case 'nextturn': {
+          // Store the engine's authoritative next-turn so bestmove can sync to it.
+          pendingNextTurnRef.current = msg.player;
+          break;
+        }
+        case 'gameover': {
+          setIsGameOver(true);
+          autoPlayRef.current = false;
+          break;
+        }
         case 'bestmove': {
           if (awaitingBestmoveRef.current) {
             awaitingBestmoveRef.current = false;
@@ -418,7 +453,17 @@ export function useGameState(
             moveListRef.current = newMoves;
             setMoveList(newMoves);
             applyMoveToBoard(engineMove);
-            const nextPlayer = advancePlayer();
+
+            // Use the engine's authoritative next-turn if available; otherwise compute locally.
+            let nextPlayer: Player;
+            if (pendingNextTurnRef.current !== null) {
+              nextPlayer = pendingNextTurnRef.current;
+              currentPlayerRef.current = nextPlayer;
+              setCurrentPlayer(nextPlayer);
+              pendingNextTurnRef.current = null;
+            } else {
+              nextPlayer = advancePlayer();
+            }
 
             // Chain next engine move if auto-play is active
             maybeChainEngineMove(nextPlayer);
