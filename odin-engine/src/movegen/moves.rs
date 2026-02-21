@@ -226,7 +226,11 @@ impl Move {
 
     /// Format move as algebraic string (e.g. "d2d4", "e7e8q").
     pub fn to_algebraic(self) -> String {
-        let mut s = format!("{}{}", square_name(self.from_sq()), square_name(self.to_sq()));
+        let mut s = format!(
+            "{}{}",
+            square_name(self.from_sq()),
+            square_name(self.to_sq())
+        );
         if let Some(promo) = self.promotion() {
             s.push(promo.fen_char().to_ascii_lowercase());
         }
@@ -486,10 +490,10 @@ fn en_passant_target_sq(from: Square, to: Square, _player: Player) -> Square {
 
 /// Pawn forward direction delta per player: (file_delta, rank_delta).
 const PAWN_FORWARD: [(i8, i8); 4] = [
-    (0, 1),   // Red: +rank
-    (1, 0),   // Blue: +file
-    (0, -1),  // Yellow: -rank
-    (-1, 0),  // Green: -file
+    (0, 1),  // Red: +rank
+    (1, 0),  // Blue: +file
+    (0, -1), // Yellow: -rank
+    (-1, 0), // Green: -file
 ];
 
 /// Compute the square of the pawn captured by en passant.
@@ -544,16 +548,18 @@ fn prev_player(player: Player) -> Player {
 }
 
 /// Get the castling configuration (public for use by move generation).
-pub fn get_castling_config(player: Player) -> (
-    Square,  // king_sq
-    Square,  // ks_rook
-    Square,  // qs_rook
-    Square,  // king_target_ks
-    Square,  // rook_target_ks
-    Square,  // king_target_qs
-    Square,  // rook_target_qs
-    u8,      // ks_bit
-    u8,      // qs_bit
+pub fn get_castling_config(
+    player: Player,
+) -> (
+    Square, // king_sq
+    Square, // ks_rook
+    Square, // qs_rook
+    Square, // king_target_ks
+    Square, // rook_target_ks
+    Square, // king_target_qs
+    Square, // rook_target_qs
+    u8,     // ks_bit
+    u8,     // qs_bit
 ) {
     let c = castling_config(player);
     (
@@ -676,10 +682,7 @@ mod tests {
 
         // Pawn should be on e4 now
         assert!(board.piece_at(from).is_none());
-        assert_eq!(
-            board.piece_at(to).unwrap().piece_type,
-            PieceType::Pawn
-        );
+        assert_eq!(board.piece_at(to).unwrap().piece_type, PieceType::Pawn);
         assert!(board.verify_zobrist());
         assert!(board.verify_piece_lists());
 
@@ -688,10 +691,7 @@ mod tests {
         assert_eq!(board.zobrist(), hash_before);
         assert!(board.verify_zobrist());
         assert!(board.verify_piece_lists());
-        assert_eq!(
-            board.piece_at(from).unwrap().piece_type,
-            PieceType::Pawn
-        );
+        assert_eq!(board.piece_at(from).unwrap().piece_type, PieceType::Pawn);
         assert!(board.piece_at(to).is_none());
     }
 

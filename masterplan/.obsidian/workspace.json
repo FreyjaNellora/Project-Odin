@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "a31a0df31f7952a6",
+        "id": "eb5c46d7811a8fdb",
         "type": "tabs",
         "children": [
           {
-            "id": "6341e45ca076c854",
+            "id": "686d229470594c43",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -163,8 +163,26 @@
       "bases:Create new base": false
     }
   },
-  "active": "6341e45ca076c854",
+  "active": "686d229470594c43",
   "lastOpenFiles": [
+    "sessions/session-2026-02-20-stage03.md",
+    "issues/Issue-DKW-Halfmove-Clock.md",
+    "patterns/Pattern-DKW-Instant-Moves.md",
+    "patterns/Pattern-Terrain-Awareness.md",
+    "connections/Connection-Board-to-GameState.md",
+    "connections/Connection-MoveGen-to-GameState.md",
+    "components/Component-GameState.md",
+    "patterns/Pattern-EP-Captured-Square-4PC.md",
+    "patterns/Pattern-Pawn-Reverse-Lookup.md",
+    "connections/Connection-Board-to-MoveGen.md",
+    "components/Component-MoveGen.md",
+    "components/Component-Board.md",
+    "issues/Issue-Huginn-Gates-Unwired.md",
+    "issues/Issue-Perft-Values-Unverified.md",
+    "issues/Issue-EP-Representation-4PC.md",
+    "AGENT_CONDUCT.md.tmp.47428.1771619335618",
+    "stage_02_movegen.md",
+    "sessions/session-2026-02-20-stage02.md",
     "sessions/session-2026-02-20-stage01.md",
     "MASTERPLAN.md",
     "_index/MOC-Tier-3-Strengthen-Search.md",
@@ -175,23 +193,6 @@
     "stage_16_nnue_integration.md",
     "stage_15_nnue_training.md",
     "stage_14_nnue_design.md",
-    "stage_13_time_management.md",
-    "stage_12_self_play.md",
-    "stage_11_hybrid_integration.md",
-    "stage_10_mcts.md",
-    "stage_09_tt_ordering.md",
-    "stage_08_brs_hybrid.md",
-    "stage_07_plain_brs.md",
-    "stage_06_bootstrap_eval.md",
-    "stage_05_basic_ui.md",
-    "stage_04_protocol.md",
-    "stage_03_gamestate.md",
-    "stage_02_movegen.md",
-    "stage_01_board.md",
-    "stage_00_skeleton.md",
-    "downstream_log_stage_19.md",
-    "downstream_log_stage_18.md",
-    "downstream_log_stage_17.md",
     "STATUS.md.tmp.12676.1771565507627",
     "AGENT_CONDUCT.md.tmp.3292.1771561357116"
   ]
