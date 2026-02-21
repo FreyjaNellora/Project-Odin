@@ -4,17 +4,21 @@
     "type": "split",
     "children": [
       {
-        "id": "eb5c46d7811a8fdb",
+        "id": "ee568976756fc1ec",
         "type": "tabs",
         "children": [
           {
-            "id": "686d229470594c43",
+            "id": "55118a6a5b4a7dfb",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "type": "markdown",
+              "state": {
+                "file": "MASTERPLAN.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "MASTERPLAN"
             }
           }
         ]
@@ -51,8 +55,8 @@
               "state": {
                 "query": "[\"date_opened\"]",
                 "matchingCase": false,
-                "explainSearch": false,
-                "collapseAll": false,
+                "explainSearch": true,
+                "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical"
               },
@@ -75,7 +79,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 380.5
   },
   "right": {
     "id": "c782b59512939c5c",
@@ -151,7 +155,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 200,
+    "collapsed": true
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -163,15 +168,26 @@
       "bases:Create new base": false
     }
   },
-  "active": "686d229470594c43",
+  "active": "55118a6a5b4a7dfb",
   "lastOpenFiles": [
+    "sessions/Session-2026-02-21-Stage06.md",
+    "connections/Connection-Eval-to-Search.md",
+    "connections/Connection-GameState-to-Eval.md",
+    "components/Component-Eval.md",
+    "audit_log_stage_05.md",
+    "_templates/issue.md",
+    "issues/Issue-Huginn-Gates-Unwired.md",
+    "sessions/Session-2026-02-20-Stage05.md",
+    "issues/Issue-DKW-Halfmove-Clock.md",
+    "components/Component-GameState.md",
+    "AGENT_CONDUCT.md",
+    "_templates/connection.md",
     "patterns/Pattern-React-Ref-Async-State.md",
     "sessions/Session-2026-02-20-Stage05-Bugfix.md",
     "issues/Issue-UI-AdvancePlayer-React-Batching.md",
     "issues/Issue-UI-Castling-Blue-Green.md",
     "issues/Issue-UI-EP-False-Positive.md",
     "issues/Issue-DKW-Invisible-Moves-UI.md",
-    "sessions/Session-2026-02-20-Stage05.md",
     "connections/Connection-Protocol-to-UI.md",
     "components/Component-BasicUI.md",
     "audit_log_stage_05.md.tmp.53944.1771638022150",
@@ -179,19 +195,8 @@
     "connections/Connection-GameState-to-Protocol.md",
     "components/Component-Protocol.md",
     "sessions/session-2026-02-20-stage03.md",
-    "issues/Issue-DKW-Halfmove-Clock.md",
     "patterns/Pattern-DKW-Instant-Moves.md",
     "patterns/Pattern-Terrain-Awareness.md",
-    "connections/Connection-Board-to-GameState.md",
-    "connections/Connection-MoveGen-to-GameState.md",
-    "components/Component-GameState.md",
-    "patterns/Pattern-EP-Captured-Square-4PC.md",
-    "patterns/Pattern-Pawn-Reverse-Lookup.md",
-    "connections/Connection-Board-to-MoveGen.md",
-    "components/Component-MoveGen.md",
-    "components/Component-Board.md",
-    "issues/Issue-Huginn-Gates-Unwired.md",
-    "issues/Issue-Perft-Values-Unverified.md",
     "AGENT_CONDUCT.md.tmp.47428.1771619335618",
     "Untitled.canvas",
     "STATUS.md.tmp.12676.1771565507627",
