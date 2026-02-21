@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
 **Last Updated:** 2026-02-21
-**Updated By:** Claude Sonnet 4.6 (Stage 7 session)
+**Updated By:** Claude Sonnet 4.6 (Stage 7 bugfix session)
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 7 complete, ready for Stage 8 |
-| **Current Build-Order Step** | Stage 7 complete (all steps) |
+| **Current Stage** | Stage 7 complete + bugfixes; ready for Stage 8 |
+| **Current Build-Order Step** | Stage 7 complete (all steps + post-completion regressions fixed) |
 | **Build Compiles** | Yes — `cargo build`, `cargo build --features huginn` both pass |
-| **Tests Pass** | Yes — 302 total (engine); UI: 45 Vitest (untouched this session) |
+| **Tests Pass** | Yes — engine: 199 lib tests; UI: 45 Vitest |
 | **Blocking Issues** | None |
 
 ---
@@ -28,7 +28,7 @@
 | 4 | Odin Protocol | complete | post-audit done | stage-04-complete / v1.4 | |
 | 5 | Basic UI Shell | complete | post-audit done | stage-05-complete / v1.5 | |
 | 6 | Bootstrap Eval + Evaluator Trait | complete | post-audit done | stage-06-complete / v1.6 | Tagged this session |
-| 7 | Plain BRS + Searcher Trait | complete | post-audit done | stage-07-complete / v1.7 | Engine playable |
+| 7 | Plain BRS + Searcher Trait | complete | post-audit done | stage-07-complete / v1.7 | Engine playable; post-completion regressions resolved |
 | 8 | BRS/Paranoid Hybrid Layer | not-started | — | — | |
 | 9 | TT & Move Ordering | not-started | — | — | |
 | 10 | MCTS | not-started | — | — | |
@@ -55,7 +55,7 @@
 | AGENT_CONDUCT.md | current | v1.0 complete. |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
 | DECISIONS.md | current | 12 ADRs (ADR-012 added Stage 7: BRS turn order). |
-| HANDOFF.md | current | Stage 7 session state captured. |
+| HANDOFF.md | current | Stage 7 + bugfix session state captured. |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
 | audit_log_stage_00.md through audit_log_stage_07.md | current | All complete. |
@@ -69,7 +69,7 @@
 2. Follow Stage Entry Protocol (AGENT_CONDUCT 1.1) for Stage 8
 3. Stage 8: BRS/Paranoid Hybrid Layer
    - Depends on Stage 7 (→ 6 → 3 → 2 → 1 → 0)
-   - Key task: improve eval's FFA strategic accuracy (lead penalty tuning)
+   - Key task: improve eval's FFA strategic accuracy (lead penalty tuning) — see [[Issue-Bootstrap-Eval-Lead-Penalty-Tactical-Mismatch]]
    - Key task: verify and remove `[unverified]` from tactical_suite.txt mate positions
    - See [[downstream_log_stage_07]] for must-know items before modifying search or eval
 
@@ -77,7 +77,7 @@
 
 ## Known Regressions
 
-None.
+None. Stage 7 post-completion regressions (semi-auto human player guard, checkmate detection DKW ordering) both resolved 2026-02-21.
 
 ---
 

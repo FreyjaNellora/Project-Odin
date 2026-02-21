@@ -38,7 +38,6 @@ function App() {
             humanPlayer={game.humanPlayer}
             engineDelay={game.engineDelay}
             isPaused={game.isPaused}
-            gameInProgress={game.gameInProgress}
             onNewGame={game.newGame}
             onEngineMove={game.requestEngineMove}
             onSetPlayMode={game.setPlayMode}

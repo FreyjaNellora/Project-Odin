@@ -23,7 +23,7 @@ use std::rc::Rc;
 
 use crate::board::{Board, Player};
 use crate::eval::BootstrapEvaluator;
-use crate::gamestate::{GameMode, GameState};
+use crate::gamestate::{EliminationReason, GameMode, GameState};
 use crate::search::brs::BrsSearcher;
 use crate::search::{SearchBudget, Searcher};
 
@@ -157,26 +157,52 @@ impl OdinEngine {
     }
 
     fn handle_go(&mut self, limits: &SearchLimits) {
-        let gs = match self.game_state.as_mut() {
-            Some(gs) => gs,
-            None => {
-                self.send(&format_error("no position set, send 'position' first"));
-                return;
-            }
-        };
-
-        if gs.is_game_over() {
+        if self.game_state.is_none() {
+            self.send(&format_error("no position set, send 'position' first"));
+            return;
+        }
+        if self.game_state.as_ref().unwrap().is_game_over() {
             self.send(&format_error("game is already over"));
             return;
         }
 
-        if gs.legal_moves().is_empty() {
-            self.send(&format_error("no legal moves available"));
+        // Handle checkmate/stalemate: current player has no legal moves.
+        if self.game_state.as_mut().unwrap().legal_moves().is_empty() {
+            let move_result = self.game_state.as_mut().unwrap().handle_no_legal_moves();
+
+            for (player, reason) in &move_result.eliminations {
+                let reason_str = match reason {
+                    EliminationReason::Checkmate => "checkmate",
+                    EliminationReason::Stalemate => "stalemate",
+                    _ => "eliminated",
+                };
+                self.send(&format!(
+                    "info string eliminated {} {reason_str}",
+                    player_color(*player)
+                ));
+            }
+
+            if self.game_state.as_ref().unwrap().is_game_over() {
+                let winner_str = self
+                    .game_state
+                    .as_ref()
+                    .unwrap()
+                    .winner()
+                    .map_or("none", player_color);
+                self.send(&format!("info string gameover {winner_str}"));
+            } else {
+                let next = self.game_state.as_ref().unwrap().current_player();
+                self.send(&format!("info string nextturn {}", player_color(next)));
+                // Recurse: chain eliminations handled by recursion; ultimately produces
+                // a bestmove for the first player found to have legal moves.
+                self.handle_go(limits);
+            }
             return;
         }
 
+        // Normal path: clone position, search, apply to get post-move state.
         // Clone so the mutable borrow of self.game_state is released before send().
-        let position = gs.clone();
+        let position = self.game_state.as_ref().unwrap().clone();
 
         let budget = Self::limits_to_budget(limits);
 
@@ -322,6 +348,7 @@ fn player_color(player: Player) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::board::{square_from, Piece, PieceType};
     use crate::movegen;
 
     #[test]
@@ -527,5 +554,77 @@ mod tests {
         assert!(info_line.contains("v3 "));
         assert!(info_line.contains("v4 "));
         assert!(info_line.contains("phase brs"));
+    }
+
+    #[test]
+    fn test_go_mated_player_emits_eliminated_and_advances() {
+        // Red king at h1 (7,0) is in checkmate (same position as gamestate test):
+        // Green queen at i2 (8,1) gives check; Blue bishop at c8 (2,7) protects queen;
+        // Blue rook at g5 (6,4) covers g1 — the only remaining escape square.
+        let mut board = Board::empty();
+        board.place_piece(
+            square_from(7, 0).unwrap(),
+            Piece::new(PieceType::King, Player::Red),
+        );
+        board.place_piece(
+            square_from(8, 1).unwrap(),
+            Piece::new(PieceType::Queen, Player::Green),
+        );
+        board.place_piece(
+            square_from(2, 7).unwrap(),
+            Piece::new(PieceType::Bishop, Player::Blue),
+        );
+        board.place_piece(
+            square_from(6, 4).unwrap(),
+            Piece::new(PieceType::Rook, Player::Blue),
+        );
+        board.place_piece(
+            square_from(3, 13).unwrap(),
+            Piece::new(PieceType::King, Player::Blue),
+        );
+        board.place_piece(
+            square_from(6, 13).unwrap(),
+            Piece::new(PieceType::King, Player::Yellow),
+        );
+        board.place_piece(
+            square_from(13, 6).unwrap(),
+            Piece::new(PieceType::King, Player::Green),
+        );
+        board.set_side_to_move(Player::Red);
+
+        let fen = board.to_fen4();
+        let mut engine = OdinEngine::new();
+        engine.handle_command(Command::PositionFen4 {
+            fen,
+            moves: vec![],
+        });
+        engine.take_output();
+
+        engine.handle_command(Command::Go(SearchLimits {
+            depth: Some(2),
+            ..Default::default()
+        }));
+        let output = engine.take_output();
+
+        // Must not emit an error
+        assert!(
+            !output.iter().any(|l| l.contains("Error")),
+            "handle_go should not error on a mated player; output: {output:?}"
+        );
+        // Red should be reported as eliminated
+        assert!(
+            output.iter().any(|l| l.contains("eliminated Red")),
+            "expected 'eliminated Red' in output; got: {output:?}"
+        );
+        // A nextturn event should follow
+        assert!(
+            output.iter().any(|l| l.contains("nextturn")),
+            "expected nextturn in output; got: {output:?}"
+        );
+        // The final line must be a bestmove (for the next alive player)
+        assert!(
+            output.last().unwrap().starts_with("bestmove "),
+            "expected bestmove as last line; got: {output:?}"
+        );
     }
 }

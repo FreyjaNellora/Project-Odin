@@ -154,6 +154,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Session-2026-02-20-Stage05-Bugfix]]` | `sessions/Session-2026-02-20-Stage05-Bugfix.md` | Stage 5 bugfix session: en passant, castling, play modes, React batching |
 | `[[Session-2026-02-21-Stage06]]` | `sessions/Session-2026-02-21-Stage06.md` | Stage 6: Bootstrap Eval + Evaluator trait implementation |
 | `[[Session-2026-02-21-Stage07]]` | `sessions/Session-2026-02-21-Stage07.md` | Stage 7: Plain BRS + Searcher trait implementation |
+| `[[Session-2026-02-21-BugfixSession]]` | `sessions/Session-2026-02-21-BugfixSession.md` | Stage 7 post-completion bugfixes: semi-auto regression + checkmate detection |
 
 ### Issues
 
@@ -169,6 +170,8 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Issue-UI-AdvancePlayer-React-Batching]]` | `issues/Issue-UI-AdvancePlayer-React-Batching.md` | advancePlayer wrong player from React 18 batching (resolved) |
 | `[[Issue-Vec-Clone-Cost-Pre-MCTS]]` | `issues/Issue-Vec-Clone-Cost-Pre-MCTS.md` | Vec clone cost in Board/GameState — retrofit before Stage 10 (open) |
 | `[[Issue-Bootstrap-Eval-Lead-Penalty-Tactical-Mismatch]]` | `issues/Issue-Bootstrap-Eval-Lead-Penalty-Tactical-Mismatch.md` | Lead-penalty causes BRS to prefer checks over captures (open, Stage 8 to fix) |
+| `[[Issue-SemiAuto-HumanPlayer-Guard]]` | `issues/Issue-SemiAuto-HumanPlayer-Guard.md` | Semi-auto engine took over human's turn when no player selected (resolved) |
+| `[[Issue-Checkmate-Detection-DKW-Ordering]]` | `issues/Issue-Checkmate-Detection-DKW-Ordering.md` | Checkmate not detected due to DKW ordering + protocol early return (resolved) |
 
 ### Patterns
 

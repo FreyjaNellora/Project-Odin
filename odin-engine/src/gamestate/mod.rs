@@ -182,8 +182,8 @@ impl GameState {
     /// 3. Score check bonus
     /// 4. Record position history
     /// 5. Advance to next active player
-    /// 6. Check checkmate/stalemate for next player (chain eliminations)
-    /// 7. Process DKW instant moves
+    /// 6. Process DKW instant moves (must run before checkmate detection)
+    /// 7. Check checkmate/stalemate for next player (chain eliminations)
     /// 8. Check game-over conditions
     pub fn apply_move(&mut self, mv: Move) -> MoveResult {
         assert!(!self.game_over, "game is already over");
@@ -236,17 +236,21 @@ impl GameState {
         if let Some(next) = self.next_active_player(mover) {
             self.current_player = next;
             self.board.set_side_to_move(next);
-
-            // 6. Check checkmate/stalemate for the next player
-            self.check_elimination_chain(&mut result);
         } else {
             // No active players left
             self.end_game(&mut result);
         }
 
-        // 7. Process DKW instant moves (only if game hasn't ended)
+        // 6. Process DKW instant moves first — board must reflect DKW positions
+        //    before checkmate/stalemate detection runs (a DKW piece that wanders
+        //    away could be the only piece the next player could capture).
         if !self.game_over {
             self.process_dkw_moves(&mut result);
+        }
+
+        // 7. Check checkmate/stalemate for the next player (now sees post-DKW board)
+        if !self.game_over {
+            self.check_elimination_chain(&mut result);
         }
 
         // 8. Check game-over conditions
@@ -324,6 +328,31 @@ impl GameState {
             self.check_game_over(&mut result);
         }
 
+        result.game_ended = self.game_over;
+        result
+    }
+
+    /// Called from the protocol when the current player has no legal moves.
+    ///
+    /// Runs checkmate/stalemate detection, DKW moves, and game-over check without
+    /// requiring a move to be made. Returns a MoveResult describing all state changes.
+    pub fn handle_no_legal_moves(&mut self) -> MoveResult {
+        let mut result = MoveResult {
+            mv: Move::new(0, 0, crate::board::PieceType::Pawn), // dummy — no move made
+            points_scored: 0,
+            eliminations: Vec::new(),
+            dkw_moves: Vec::new(),
+            game_ended: false,
+        };
+        if !self.game_over {
+            self.check_elimination_chain(&mut result);
+        }
+        if !self.game_over {
+            self.process_dkw_moves(&mut result);
+        }
+        if !self.game_over {
+            self.check_game_over(&mut result);
+        }
         result.game_ended = self.game_over;
         result
     }
@@ -645,5 +674,120 @@ mod tests {
     fn test_terrain_mode_flag() {
         let gs = GameState::new_standard_ffa_terrain();
         assert!(gs.terrain_mode());
+    }
+
+    #[test]
+    fn test_handle_no_legal_moves_checkmate() {
+        // Red king at h1 (7,0), Green queen at i2 (8,1) giving check along SW diagonal.
+        // Blue bishop at c8 (2,7) protects the queen on the SE diagonal (c8→…→i2).
+        // Blue rook at g5 (6,4) covers g1 (6,0) via file g — the only other escape square.
+        //
+        // Escape analysis from h1:
+        //   g1 (6,0): rook at g5 covers via file g   → illegal
+        //   h2 (7,1): queen at i2 covers via rank 1   → illegal
+        //   g2 (6,1): queen at i2 covers via rank 1   → illegal
+        //   i1 (8,0): queen at i2 covers via file i   → illegal
+        //   i2 (8,1): queen is there, protected by bishop → illegal capture
+        // h1 is in check (queen on SW diagonal). No escape → CHECKMATE.
+        let mut board = Board::empty();
+        board.place_piece(
+            square_from(7, 0).unwrap(),
+            Piece::new(PieceType::King, Player::Red),
+        );
+        board.place_piece(
+            square_from(8, 1).unwrap(),
+            Piece::new(PieceType::Queen, Player::Green),
+        );
+        board.place_piece(
+            square_from(2, 7).unwrap(),
+            Piece::new(PieceType::Bishop, Player::Blue),
+        );
+        board.place_piece(
+            square_from(6, 4).unwrap(),
+            Piece::new(PieceType::Rook, Player::Blue),
+        );
+        // Remaining kings placed on valid non-corner squares
+        board.place_piece(
+            square_from(3, 13).unwrap(),
+            Piece::new(PieceType::King, Player::Blue),
+        );
+        board.place_piece(
+            square_from(6, 13).unwrap(),
+            Piece::new(PieceType::King, Player::Yellow),
+        );
+        board.place_piece(
+            square_from(13, 6).unwrap(),
+            Piece::new(PieceType::King, Player::Green),
+        );
+        board.set_side_to_move(Player::Red);
+
+        let mut gs = GameState::new(board, GameMode::FreeForAll, false);
+        assert!(gs.legal_moves().is_empty(), "Red should have no legal moves");
+
+        let result = gs.handle_no_legal_moves();
+
+        assert!(
+            result.eliminations.iter().any(|(p, r)| *p == Player::Red && *r == EliminationReason::Checkmate),
+            "Red should be eliminated by checkmate"
+        );
+        assert_ne!(
+            gs.current_player(),
+            Player::Red,
+            "current player should have advanced past Red"
+        );
+    }
+
+    #[test]
+    fn test_handle_no_legal_moves_stalemate() {
+        // Red king at h1 (7,0), not in check, no legal moves.
+        //
+        // Three Blue rooks box in the king:
+        //   f2 (5,1): covers rank 1 → h2 (7,1), g2 (6,1), i2 (8,1)
+        //   g3 (6,2): covers file g → g1 (6,0)
+        //   i4 (8,3): covers file i → i1 (8,0)
+        //
+        // h1 (7,0) is NOT on rank 1, file g, or file i → not in check.
+        // All five escape squares covered → STALEMATE.
+        let mut board = Board::empty();
+        board.place_piece(
+            square_from(7, 0).unwrap(),
+            Piece::new(PieceType::King, Player::Red),
+        );
+        board.place_piece(
+            square_from(5, 1).unwrap(),
+            Piece::new(PieceType::Rook, Player::Blue),
+        );
+        board.place_piece(
+            square_from(6, 2).unwrap(),
+            Piece::new(PieceType::Rook, Player::Blue),
+        );
+        board.place_piece(
+            square_from(8, 3).unwrap(),
+            Piece::new(PieceType::Rook, Player::Blue),
+        );
+        // Remaining kings on valid non-corner squares
+        board.place_piece(
+            square_from(3, 13).unwrap(),
+            Piece::new(PieceType::King, Player::Blue),
+        );
+        board.place_piece(
+            square_from(6, 13).unwrap(),
+            Piece::new(PieceType::King, Player::Yellow),
+        );
+        board.place_piece(
+            square_from(13, 6).unwrap(),
+            Piece::new(PieceType::King, Player::Green),
+        );
+        board.set_side_to_move(Player::Red);
+
+        let mut gs = GameState::new(board, GameMode::FreeForAll, false);
+        assert!(gs.legal_moves().is_empty(), "Red should have no legal moves");
+
+        let result = gs.handle_no_legal_moves();
+
+        assert!(
+            result.eliminations.iter().any(|(p, r)| *p == Player::Red && *r == EliminationReason::Stalemate),
+            "Red should be eliminated by stalemate"
+        );
     }
 }

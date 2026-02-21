@@ -93,6 +93,9 @@ export function useGameState(
   const setHumanPlayer = useCallback((player: Player | null) => {
     setHumanPlayerState(player);
     humanPlayerRef.current = player;
+    // Stop any in-flight engine chain so it doesn't play through the newly-selected
+    // player's turn. The chain resumes naturally on the next maybeChainEngineMove call.
+    autoPlayRef.current = false;
   }, []);
 
   const setEngineDelay = useCallback((ms: number) => {
@@ -116,7 +119,11 @@ export function useGameState(
   /** Check if the engine should auto-play the given player's turn. */
   const shouldEnginePlay = useCallback((player: Player): boolean => {
     if (playModeRef.current === 'full-auto') return true;
-    if (playModeRef.current === 'semi-auto' && humanPlayerRef.current !== player) return true;
+    if (
+      playModeRef.current === 'semi-auto' &&
+      humanPlayerRef.current !== null &&
+      humanPlayerRef.current !== player
+    ) return true;
     return false;
   }, []);
 

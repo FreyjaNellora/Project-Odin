@@ -15,7 +15,6 @@ interface GameControlsProps {
   humanPlayer: Player | null;
   engineDelay: number;
   isPaused: boolean;
-  gameInProgress: boolean;
   onNewGame: (terrain: boolean) => void;
   onEngineMove: () => void;
   onSetPlayMode: (mode: PlayMode) => void;
@@ -39,7 +38,6 @@ export default function GameControls({
   humanPlayer,
   engineDelay,
   isPaused,
-  gameInProgress,
   onNewGame,
   onEngineMove,
   onSetPlayMode,
@@ -114,7 +112,6 @@ export default function GameControls({
                   borderColor: humanPlayer === player ? PLAYER_COLORS[player] : undefined,
                 }}
                 onClick={() => onSetHumanPlayer(player)}
-                disabled={gameInProgress}
               >
                 {player}
               </button>
