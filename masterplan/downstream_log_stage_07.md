@@ -64,7 +64,7 @@ The bootstrap `eval_scalar` for Red at the starting position returns ~4300cp. Th
 
 ### Performance Baselines
 
-All measurements: debug build (`cargo test`), starting position (Red to move), AMD/Intel x86_64 desktop.
+**Debug build** (`cargo test`), starting position (Red to move):
 
 | Depth | Best Move | Score | Nodes | Elapsed (ms) | Stability |
 |-------|-----------|-------|-------|--------------|-----------|
@@ -75,13 +75,28 @@ All measurements: debug build (`cargo test`), starting position (Red to move), A
 | 5 | e2e3 | 4297 | 1,425 | 221 | MOVE-CHANGED |
 | 6 | j1i3 | 4180 | 10,916 | 1,547 | MOVE-CHANGED |
 
-**Key observations:**
-- Debug build depth 6: 1,547ms — well within the 5-second AC4 limit.
-- Effective branching factor (debug): ~7x per depth (node count grows 40→100→164→356→1,425→10,916).
-- Move stable at depths 1-4 (same move `e1f3`), changes at depths 5 and 6. The change at depth 5 suggests a horizon effect where the search sees a qualitatively different sequence at the added ply. This is expected for BRS with a bootstrap eval.
-- For CI: cap integration tests at depth 4 (80ms, well within timeout). For release verification: use depth 6 (expect <300ms).
+**Release build** (`cargo test --release`), starting position (Red to move):
 
-**Approximate release build estimate:** Typically 5-10x faster than debug. Estimated depth-6 release: ~150-300ms, depth-7: ~1-2s, depth-8: ~10-20s.
+| Depth | Best Move | Score | Nodes | Elapsed (ms) | Stability |
+|-------|-----------|-------|-------|--------------|-----------|
+| 1 | e1f3 | 4330 | 40 | 0 | — |
+| 2 | e1f3 | 4305 | 100 | 0 | STABLE |
+| 3 | e1f3 | 4305 | 164 | 1 | STABLE |
+| 4 | e1f3 | 4280 | 356 | 4 | STABLE |
+| 5 | e2e3 | 4297 | 1,425 | 13 | MOVE-CHANGED |
+| 6 | j1i3 | 4180 | 10,916 | 109 | MOVE-CHANGED |
+| 7 | j1i3 | 4180 | 19,309 | 215 | STABLE |
+| 8 | j1i3 | 4172 | 31,896 | 371 | STABLE |
+
+**Key observations:**
+- Release depth 6: 109ms. Release depth 8: 371ms. Both well under 5-second AC4 limit.
+- **Move converges at depth 6 and holds through depths 7 and 8.** `j1i3` is the stable best move for Red at the starting position with the bootstrap eval. Depths 1-4 stable at `e1f3`; changes at 5 (horizon effect); converges at 6.
+- **Branching factor collapses after depth 6 (release).** Node counts: 10,916 → 19,309 → 31,896. That's 1.77x and 1.65x — far below the ~7x debug branching factor at the same depths. The release build's optimizer + aspiration windows + LMR are doing significant work at depths 7-8 that wasn't visible in debug.
+- **Score highly stable at depths 6-8:** 4180 → 4180 → 4172 (8cp drift). The search has genuinely converged on this line.
+- For CI: cap integration tests at depth 4 (4ms release, 80ms debug). For release verification: depth 6 (109ms).
+- Debug NPS at depth 6: ~7k. Release NPS at depth 8: ~85k (~12x speedup, consistent with optimizer eliminating bounds checks and inlining eval).
+
+**Critical insight for Stage 9 (TT):** The low release branching factor at depths 7-8 suggests aspiration windows + LMR are already pruning aggressively. Stage 9's TT will help most at positions with transpositions (not the starting position, which is unique). Expect larger TT benefit in tactical middlegames than at the opening.
 
 ### Open Questions
 

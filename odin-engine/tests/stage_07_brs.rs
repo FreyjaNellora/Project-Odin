@@ -642,10 +642,10 @@ fn test_protocol_depth_limit_one() {
 // Depth progression analysis — ignored in CI, run manually to observe patterns.
 //
 // Run with:
-//   cargo test --test stage_07_brs depth_progression_analysis -- --ignored --nocapture
+//   cargo test --release --test stage_07_brs depth_progression_analysis -- --ignored --nocapture
 //
-// Tracks best_move, score, nodes, and elapsed time at depths 1-6 (debug build).
-// For depth 7-8 verification use: cargo test --release ... -- --ignored --nocapture
+// Tracks best_move, score, nodes, and elapsed time at depths 1-8.
+// Use --release: depth 7 ~1-2s, depth 8 ~10-20s. Debug adds 5-10x overhead.
 // ---------------------------------------------------------------------------
 #[test]
 #[ignore]
@@ -660,7 +660,7 @@ fn depth_progression_analysis() {
     let mut prev_move = String::new();
     let mut prev_score: i16 = 0;
 
-    for depth in 1u8..=6 {
+    for depth in 1u8..=8 {
         let start = Instant::now();
         let mut searcher = make_searcher();
         let result = searcher.search(&gs, depth_budget(depth));

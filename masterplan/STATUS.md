@@ -111,8 +111,9 @@ None.
 | Starting material per player | 4300cp | 6 | 8P + 2N + 2B + 2R + Q + K |
 | Test count (no huginn) | 302 | 7 | 196 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 + 11 stage-06 + 22 stage-07 |
 | BRS depth 6 (debug, starting pos) | 1,547ms / 10,916 nodes | 7 | ~7k NPS debug |
-| BRS depth 6 best move | j1i3 | 7 | Score 4180cp at starting position |
-| BRS depth 4 (debug, CI cap) | 80ms / 356 nodes | 7 | Stable move e1f3 |
+| BRS depth 6 (release, starting pos) | 109ms / 10,916 nodes | 7 | ~100k NPS release |
+| BRS depth 8 (release, starting pos) | 371ms / 31,896 nodes | 7 | Move converges at depth 6 (j1i3); stable 6-8 |
+| BRS depth 4 (CI cap) | 80ms debug / 4ms release | 7 | Stable move e1f3 |
 
 ---
 
