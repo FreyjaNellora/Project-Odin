@@ -2,7 +2,7 @@
 type: moc
 tags:
   - type/moc
-last_updated: 2026-02-20
+last_updated: 2026-02-21
 ---
 
 # Wikilink Registry
@@ -126,6 +126,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Component-GameState]]` | `components/Component-GameState.md` | Game state, scoring, rules, elimination, DKW, terrain, game-over |
 | `[[Component-Protocol]]` | `components/Component-Protocol.md` | Odin Protocol: command parsing, response formatting, engine loop |
 | `[[Component-BasicUI]]` | `components/Component-BasicUI.md` | Basic UI Shell: Tauri v2, SVG board, engine IPC, debug console |
+| `[[Component-Eval]]` | `components/Component-Eval.md` | Bootstrap Evaluator: Evaluator trait, material, PST, king safety, multi-player eval |
 
 ### Connections
 
@@ -136,6 +137,8 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Connection-Board-to-GameState]]` | `connections/Connection-Board-to-GameState.md` | How Board is wrapped and accessed by GameState |
 | `[[Connection-GameState-to-Protocol]]` | `connections/Connection-GameState-to-Protocol.md` | How Protocol owns and drives GameState |
 | `[[Connection-Protocol-to-UI]]` | `connections/Connection-Protocol-to-UI.md` | How UI communicates with engine via Tauri IPC |
+| `[[Connection-GameState-to-Eval]]` | `connections/Connection-GameState-to-Eval.md` | How Eval reads GameState for position scoring |
+| `[[Connection-Eval-to-Search]]` | `connections/Connection-Eval-to-Search.md` | How Search calls Eval through the Evaluator trait |
 
 ### Sessions
 
@@ -147,6 +150,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Session-2026-02-20-Stage04]]` | `sessions/Session-2026-02-20-Stage04.md` | Stage 4 implementation session |
 | `[[Session-2026-02-20-Stage05]]` | `sessions/Session-2026-02-20-Stage05.md` | Stage 5 implementation session |
 | `[[Session-2026-02-20-Stage05-Bugfix]]` | `sessions/Session-2026-02-20-Stage05-Bugfix.md` | Stage 5 bugfix session: en passant, castling, play modes, React batching |
+| `[[Session-2026-02-21-Stage06]]` | `sessions/Session-2026-02-21-Stage06.md` | Stage 6: Bootstrap Eval + Evaluator trait implementation |
 
 ### Issues
 
@@ -154,7 +158,7 @@ These sections grow as agents create notes during development. Add entries here 
 |---|---|---|
 | `[[Issue-EP-Representation-4PC]]` | `issues/Issue-EP-Representation-4PC.md` | En passant file→square fix for 4PC (resolved) |
 | `[[Issue-Perft-Values-Unverified]]` | `issues/Issue-Perft-Values-Unverified.md` | Perft values lack external verification (open) |
-| `[[Issue-Huginn-Gates-Unwired]]` | `issues/Issue-Huginn-Gates-Unwired.md` | Stages 1-4 Huginn gates not wired (open) |
+| `[[Issue-Huginn-Gates-Unwired]]` | `issues/Issue-Huginn-Gates-Unwired.md` | Stages 1-6 Huginn gates not wired (open) |
 | `[[Issue-DKW-Halfmove-Clock]]` | `issues/Issue-DKW-Halfmove-Clock.md` | DKW instant moves increment halfmove clock (open) |
 | `[[Issue-DKW-Invisible-Moves-UI]]` | `issues/Issue-DKW-Invisible-Moves-UI.md` | DKW king instant moves not visible in UI (open) |
 | `[[Issue-UI-EP-False-Positive]]` | `issues/Issue-UI-EP-False-Positive.md` | En passant false positive for Blue/Green UI display (resolved) |

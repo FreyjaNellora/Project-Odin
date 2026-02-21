@@ -3,7 +3,7 @@ type: moc
 tags:
   - type/moc
   - tier/simple-search
-last_updated: 2026-02-19
+last_updated: 2026-02-21
 ---
 
 # Tier 2: Simple Search (Stages 6-7)
