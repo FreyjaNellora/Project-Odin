@@ -125,6 +125,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Component-MoveGen]]` | `components/Component-MoveGen.md` | Move generation, attack queries, make/unmake, perft |
 | `[[Component-GameState]]` | `components/Component-GameState.md` | Game state, scoring, rules, elimination, DKW, terrain, game-over |
 | `[[Component-Protocol]]` | `components/Component-Protocol.md` | Odin Protocol: command parsing, response formatting, engine loop |
+| `[[Component-BasicUI]]` | `components/Component-BasicUI.md` | Basic UI Shell: Tauri v2, SVG board, engine IPC, debug console |
 
 ### Connections
 
@@ -134,6 +135,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Connection-MoveGen-to-GameState]]` | `connections/Connection-MoveGen-to-GameState.md` | How MoveGen provides legal moves, attack queries, and make_move to GameState |
 | `[[Connection-Board-to-GameState]]` | `connections/Connection-Board-to-GameState.md` | How Board is wrapped and accessed by GameState |
 | `[[Connection-GameState-to-Protocol]]` | `connections/Connection-GameState-to-Protocol.md` | How Protocol owns and drives GameState |
+| `[[Connection-Protocol-to-UI]]` | `connections/Connection-Protocol-to-UI.md` | How UI communicates with engine via Tauri IPC |
 
 ### Sessions
 
@@ -143,6 +145,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Session-2026-02-20-Stage02]]` | `sessions/session-2026-02-20-stage02.md` | Stage 2 implementation session |
 | `[[Session-2026-02-20-Stage03]]` | `sessions/session-2026-02-20-stage03.md` | Stage 3 implementation session |
 | `[[Session-2026-02-20-Stage04]]` | `sessions/Session-2026-02-20-Stage04.md` | Stage 4 implementation session |
+| `[[Session-2026-02-20-Stage05]]` | `sessions/Session-2026-02-20-Stage05.md` | Stage 5 implementation session |
 
 ### Issues
 
@@ -152,6 +155,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Issue-Perft-Values-Unverified]]` | `issues/Issue-Perft-Values-Unverified.md` | Perft values lack external verification (open) |
 | `[[Issue-Huginn-Gates-Unwired]]` | `issues/Issue-Huginn-Gates-Unwired.md` | Stages 1-4 Huginn gates not wired (open) |
 | `[[Issue-DKW-Halfmove-Clock]]` | `issues/Issue-DKW-Halfmove-Clock.md` | DKW instant moves increment halfmove clock (open) |
+| `[[Issue-DKW-Invisible-Moves-UI]]` | `issues/Issue-DKW-Invisible-Moves-UI.md` | DKW king instant moves not visible in UI (open) |
 
 ### Patterns
 
