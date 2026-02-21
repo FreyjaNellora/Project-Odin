@@ -47,10 +47,10 @@ Desktop application shell for visualizing the 4-player chess board, making moves
 
 **React Frontend (src/):**
 - `useEngine`: Hook managing engine lifecycle, IPC, event listeners, message routing.
-- `useGameState`: Hook managing board rendering cache, move list, turn rotation, click-to-move flow.
-- `BoardDisplay/BoardSquare/PieceIcon`: SVG board renderer, 46px squares, file/rank labels.
+- `useGameState`: Hook managing board rendering cache, move list, turn rotation, click-to-move flow, play modes (manual/semi-auto/full-auto), auto-play chaining with ref-based state.
+- `BoardDisplay/BoardSquare/PieceIcon`: SVG board renderer, 46px squares, file/rank labels. Responsive sizing via CSS (no fixed dimensions).
 - `DebugConsole`: Scrollable log with color coding, parsed info summary, manual command input.
-- `GameControls`: Turn indicator, scores, New Game / Engine Move buttons.
+- `GameControls`: Turn indicator, scores, play mode selector (Manual/Semi-Auto/Full Auto), player color picker (semi-auto), speed slider (100-2000ms), pause/resume button, New Game / Engine Move buttons.
 - `StatusBar`: Engine name and connection status.
 
 ## Connections
@@ -68,6 +68,10 @@ None. Stage 5 is UI-only; Huginn is engine-side.
 2. **Error in `position` command clears engine state.** UI must re-send previous valid position for error recovery.
 3. **DKW invisible moves.** UI rendering cache does not reflect DKW king instant moves.
 4. **Turn tracking is simple rotation.** Does not account for eliminated players being skipped.
+5. **En passant detection must check BOTH file AND rank change.** Blue/Green forward moves change file, not rank. Only a true diagonal (both change) is en passant.
+6. **Castling detection is orientation-aware.** Red/Yellow castle horizontally (file ≥ 2). Blue/Green castle vertically (rank ≥ 2).
+7. **advancePlayer uses ref, not React state updater.** React 18 batching can delay state updater execution. The ref `currentPlayerRef` is the source of truth for immediate reads. See [[Pattern-React-Ref-Async-State]].
+8. **Player color locked during active game.** In semi-auto, player selector is disabled once moveList is non-empty. Prevents mid-game switching bugs.
 
 ## Performance Notes
 
@@ -76,8 +80,8 @@ SVG board renders 160 rect + text elements. Trivial for modern browsers. No perf
 ## Known Issues
 
 - [[Issue-DKW-Invisible-Moves-UI]] — DKW king positions not reflected in UI
-- `tauri dev` not tested end-to-end (awaits graphical testing)
 
 ## Build History
 
 - [[Session-2026-02-20-Stage05]] — Initial implementation
+- [[Session-2026-02-20-Stage05-Bugfix]] — Fixed en passant/castling for Blue/Green, responsive board, play modes, semi-auto advancePlayer fix

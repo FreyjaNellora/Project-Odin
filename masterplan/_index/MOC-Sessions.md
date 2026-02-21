@@ -12,6 +12,7 @@ Chronological index of build sessions. Each session note captures what was attem
 ## Sessions
 
 <!-- Add newest sessions at the top -->
+- **2026-02-20** [[Session-2026-02-20-Stage05-Bugfix]] -- Stage 5 bugfixes: en passant/castling for Blue/Green, responsive board, play modes (Manual/Semi-Auto/Full Auto), speed control, advancePlayer React 18 batching fix.
 - **2026-02-20** [[Session-2026-02-20-Stage05]] -- Stage 5: Basic UI Shell. Tauri v2 scaffolding, SVG board renderer, engine subprocess IPC, click-to-move, debug console, game controls. 45 Vitest tests.
 - **2026-02-20** [[Session-2026-02-20-Stage04]] -- Stage 4: Odin Protocol. Command parser, response emitter, OdinEngine loop, position setting, random-move go stub. 229 tests (156 unit + 73 integration).
 - **2026-02-20** [[Session-2026-02-20-Stage03]] -- Stage 3: GameState, scoring, rules, elimination pipeline, DKW, terrain conversion, game-over detection. 164 tests (108 unit + 56 integration).

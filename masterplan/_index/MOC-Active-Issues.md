@@ -25,4 +25,7 @@ _None._
 
 ## Recently Resolved
 
+- [[Issue-UI-EP-False-Positive]] -- En passant false positive for Blue/Green pawns in UI display cache. Fixed: require both file AND rank to change. (2026-02-20)
+- [[Issue-UI-Castling-Blue-Green]] -- Castling display broken for Blue/Green in UI. Fixed: orientation-aware detection. (2026-02-20)
+- [[Issue-UI-AdvancePlayer-React-Batching]] -- advancePlayer returned wrong player due to React 18 batching. Fixed: use ref instead of state updater. (2026-02-20)
 - [[Issue-EP-Representation-4PC]] -- En passant stored file index, insufficient for 4PC. Fixed Stage 2: now stores full square index. (2026-02-20)

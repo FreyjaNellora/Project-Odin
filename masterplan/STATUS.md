@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
 **Last Updated:** 2026-02-20
-**Updated By:** Claude Opus 4.6 (Stage 5 implementation session)
+**Updated By:** Claude Opus 4.6 (Stage 5 bugfix & play modes session)
 
 ---
 
@@ -26,7 +26,7 @@
 | 2 | Move Generation + Attack Query API | complete | post-audit done | stage-02-complete / v1.2 | |
 | 3 | Game State & Rules | complete | post-audit done | stage-03-complete / v1.3 | |
 | 4 | Odin Protocol | complete | post-audit done | stage-04-complete / v1.4 | |
-| 5 | Basic UI Shell | complete | post-audit done | — | Tag pending human confirmation |
+| 5 | Basic UI Shell | complete | post-audit done | — | Tag pending. Bugfixes + play modes added post-audit (see addendum). |
 | 6 | Bootstrap Eval + Evaluator Trait | not-started | — | — | |
 | 7 | Plain BRS + Searcher Trait | not-started | — | — | |
 | 8 | BRS/Paranoid Hybrid Layer | not-started | — | — | |
@@ -55,7 +55,7 @@
 | AGENT_CONDUCT.md | current | v1.0 complete. |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
 | DECISIONS.md | current | 11 ADRs from planning sessions. |
-| HANDOFF.md | current | Stage 5 session state captured. |
+| HANDOFF.md | current | Stage 5 bugfix session state captured. |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
 | audit_log_stage_00.md | current | Pre-audit + post-audit complete. |
@@ -68,18 +68,17 @@
 | downstream_log_stage_03.md | current | All sections filled. |
 | audit_log_stage_04.md | current | Pre-audit + post-audit complete. |
 | downstream_log_stage_04.md | current | All sections filled. |
-| audit_log_stage_05.md | current | Pre-audit + post-audit complete. |
-| downstream_log_stage_05.md | current | All sections filled. |
+| audit_log_stage_05.md | current | Pre-audit + post-audit + bugfix addendum complete. |
+| downstream_log_stage_05.md | current | All sections filled. Play mode API contracts added. |
 
 ---
 
 ## What the Next Session Should Do First
 
 1. Create `stage-05-complete` / `v1.5` git tag
-2. Run `tauri dev` to visually verify the UI (requires graphical environment)
-3. Begin Stage 6: Bootstrap Eval + Evaluator Trait
-4. Follow Stage Entry Protocol (AGENT_CONDUCT 1.1)
-5. Note: Stage 6 is independent of Stage 5 in the dependency chain (both depend on Stage 3)
+2. Begin Stage 6: Bootstrap Eval + Evaluator Trait
+3. Follow Stage Entry Protocol (AGENT_CONDUCT 1.1)
+4. Note: Stage 6 is independent of Stage 5 in the dependency chain (both depend on Stage 3)
 
 ---
 

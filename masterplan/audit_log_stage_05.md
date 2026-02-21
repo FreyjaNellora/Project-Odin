@@ -116,7 +116,111 @@ N/A — Stage 5 adds no search or evaluation logic. All engine tests (229) still
 
 ---
 
+## Post-Audit Addendum — Bugfix Session
+**Date:** 2026-02-20
+**Auditor:** Claude Opus 4.6
+
+This addendum documents bugs found during live `tauri dev` testing and subsequent fixes. All issues were discovered during interactive play, not during the original audit (which noted `tauri dev` was not tested end-to-end).
+
+### Bugs Found and Fixed
+
+#### BLOCKING: En Passant False Positive for Blue/Green Pawns
+
+**Severity:** BLOCKING (caused piece to vanish on every Blue/Green pawn forward move)
+**Root cause (Section 2.6 — Broken Code):** In `applyMoveToBoard` (useGameState.ts), en passant detection checked only `fileOf(from) !== fileOf(to)`. For Blue and Green pawns, whose forward direction changes the file (not rank), every forward step triggered en passant detection. The captured-square formula `squareFrom(fileOf(to), rankOf(from))` then equaled the destination square itself, removing the just-placed piece.
+
+**Fix:** Changed condition to require both file AND rank to change (a true diagonal):
+```typescript
+// Before (broken):
+if (piece.pieceType === 'Pawn' && fileOf(from) !== fileOf(to) && prev[to] === null)
+
+// After (correct for all 4 orientations):
+const isDiagonal = fileOf(from) !== fileOf(to) && rankOf(from) !== rankOf(to);
+if (piece.pieceType === 'Pawn' && isDiagonal && prev[to] === null)
+```
+
+**Impact:** Display-only (rendering cache). Engine state was never affected. Pattern documented in [[Pattern-EP-Captured-Square-4PC]].
+
+#### WARNING: Castling Display Broken for Blue/Green
+
+**Severity:** WARNING (visual-only — rook not moved on display when Blue/Green castle)
+**Root cause (Section 2.6 — Broken Code):** Castling detection in `applyMoveToBoard` checked `Math.abs(fileOf(to) - fileOf(from)) >= 2`, but Blue and Green kings castle by changing rank (not file). The detection never triggered for these players.
+
+**Fix:** Added orientation-aware detection:
+```typescript
+const isVertical = piece.owner === 'Red' || piece.owner === 'Yellow';
+const moveDist = isVertical
+  ? fileOf(to) - fileOf(from)
+  : rankOf(to) - rankOf(from);
+if (Math.abs(moveDist) >= 2) {
+  // Orientation-specific rook placement
+}
+```
+
+#### WARNING: Board Clipped at Bottom (Red's Side Cut Off)
+
+**Severity:** WARNING (usability)
+**Root cause:** SVG had fixed `width={684} height={684}` attributes. With CSS `overflow: hidden` on parent containers, shorter viewports clipped the bottom of the board.
+
+**Fix:** Removed fixed SVG dimensions. Added CSS-based responsive sizing with `max-height: calc(100vh - 70px)`, `aspect-ratio: 1`, and `width: 100%; height: 100%` on the SVG.
+
+#### BLOCKING: advancePlayer Returns Wrong Player (React 18 Batching)
+
+**Severity:** BLOCKING (caused semi-auto mode to completely fail)
+**Root cause (Section 2.6 — Broken Code):** `advancePlayer` computed the next player inside a `setCurrentPlayer` updater function. With React 18 automatic batching, when multiple setState calls are pending in the same handler, the updater may not run synchronously. `nextPlayer` stayed at its default value `'Red'`, causing every downstream auto-play decision to use the wrong player.
+
+**Fix:** Compute next player directly from `currentPlayerRef.current` (the ref, not the React state):
+```typescript
+// Before (broken due to React 18 batching):
+const advancePlayer = useCallback((): Player => {
+  let nextPlayer: Player = 'Red';
+  setCurrentPlayer((prev) => {
+    const idx = PLAYERS.indexOf(prev);
+    nextPlayer = PLAYERS[(idx + 1) % 4];
+    return nextPlayer;
+  });
+  return nextPlayer;
+}, []);
+
+// After (ref-based, no React timing dependency):
+const advancePlayer = useCallback((): Player => {
+  const idx = PLAYERS.indexOf(currentPlayerRef.current);
+  const nextPlayer = PLAYERS[(idx + 1) % 4];
+  currentPlayerRef.current = nextPlayer;
+  setCurrentPlayer(nextPlayer);
+  return nextPlayer;
+}, []);
+```
+
+**Impact:** Semi-auto and full-auto play modes were completely non-functional without this fix. Pattern documented in [[Pattern-React-Ref-Async-State]].
+
+### New Features Added
+
+| Feature | Description | Files |
+|---|---|---|
+| Three play modes | Manual (click-to-move), Semi-Auto (user picks color, engine plays rest), Full Auto (engine plays all) | useGameState.ts, GameControls.tsx |
+| Speed control slider | Adjustable engine move delay 100ms-2000ms | GameControls.tsx |
+| Pause/Resume button | Pause auto-play in semi-auto and full-auto modes | useGameState.ts, GameControls.tsx |
+| Player color selection | In semi-auto, user picks which color to play as. Locked during active game. | GameControls.tsx |
+| Responsive board sizing | Board scales to viewport with aspect-ratio preservation | BoardDisplay.tsx, App.css |
+
+### Deliverables Re-Check
+
+All original deliverables remain intact. New features are additive. The permanent invariant "UI owns ZERO game logic" is still respected — all move validation happens engine-side. The play mode logic (which player to auto-play) is UI scheduling logic, not game logic.
+
+### Issue Disposition
+
+| Issue | Disposition |
+|---|---|
+| [[Issue-UI-EP-False-Positive]] | Created and resolved this session |
+| [[Issue-UI-Castling-Blue-Green]] | Created and resolved this session |
+| [[Issue-UI-AdvancePlayer-React-Batching]] | Created and resolved this session |
+| [[Issue-DKW-Invisible-Moves-UI]] | Still open (accepted limitation) |
+
+---
+
 ## Related
 
 - Stage spec: [[stage_05_basic_ui]]
 - Downstream log: [[downstream_log_stage_05]]
+- Bugfix session: [[Session-2026-02-20-Stage05-Bugfix]]

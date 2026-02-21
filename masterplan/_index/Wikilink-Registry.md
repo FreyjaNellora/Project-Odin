@@ -146,6 +146,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Session-2026-02-20-Stage03]]` | `sessions/session-2026-02-20-stage03.md` | Stage 3 implementation session |
 | `[[Session-2026-02-20-Stage04]]` | `sessions/Session-2026-02-20-Stage04.md` | Stage 4 implementation session |
 | `[[Session-2026-02-20-Stage05]]` | `sessions/Session-2026-02-20-Stage05.md` | Stage 5 implementation session |
+| `[[Session-2026-02-20-Stage05-Bugfix]]` | `sessions/Session-2026-02-20-Stage05-Bugfix.md` | Stage 5 bugfix session: en passant, castling, play modes, React batching |
 
 ### Issues
 
@@ -156,6 +157,9 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Issue-Huginn-Gates-Unwired]]` | `issues/Issue-Huginn-Gates-Unwired.md` | Stages 1-4 Huginn gates not wired (open) |
 | `[[Issue-DKW-Halfmove-Clock]]` | `issues/Issue-DKW-Halfmove-Clock.md` | DKW instant moves increment halfmove clock (open) |
 | `[[Issue-DKW-Invisible-Moves-UI]]` | `issues/Issue-DKW-Invisible-Moves-UI.md` | DKW king instant moves not visible in UI (open) |
+| `[[Issue-UI-EP-False-Positive]]` | `issues/Issue-UI-EP-False-Positive.md` | En passant false positive for Blue/Green UI display (resolved) |
+| `[[Issue-UI-Castling-Blue-Green]]` | `issues/Issue-UI-Castling-Blue-Green.md` | Castling display broken for Blue/Green UI (resolved) |
+| `[[Issue-UI-AdvancePlayer-React-Batching]]` | `issues/Issue-UI-AdvancePlayer-React-Batching.md` | advancePlayer wrong player from React 18 batching (resolved) |
 
 ### Patterns
 
@@ -165,3 +169,4 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Pattern-EP-Captured-Square-4PC]]` | `patterns/Pattern-EP-Captured-Square-4PC.md` | Use prev_player's forward direction for EP captured pawn location |
 | `[[Pattern-Terrain-Awareness]]` | `patterns/Pattern-Terrain-Awareness.md` | Terrain pieces block movement and don't give check at MoveGen level |
 | `[[Pattern-DKW-Instant-Moves]]` | `patterns/Pattern-DKW-Instant-Moves.md` | DKW king moves happen instantly between turns via side_to_move swap |
+| `[[Pattern-React-Ref-Async-State]]` | `patterns/Pattern-React-Ref-Async-State.md` | Use refs alongside React state for synchronous reads in async chains |

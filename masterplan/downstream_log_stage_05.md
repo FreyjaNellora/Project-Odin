@@ -46,16 +46,44 @@
 | `startingPosition()` | `lib/board-constants.ts` | 196-element array matching engine |
 | `parseEngineOutput(line)` | `lib/protocol-parser.ts` | Parse single engine stdout line |
 
+**useGameState Hook Exports:**
+
+| Export | Type | Notes |
+|---|---|---|
+| `PlayMode` | `'manual' \| 'semi-auto' \| 'full-auto'` | Play mode type |
+| `board` | `(Piece \| null)[]` | 196-element rendering cache |
+| `currentPlayer` | `Player` | Whose turn it is |
+| `scores` | `[number, number, number, number]` | RBYG score array |
+| `isGameOver` | `boolean` | Game termination flag |
+| `error` | `string \| null` | Last engine error |
+| `selectedSquare` | `number \| null` | Currently selected square |
+| `lastMoveFrom` / `lastMoveTo` | `number \| null` | Last move highlight squares |
+| `latestInfo` | `InfoData \| null` | Latest parsed info from engine |
+| `playMode` | `PlayMode` | Current play mode |
+| `humanPlayer` | `Player \| null` | Player color in semi-auto mode |
+| `engineDelay` | `number` | Delay (ms) between auto engine moves |
+| `isPaused` | `boolean` | Whether auto-play is paused |
+| `gameInProgress` | `boolean` | Whether moveList is non-empty |
+| `handleSquareClick(sq)` | function | Click-to-move handler |
+| `handleEngineMessage(msg)` | function | Engine output router |
+| `newGame(terrain)` | function | Start new game, optionally with terrain |
+| `requestEngineMove()` | function | Request engine move (manual mode) |
+| `setPlayMode(mode)` | function | Change play mode |
+| `setHumanPlayer(player)` | function | Set human player color (semi-auto) |
+| `setEngineDelay(ms)` | function | Set auto-play delay |
+| `togglePause()` | function | Toggle auto-play pause |
+
 ### Known Limitations
 
-1. **DKW invisible moves:** DKW king instant random moves not visible through protocol. UI rendering cache will not update.
+1. **DKW invisible moves:** DKW king instant random moves not visible through protocol. UI rendering cache will not update. See [[Issue-DKW-Invisible-Moves-UI]].
 2. **Turn tracking is simple rotation:** Red→Blue→Yellow→Green regardless of eliminations.
 3. **No undo/takeback.** "New Game" is the only reset.
 4. **No move history display.** Move list stored but not rendered.
 5. **No legal move highlighting.** Would require game logic in UI.
 6. **Auto-promote to queen.** No promotion dialog. Stage 18 concern.
-7. **`tauri dev` not verified end-to-end.** Individual compilations verified.
-8. **Engine path hardcoded to dev build.** Sidecar bundling is a production concern.
+7. **Engine path hardcoded to dev build.** Sidecar bundling is a production concern.
+8. **Player color locked during game.** In semi-auto mode, player color can only be changed before the first move. Must start a new game to switch.
+9. **Display-side en passant/castling heuristics.** The rendering cache applies en passant and castling display updates heuristically. Fixed for all 4 orientations (see [[audit_log_stage_05]] addendum) but remains display logic, not validated game logic.
 
 ### Performance Baselines
 
@@ -78,6 +106,9 @@
 2. **SVG over Canvas:** React component model, DOM events, trivial performance for 160 elements.
 3. **No state management library:** useState/useReducer sufficient. Redux/Zustand over-engineering.
 4. **Display-side move application:** Rendering cache only. Engine is the authority.
+5. **Ref-based async state for play modes:** Play mode settings (playModeRef, humanPlayerRef, engineDelayRef, currentPlayerRef) stored as refs to avoid stale closures in setTimeout auto-play chains. React state is also maintained for re-rendering. See [[Pattern-React-Ref-Async-State]].
+6. **En passant detection requires both file AND rank change:** Forward moves for Blue/Green change file (not rank), so checking only file change falsely triggers en passant. A true diagonal requires both coordinates to change.
+7. **Orientation-aware castling detection:** Red/Yellow kings castle horizontally (file changes ≥ 2). Blue/Green kings castle vertically (rank changes ≥ 2). Detection branches on player orientation.
 
 
 ---
