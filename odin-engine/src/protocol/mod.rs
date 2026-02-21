@@ -17,12 +17,17 @@ mod types;
 pub use parser::parse_command;
 pub use types::{Command, EngineOptions, SearchLimits};
 
-use crate::board::Board;
-use crate::gamestate::{GameMode, GameState};
-
-use emitter::{format_bestmove, format_error, format_id, format_info, format_readyok, SearchInfo};
-
+use std::cell::RefCell;
 use std::io::BufRead;
+use std::rc::Rc;
+
+use crate::board::Board;
+use crate::eval::BootstrapEvaluator;
+use crate::gamestate::{GameMode, GameState};
+use crate::search::brs::BrsSearcher;
+use crate::search::{SearchBudget, Searcher};
+
+use emitter::{format_bestmove, format_error, format_id, format_readyok};
 
 /// The Odin engine protocol handler.
 ///
@@ -31,7 +36,6 @@ use std::io::BufRead;
 pub struct OdinEngine {
     game_state: Option<GameState>,
     options: EngineOptions,
-    rng_seed: u64,
     /// Collected output lines (for testing).
     output_buffer: Vec<String>,
 }
@@ -42,7 +46,6 @@ impl OdinEngine {
         Self {
             game_state: None,
             options: EngineOptions::default(),
-            rng_seed: 0x0D14_CAFE_0000_BEEF,
             output_buffer: Vec::new(),
         }
     }
@@ -153,7 +156,7 @@ impl OdinEngine {
         }
     }
 
-    fn handle_go(&mut self, _limits: &SearchLimits) {
+    fn handle_go(&mut self, limits: &SearchLimits) {
         let gs = match self.game_state.as_mut() {
             Some(gs) => gs,
             None => {
@@ -167,33 +170,85 @@ impl OdinEngine {
             return;
         }
 
-        let legal = gs.legal_moves();
-        if legal.is_empty() {
+        if gs.legal_moves().is_empty() {
             self.send(&format_error("no legal moves available"));
             return;
         }
 
-        // Stage 4: pick a random legal move via LCG
-        self.rng_seed = self
-            .rng_seed
-            .wrapping_mul(6364136223846793005)
-            .wrapping_add(1);
-        let idx = (self.rng_seed >> 33) as usize % legal.len();
-        let mv = legal[idx];
+        // Clone so the mutable borrow of self.game_state is released before send().
+        let position = gs.clone();
 
-        // Send info line with minimal data
-        let scores = gs.scores();
-        let info = SearchInfo {
-            depth: Some(0),
-            score_cp: Some(0),
-            values: Some(scores),
-            nodes: Some(1),
-            time_ms: Some(0),
-            pv: vec![mv.to_algebraic()],
-            ..Default::default()
-        };
-        self.send(&format_info(&info));
-        self.send(&format_bestmove(&mv.to_algebraic(), None));
+        let budget = Self::limits_to_budget(limits);
+
+        // Collect info strings via callback (Rc/RefCell: single-threaded, blocking search).
+        let info_buf = Rc::new(RefCell::new(Vec::<String>::new()));
+        let info_buf_cb = Rc::clone(&info_buf);
+        let cb: Box<dyn FnMut(String)> = Box::new(move |line: String| {
+            info_buf_cb.borrow_mut().push(line);
+        });
+
+        let mut searcher =
+            BrsSearcher::with_info_callback(Box::new(BootstrapEvaluator::new()), cb);
+        let result = searcher.search(&position, budget);
+
+        for line in info_buf.borrow().iter() {
+            self.send(line);
+        }
+        self.send(&format_bestmove(&result.best_move.to_algebraic(), None));
+    }
+
+    /// Convert `SearchLimits` (from the protocol) into a `SearchBudget` for the searcher.
+    ///
+    /// Priority: infinite > movetime > depth > nodes > time controls > default (depth 6).
+    fn limits_to_budget(limits: &SearchLimits) -> SearchBudget {
+        if limits.infinite {
+            return SearchBudget {
+                max_depth: None,
+                max_nodes: None,
+                max_time_ms: None,
+            };
+        }
+        if let Some(mt) = limits.movetime {
+            return SearchBudget {
+                max_depth: None,
+                max_nodes: None,
+                max_time_ms: Some(mt),
+            };
+        }
+        if let Some(d) = limits.depth {
+            return SearchBudget {
+                max_depth: Some(d as u8),
+                max_nodes: None,
+                max_time_ms: None,
+            };
+        }
+        if let Some(n) = limits.nodes {
+            return SearchBudget {
+                max_depth: None,
+                max_nodes: Some(n),
+                max_time_ms: None,
+            };
+        }
+        // Time controls: allocate a fraction of the remaining clock.
+        let own_time = limits
+            .wtime
+            .or(limits.btime)
+            .or(limits.ytime)
+            .or(limits.gtime);
+        if let Some(t) = own_time {
+            let ms = (t / 50).max(200);
+            return SearchBudget {
+                max_depth: None,
+                max_nodes: None,
+                max_time_ms: Some(ms),
+            };
+        }
+        // No limits specified: default to depth 6.
+        SearchBudget {
+            max_depth: Some(6),
+            max_nodes: None,
+            max_time_ms: None,
+        }
     }
 
     // --- Utilities ---
@@ -384,13 +439,17 @@ mod tests {
         engine.handle_command(Command::PositionStartpos { moves: vec![] });
         engine.take_output(); // Clear position output
 
-        engine.handle_command(Command::Go(SearchLimits::default()));
+        // depth 4: fast in debug mode, deterministic, exercises iterative deepening.
+        engine.handle_command(Command::Go(SearchLimits {
+            depth: Some(4),
+            ..Default::default()
+        }));
         let output = engine.take_output();
 
-        // Should have info + bestmove
+        // Should have at least one info line + bestmove as the final line.
         assert!(output.len() >= 2);
         assert!(output[0].starts_with("info "));
-        assert!(output[1].starts_with("bestmove "));
+        assert!(output.last().unwrap().starts_with("bestmove "));
     }
 
     #[test]
@@ -399,11 +458,14 @@ mod tests {
         engine.handle_command(Command::PositionStartpos { moves: vec![] });
         engine.take_output();
 
-        engine.handle_command(Command::Go(SearchLimits::default()));
+        engine.handle_command(Command::Go(SearchLimits {
+            depth: Some(4),
+            ..Default::default()
+        }));
         let output = engine.take_output();
 
-        // Extract the move from "bestmove d4d5"
-        let bestmove_line = &output[1];
+        // bestmove is always the last line; info lines precede it.
+        let bestmove_line = output.last().unwrap();
         let move_str = bestmove_line.strip_prefix("bestmove ").unwrap();
 
         // Verify it's a legal move from starting position
@@ -419,13 +481,20 @@ mod tests {
         engine.handle_command(Command::PositionStartpos { moves: vec![] });
         engine.take_output();
 
-        engine.handle_command(Command::Go(SearchLimits::default()));
+        engine.handle_command(Command::Go(SearchLimits {
+            depth: Some(4),
+            ..Default::default()
+        }));
         let output = engine.take_output();
 
+        // Depth-1 info line (output[0]) must carry all required fields.
         let info_line = &output[0];
+        assert!(info_line.contains("depth "));
+        assert!(info_line.contains("score cp "));
         assert!(info_line.contains("v1 "));
         assert!(info_line.contains("v2 "));
         assert!(info_line.contains("v3 "));
         assert!(info_line.contains("v4 "));
+        assert!(info_line.contains("phase brs"));
     }
 }

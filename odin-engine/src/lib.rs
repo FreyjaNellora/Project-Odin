@@ -5,5 +5,5 @@ pub mod eval;
 pub mod gamestate;
 pub mod movegen;
 pub mod protocol;
-mod search;
+pub mod search;
 mod variants;

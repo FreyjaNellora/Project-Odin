@@ -36,6 +36,8 @@ pub fn format_error(msg: &str) -> String {
 
 /// Search info data for formatting.
 /// All fields are optional — only present fields appear in the output.
+/// Reserved for Stage 8+ hybrid output; currently formatted directly by BrsSearcher.
+#[allow(dead_code)]
 #[derive(Default)]
 pub struct SearchInfo {
     pub depth: Option<u32>,
@@ -55,6 +57,8 @@ pub struct SearchInfo {
 
 /// Format `info` string from search data.
 /// Only fields that are `Some` appear in the output.
+/// Reserved for Stage 8+ hybrid output; currently BrsSearcher formats its own info strings.
+#[allow(dead_code)]
 pub fn format_info(info: &SearchInfo) -> String {
     let mut parts = vec!["info".to_string()];
 
