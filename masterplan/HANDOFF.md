@@ -1,78 +1,77 @@
 # PROJECT ODIN — SESSION HANDOFF
 
 **Last Updated:** 2026-02-20
-**Session:** Stage 3 implementation — COMPLETE
+**Session:** Stage 4 implementation — COMPLETE
 
 ---
 
 ## Current Work In Progress
 
-**Stage:** Stage 3 — Game State & Rules — COMPLETE
+**Stage:** Stage 4 — Odin Protocol — COMPLETE
 **Task:** All build order steps completed. Pre-audit, post-audit, downstream log, vault notes filled.
 
 ### What Was Completed This Session
 
 1. Followed Stage Entry Protocol (AGENT_CONDUCT 1.1) — read STATUS, HANDOFF, DECISIONS, stage spec, upstream audit/downstream logs
-2. Created git tags: `stage-02-complete` / `v1.2` (stage-01-complete / v1.1 already existed)
-3. Filled pre-audit section of `audit_log_stage_03.md`
-4. Added `Board::set_piece_status()` for in-place status changes (Alive→Dead/Terrain), hash-neutral
-5. Added terrain awareness to movegen: attacks.rs (terrain doesn't attack/give check, blocks rays) and generate.rs (terrain is impassable, uncapturable)
-6. Verified perft values unchanged (20, 395, 7800, 152050) after movegen modifications
-7. Implemented `gamestate/scoring.rs` — FFA capture point values, check bonuses
-8. Implemented `gamestate/rules.rs` — checkmate/stalemate detection, DKW random king moves, terrain conversion, draw/claim-win detection
-9. Implemented `gamestate/mod.rs` — GameState struct, turn rotation with elimination skip, apply_move flow (capture scoring → check bonus → history → advance → chain elimination → DKW → game-over)
-10. Made gamestate module public in lib.rs
-11. Wrote 18 integration tests (`stage_03_gamestate.rs`) including 1000+ random game playouts in normal and terrain modes
+2. Created git tags: `stage-03-complete` / `v1.3`
+3. Filled pre-audit section of `audit_log_stage_04.md`
+4. Created `protocol/types.rs` — Command enum, SearchLimits, EngineOptions
+5. Created `protocol/parser.rs` — `parse_command()` with 23 unit tests
+6. Created `protocol/emitter.rs` — Response formatters (format_id, format_bestmove, format_info, format_error) with 8 unit tests
+7. Rewrote `protocol/mod.rs` — OdinEngine struct with all command handlers, main loop, output buffer for testing, 17 unit tests
+8. Updated `main.rs` to run `OdinEngine::run()` (protocol loop on stdin)
+9. Updated `lib.rs` — `pub mod protocol`
+10. Updated `board/mod.rs` — added `pub use fen4::Fen4Error` re-export
+11. Created 17 integration tests (`stage_04_protocol.rs`) — permanent invariant, acceptance, edge cases
 12. All `cargo fmt` and `cargo clippy` clean
-13. Filled post-audit section of `audit_log_stage_03.md`
-14. Filled `downstream_log_stage_03.md`
-15. Created vault notes: Component-GameState, Connection-MoveGen-to-GameState, Connection-Board-to-GameState, Pattern-Terrain-Awareness, Pattern-DKW-Instant-Moves, Issue-DKW-Halfmove-Clock, session note
+13. Filled post-audit section of `audit_log_stage_04.md`
+14. Filled `downstream_log_stage_04.md`
+15. Created vault notes: Component-Protocol, Connection-GameState-to-Protocol, session note
+16. Updated Issue-Huginn-Gates-Unwired to include Stage 3-4 gates
 
 ### What Was NOT Completed
 
-1. **Huginn gates** — 7 gates specified in Stage 3 spec not wired. Deferred per established pattern.
+1. **Huginn gates** — 4 gates specified in Stage 4 spec not wired. Deferred per established pattern (Stages 1-4 all deferred).
 2. **CI configuration** — Still not set up.
-3. **Auto-claim** — chess.com's autoclaim (eliminated 2nd-place leads 3rd by 21+) not implemented. Only active-player claim-win is done.
-4. **Move history** — GameState stores position hashes for repetition, but not move history for replay.
+3. **Threading** — `go` is synchronous. `stop` is a no-op. Acceptable since `go` returns instantly (random move). Threading needed in Stage 7 when actual search is added.
+4. **Pondering** — `ponder` field always None. Not needed until search exists.
 
 ### Open Issues
 
-- **NOTE (Issue-DKW-Halfmove-Clock):** DKW instant moves increment halfmove_clock via make_move. May cause premature 50-move rule triggers. Rules ambiguous.
 - **WARNING (Issue-Perft-Values-Unverified):** Perft values still unverified against external reference. Carried from Stage 2.
-- **NOTE (Issue-Huginn-Gates-Unwired):** Now accumulating gates from Stages 1-3.
+- **NOTE (Issue-Huginn-Gates-Unwired):** Now accumulating gates from Stages 1-4.
+- **NOTE (Issue-DKW-Halfmove-Clock):** DKW instant moves increment halfmove_clock via make_move. Not relevant to protocol.
 
 ### Files Modified
 
-**Board module changes:**
-- `odin-engine/src/board/board_struct.rs` — Added `set_piece_status()` method
+**New protocol module:**
+- `odin-engine/src/protocol/types.rs` (new — Command, SearchLimits, EngineOptions)
+- `odin-engine/src/protocol/parser.rs` (new — parse_command + 23 unit tests)
+- `odin-engine/src/protocol/emitter.rs` (new — response formatters + 8 unit tests)
+- `odin-engine/src/protocol/mod.rs` (rewritten — OdinEngine struct, handlers, run loop + 17 unit tests)
 
-**Movegen module changes:**
-- `odin-engine/src/movegen/attacks.rs` — Terrain inertness checks (don't attack, block rays)
-- `odin-engine/src/movegen/generate.rs` — Terrain blocking/uncapturable checks
-
-**New gamestate module:**
-- `odin-engine/src/gamestate/mod.rs` (rewritten from stub — GameState struct, apply_move, all API)
-- `odin-engine/src/gamestate/scoring.rs` (new — FFA scoring constants and functions)
-- `odin-engine/src/gamestate/rules.rs` (new — check/mate/stalemate, DKW, terrain, game-over)
-- `odin-engine/src/lib.rs` — `pub mod gamestate`
+**Modified existing files:**
+- `odin-engine/src/main.rs` — OdinEngine::new().run()
+- `odin-engine/src/lib.rs` — pub mod protocol
+- `odin-engine/src/board/mod.rs` — pub use fen4::Fen4Error
 
 **Tests:**
-- `odin-engine/tests/stage_03_gamestate.rs` (new — 18 integration tests)
+- `odin-engine/tests/stage_04_protocol.rs` (new — 17 integration tests)
 
 **Documentation:**
-- `masterplan/audit_log_stage_03.md` — pre-audit + post-audit filled
-- `masterplan/downstream_log_stage_03.md` — all sections filled
+- `masterplan/audit_log_stage_04.md` — pre-audit + post-audit filled
+- `masterplan/downstream_log_stage_04.md` — all sections filled
 - `masterplan/HANDOFF.md` (this file)
 - `masterplan/STATUS.md`
-- 7 new vault notes (components, connections, patterns, issues, sessions)
+- 3 new vault notes (component, connection, session)
 
 ### Recommendations for Next Session
 
-1. Create git tag: `stage-03-complete` / `v1.3`
-2. Begin Stage 4: Odin Protocol
+1. Create git tag: `stage-04-complete` / `v1.4`
+2. Begin Stage 5: Basic UI Shell
 3. Follow Stage Entry Protocol (AGENT_CONDUCT 1.1)
-4. Wire Huginn gates for Stages 1-3 when telemetry becomes relevant
-5. Consider: position_history optimization for MCTS (Stage 10)
+4. Wire Huginn gates for Stages 1-4 when telemetry becomes relevant
+5. Note: Stage 5 and Stage 6 can run in parallel per MASTERPLAN dependency chain
 
 ---
 

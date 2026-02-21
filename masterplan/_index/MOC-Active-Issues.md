@@ -19,7 +19,7 @@ _None._
 
 ## Notes
 
-- [[Issue-Huginn-Gates-Unwired]] -- Stages 1-2 Huginn observation gates not wired; deferred until buffer plumbing exists
+- [[Issue-Huginn-Gates-Unwired]] -- Stages 1-4 Huginn observation gates not wired; deferred until buffer plumbing exists
 - [[Issue-DKW-Halfmove-Clock]] -- DKW instant moves increment halfmove_clock via make_move; may cause premature 50-move rule triggers in DKW games
 
 ## Recently Resolved
