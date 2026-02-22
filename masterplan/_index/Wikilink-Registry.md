@@ -155,6 +155,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Session-2026-02-21-Stage06]]` | `sessions/Session-2026-02-21-Stage06.md` | Stage 6: Bootstrap Eval + Evaluator trait implementation |
 | `[[Session-2026-02-21-Stage07]]` | `sessions/Session-2026-02-21-Stage07.md` | Stage 7: Plain BRS + Searcher trait implementation |
 | `[[Session-2026-02-21-BugfixSession]]` | `sessions/Session-2026-02-21-BugfixSession.md` | Stage 7 post-completion bugfixes: semi-auto regression + checkmate detection |
+| `[[Session-2026-02-21-Stage07-Bugfix2]]` | `sessions/Session-2026-02-21-Stage07-Bugfix2.md` | Stage 7 bugfix pass 2: UI parser drops eliminated reason-suffix + test fixes |
 
 ### Issues
 

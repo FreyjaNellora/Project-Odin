@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
 **Last Updated:** 2026-02-21
-**Updated By:** Claude Sonnet 4.6 (Stage 7 bugfix session)
+**Updated By:** Claude Sonnet 4.6 (Stage 7 bugfix session — second pass)
 
 ---
 
@@ -12,7 +12,7 @@
 | **Current Stage** | Stage 7 complete + bugfixes; ready for Stage 8 |
 | **Current Build-Order Step** | Stage 7 complete (all steps + post-completion regressions fixed) |
 | **Build Compiles** | Yes — `cargo build`, `cargo build --features huginn` both pass |
-| **Tests Pass** | Yes — engine: 199 lib tests; UI: 45 Vitest |
+| **Tests Pass** | Yes — engine: 199 lib + 305 integration tests; UI: 54 Vitest |
 | **Blocking Issues** | None |
 
 ---
@@ -77,7 +77,11 @@
 
 ## Known Regressions
 
-None. Stage 7 post-completion regressions (semi-auto human player guard, checkmate detection DKW ordering) both resolved 2026-02-21.
+None. All Stage 7 post-completion regressions resolved:
+- Semi-auto human player guard (session 1)
+- Checkmate detection DKW ordering (session 1)
+- UI parser dropping `eliminated Red checkmate` events (session 2 — this session)
+- Stage 7 integration tests updated for `info string nextturn` protocol addition (session 2)
 
 ---
 
@@ -105,6 +109,7 @@ None. Stage 7 post-completion regressions (semi-auto human player guard, checkma
 | 1000 random games via GameState (terrain) | ~104s | 3 | Terrain mode, debug build (permanent invariant) |
 | Test count (no huginn) | 229 | 4 | 156 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 |
 | Vitest test count | 45 | 5 | 29 board-constants + 16 protocol-parser |
+| Vitest test count | 54 | 7 (bugfix) | 29 board-constants + 25 protocol-parser (9 new) |
 | Tauri backend compile (fresh) | ~11s | 5 | Debug profile |
 | Test count (no huginn) | 275 | 6 | 191 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 + 11 stage-06 |
 | eval_scalar per call | <10us | 6 | Release build, starting position |

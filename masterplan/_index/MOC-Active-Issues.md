@@ -27,7 +27,7 @@ _None._
 ## Recently Resolved
 
 - [[Issue-SemiAuto-HumanPlayer-Guard]] -- Semi-auto engine took over human's turn when no player selected. Fixed: null guard in shouldEnginePlay, removed disabled from player selector. (2026-02-21)
-- [[Issue-Checkmate-Detection-DKW-Ordering]] -- Checkmate not detected due to DKW ordering bug + protocol early return. Fixed: swap apply_move step order; add handle_no_legal_moves. (2026-02-21)
+- [[Issue-Checkmate-Detection-DKW-Ordering]] -- Checkmate not detected due to DKW ordering bug + protocol early return + UI parser dropping reason-suffixed events. All three bugs fixed. (2026-02-21)
 - [[Issue-UI-EP-False-Positive]] -- En passant false positive for Blue/Green pawns in UI display cache. Fixed: require both file AND rank to change. (2026-02-20)
 - [[Issue-UI-Castling-Blue-Green]] -- Castling display broken for Blue/Green in UI. Fixed: orientation-aware detection. (2026-02-20)
 - [[Issue-UI-AdvancePlayer-React-Batching]] -- advancePlayer returned wrong player due to React 18 batching. Fixed: use ref instead of state updater. (2026-02-20)

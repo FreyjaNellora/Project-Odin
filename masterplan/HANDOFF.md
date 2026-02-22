@@ -1,31 +1,49 @@
 # HANDOFF — Last Session Summary
 
 **Date:** 2026-02-21
-**Stage:** 7 complete + bugfixes
+**Stage:** 7 complete + bugfixes (second pass)
 **Next:** Stage 8
 
 ## What Was Done
 
-**Semi-auto regression** (completed): Engine was taking over human player's turn in semi-auto mode when no player was selected. Fixed with null guard in `shouldEnginePlay`, removed disabled restriction on player selector buttons, added chain-stop on player change.
+**Bug 3 — Protocol parser dropping elimination events** (completed):
 
-**Checkmate detection** (completed): After Green played n7i2, Red's king was in checkmate but the engine did not detect it. Two bugs fixed:
-1. `apply_move` ordering: `process_dkw_moves` now runs before `check_elimination_chain` so checkmate detection sees the final board state.
-2. `handle_go` early return: replaced error-and-return with proper elimination handling + recursive bestmove for next player.
+Root cause of "Red checkmated but engine stops instead of advancing to Blue":
 
-Both fixes have full test coverage. 199/199 engine tests passing.
+The UI protocol parser (`odin-ui/src/lib/protocol-parser.ts`) was silently dropping
+`info string eliminated Red checkmate` events. When the `handle_no_legal_moves` path
+fires, the engine appends a reason word (e.g. `checkmate`, `stalemate`) after the
+player color. The parser was extracting the full remainder as the color string
+(`"Red checkmate"`), which failed `isValidPlayerColor`, causing the entire elimination
+event to be dropped. The UI never learned Red was eliminated, so `eliminatedPlayersRef`
+was never updated and the auto-play chain never correctly skipped Red.
+
+**Fix:** `protocol-parser.ts` line 46 — extract only the first whitespace-delimited
+token after `"info string eliminated "` instead of the full remaining string.
+
+**Regression tests discovered and fixed:**
+
+The Bug 2 fix (previous session) added `info string nextturn Blue` to the normal
+(non-checkmate) `handle_go` path. This broke 3 Stage 7 integration tests in
+`odin-engine/tests/stage_07_brs.rs` that assumed only search info lines (not
+protocol string lines) were emitted. Fixed those tests to filter out `info string`
+lines when counting/validating depth-based search info lines.
+
+**Test counts after this session:**
+- Engine: 199 lib tests + 305 integration tests, all passing
+- UI (Vitest): 54 tests (up from 45 — 9 new parser tests added)
 
 ## What's Next
 
-**Stage 8** — BRS hybrid scoring and move classification. Read `masterplan/MASTERPLAN.md` Stage 8 spec before starting.
+**Stage 8** — BRS hybrid scoring and move classification. Read `masterplan/MASTERPLAN.md`
+Stage 8 spec before starting.
 
 ## Known Issues
 
-None open. Both regression bugs from Stage 7 post-testing are resolved.
+None open.
 
 ## Files Modified This Session
 
-- `odin-engine/src/gamestate/mod.rs` — swapped DKW/checkmate order; added `handle_no_legal_moves`
-- `odin-engine/src/protocol/mod.rs` — restructured `handle_go`; added `EliminationReason` import
-- `odin-ui/src/hooks/useGameState.ts` — semi-auto null guard; chain-stop on player change
-- `odin-ui/src/components/GameControls.tsx` — removed disabled from player selector
-- `odin-ui/src/App.tsx` — removed stale prop
+- `odin-ui/src/lib/protocol-parser.ts` — extract first token only for eliminated color
+- `odin-ui/src/lib/protocol-parser.test.ts` — add 9 tests: eliminated (with/without reason), nextturn, gameover
+- `odin-engine/tests/stage_07_brs.rs` — fix 3 tests to filter `info string` lines from search-info-line counts
