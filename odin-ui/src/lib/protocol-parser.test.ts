@@ -99,6 +99,62 @@ describe('parseEngineOutput', () => {
     }
   });
 
+  // --- eliminated ---
+
+  it('parses info string eliminated without reason', () => {
+    const msg = parseEngineOutput('info string eliminated Red');
+    expect(msg).toEqual({ type: 'eliminated', player: 'Red' });
+  });
+
+  it('parses info string eliminated with checkmate reason', () => {
+    // Regression: parser must extract only the first word, not "Red checkmate".
+    const msg = parseEngineOutput('info string eliminated Red checkmate');
+    expect(msg).toEqual({ type: 'eliminated', player: 'Red' });
+  });
+
+  it('parses info string eliminated with stalemate reason', () => {
+    const msg = parseEngineOutput('info string eliminated Blue stalemate');
+    expect(msg).toEqual({ type: 'eliminated', player: 'Blue' });
+  });
+
+  it('parses eliminated for all player colors', () => {
+    for (const color of ['Red', 'Blue', 'Yellow', 'Green']) {
+      const msg = parseEngineOutput(`info string eliminated ${color}`);
+      expect(msg).toEqual({ type: 'eliminated', player: color });
+    }
+  });
+
+  it('ignores eliminated with unknown color', () => {
+    const msg = parseEngineOutput('info string eliminated Purple');
+    expect(msg.type).not.toBe('eliminated');
+  });
+
+  // --- nextturn ---
+
+  it('parses info string nextturn', () => {
+    const msg = parseEngineOutput('info string nextturn Blue');
+    expect(msg).toEqual({ type: 'nextturn', player: 'Blue' });
+  });
+
+  it('parses nextturn for all player colors', () => {
+    for (const color of ['Red', 'Blue', 'Yellow', 'Green']) {
+      const msg = parseEngineOutput(`info string nextturn ${color}`);
+      expect(msg).toEqual({ type: 'nextturn', player: color });
+    }
+  });
+
+  // --- gameover ---
+
+  it('parses info string gameover with winner', () => {
+    const msg = parseEngineOutput('info string gameover Green');
+    expect(msg).toEqual({ type: 'gameover', winner: 'Green' });
+  });
+
+  it('parses info string gameover none (draw)', () => {
+    const msg = parseEngineOutput('info string gameover none');
+    expect(msg).toEqual({ type: 'gameover', winner: null });
+  });
+
   it('returns unknown for unrecognized lines', () => {
     const msg = parseEngineOutput('something random');
     expect(msg).toEqual({ type: 'unknown', raw: 'something random' });

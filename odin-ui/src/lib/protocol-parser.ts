@@ -41,9 +41,12 @@ export function parseEngineOutput(line: string): EngineMessage {
     return { type: 'bestmove', move, ponder };
   }
 
-  // info string eliminated <color>
+  // info string eliminated <color> [reason]
+  // The engine may append a reason word (e.g. "checkmate", "stalemate") — extract
+  // only the first token so "Red checkmate" still parses as player Red.
   if (trimmed.startsWith('info string eliminated ')) {
-    const color = trimmed.slice('info string eliminated '.length).trim();
+    const rest = trimmed.slice('info string eliminated '.length).trim();
+    const color = rest.split(/\s+/)[0];
     if (isValidPlayerColor(color)) {
       return { type: 'eliminated', player: color };
     }

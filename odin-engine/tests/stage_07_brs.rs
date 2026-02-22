@@ -241,13 +241,19 @@ fn test_info_strings_have_required_fields() {
     }));
     let output = engine.take_output();
 
-    // Should have 4 info lines (depth 1-4) + bestmove.
+    // Should have 4 search info lines (depth 1-4) + protocol string lines + bestmove.
     assert!(output.len() >= 2, "need at least info + bestmove");
     assert!(output.last().unwrap().starts_with("bestmove "));
 
-    // Every info line (all but last) must contain required fields.
-    for line in output.iter().take(output.len() - 1) {
-        assert!(line.starts_with("info "), "expected info line: {line}");
+    // Search info lines start with "info depth" — protocol info strings ("info string ...")
+    // are also emitted (e.g. nextturn) and must be excluded from this check.
+    let search_lines: Vec<&str> = output
+        .iter()
+        .filter(|l| l.starts_with("info ") && !l.starts_with("info string"))
+        .map(|l| l.as_str())
+        .collect();
+
+    for line in &search_lines {
         assert!(line.contains("depth "), "missing 'depth': {line}");
         assert!(line.contains("score cp "), "missing 'score cp': {line}");
         assert!(line.contains("v1 "), "missing v1 per-player eval: {line}");
@@ -259,10 +265,9 @@ fn test_info_strings_have_required_fields() {
         assert!(line.contains("phase brs"), "missing 'phase brs': {line}");
     }
 
-    // Depth values in info lines must be 1, 2, 3, 4 in order.
-    let depths: Vec<u32> = output
+    // Depth values in search info lines must be 1, 2, 3, 4 in order.
+    let depths: Vec<u32> = search_lines
         .iter()
-        .take(output.len() - 1)
         .filter_map(|line| {
             let after = line.split("depth ").nth(1)?;
             after.split_whitespace().next()?.parse::<u32>().ok()
@@ -567,8 +572,12 @@ fn test_protocol_go_depth_6_emits_six_info_lines() {
     let elapsed = start.elapsed();
     let output = engine.take_output();
 
-    // Must have 6 info lines + 1 bestmove.
-    let info_count = output.iter().take(output.len() - 1).count();
+    // Must have 6 search info lines (depth 1-6). Protocol string lines (e.g. "info string
+    // nextturn ...") are also emitted and must be excluded from the count.
+    let info_count = output
+        .iter()
+        .filter(|l| l.starts_with("info ") && !l.starts_with("info string"))
+        .count();
     assert_eq!(info_count, 6, "expected 6 info lines for depth 6, got {info_count}");
 
     // Must complete within 5 seconds (AC4).
@@ -627,15 +636,21 @@ fn test_protocol_depth_limit_one() {
     }));
     let output = engine.take_output();
 
-    // Should have exactly 1 info line for depth 1.
+    // Should have exactly 1 search info line (depth 1) + optional protocol string lines
+    // (e.g. "info string nextturn ...") + 1 bestmove as the final line.
+    let search_lines: Vec<&str> = output
+        .iter()
+        .filter(|l| l.starts_with("info ") && !l.starts_with("info string"))
+        .map(|l| l.as_str())
+        .collect();
     assert_eq!(
-        output.len(),
-        2,
-        "depth-1 should produce 1 info + 1 bestmove, got {}",
-        output.len()
+        search_lines.len(),
+        1,
+        "depth-1 should produce 1 search info line, got {}",
+        search_lines.len()
     );
-    assert!(output[0].contains("depth 1"), "info line should say depth 1");
-    assert!(output[1].starts_with("bestmove "));
+    assert!(search_lines[0].contains("depth 1"), "info line should say depth 1");
+    assert!(output.last().unwrap().starts_with("bestmove "));
 }
 
 // ---------------------------------------------------------------------------
