@@ -240,6 +240,99 @@ The user's directive: "get your steps in order! figure out what needs to be buil
 
 ---
 
+### ADR-013: Score-Aware Engine — Point Scoring as First-Class Eval Input
+
+**Date:** 2026-02-21
+**Status:** Active
+**Affects:** Stage 8 ([[stage_08_brs_hybrid]]), Stage 10 ([[stage_10_mcts]]), Stage 12 ([[stage_12_self_play]]), Stage 16 ([[stage_16_nnue_integration]])
+
+**Decision:** The engine must treat FFA point scoring as a first-class evaluation input, not just a side effect of captures. Banked points, point differential, capture opportunity density, and farm denial must be explicitly modeled. This is not a single-stage feature — it threads through multiple stages as each provides the mechanism for a different aspect.
+
+**The problem:** BRS optimizes for "don't lose to the biggest threat" (defensive). Paranoid assumes all opponents cooperate against you (more defensive). MCTS explores broadly but inherits eval blindness. The bootstrap eval (Stage 6) scores material balance — pieces on the board — but not points already banked. An engine with a queen and 0 points evaluates identically to an engine with a queen and 30 points. In FFA, the player with the most points wins. The engine currently plays "good chess" but doesn't play to WIN THE SCORING GAME.
+
+**Stage-by-stage implementation:**
+
+| Stage | What Gets Added | Why |
+|---|---|---|
+| 6 (Bootstrap Eval) | Nothing — it's temporary scaffolding | NNUE replaces it. Not worth adding complexity. |
+| 8 (Board Context) | **Scoring context** added to board scanner: point standings per player, lead/deficit magnitude, capture opportunity density, farm denial assessment. Context feeds into reply scoring — behind in points = weight aggressive moves higher; ahead = weight denial/defense higher. | Board context is pre-search (< 1ms). Adding scoring reads here is architecturally clean and directly influences move selection. |
+| 10 (MCTS) | **Point-based terminal evaluation.** When playouts reach terminal states, score using actual game points, not just material eval. "Red won with 45 points" vs "Red won with 22 points" must produce different backpropagation values. | Makes MCTS naturally discover aggressive lines — more captures = more points = higher playout scores. |
+| 11 (Hybrid) | **Phase allocation considers scoring context.** When behind in points, allocate more MCTS budget (explore aggressive/tactical lines). When ahead, lean on BRS (solid, defensive). | The BRS/MCTS split already exists; this makes the split score-aware. |
+| 12 (Self-Play) | **Point differential as a metric** alongside win rate. Report average points scored, point spread, and capture efficiency per game. | "Did we win?" is insufficient. "Did we win AND outscore by a wide margin?" reveals whether the engine is passively squeaking by or actively dominating. |
+| 16 (NNUE) | **Score-context features** in NNUE input: banked points per player, point differential, game phase (early/mid/late based on pieces remaining). Training signal includes point differential, not just win/loss. | The NNUE learns "this board + me 10 points behind = worse than same board + me 10 points ahead." Without score features, it's blind to the actual objective. |
+
+**What this produces:** An engine that captures when tactically sound (BRS), pursues scoring when behind (board context modulates aggression), discovers high-scoring lines (MCTS terminal eval), and learns nuanced scoring patterns (NNUE). Defense and aggression are balanced by context, not hardcoded.
+
+**Alternatives considered:**
+- **Add point terms to bootstrap eval now:** Wasted effort — NNUE replaces it. The bootstrap just needs to not crash.
+- **Let NNUE learn aggression purely from self-play:** Risky. If the training signal is win/loss only, NNUE might learn passive play that wins by not losing. Score-aware training signal is needed.
+- **Hardcode aggression heuristics:** Fragile. "Always capture when possible" is dumb. "Capture when the scoring context says it's worth it" is smart. Context-driven > rule-driven.
+
+**Key insight:** "The faster you establish a point lead and prevent others from farming pieces on the board, the more you guarantee victory." This is the FFA meta-strategy. The engine must understand it.
+
+---
+
+### ADR-014: UI Vision — Three-Column Desktop Application
+
+**Date:** 2026-02-21
+**Status:** Active
+**Affects:** Stage 5 ([[stage_05_basic_ui]]), Stage 18 ([[stage_18_full_ui]])
+
+**Decision:** The UI is a three-column desktop application: controls left, board center, information right. The design philosophy is "window into the engine's reasoning" — not just a chess viewer but a tool for understanding what the AI is thinking.
+
+**Layout:**
+
+```
+┌──────────┬─────────────────────────┬─────────────────────┐
+│ CONTROLS │                         │ SCORES (2×2 grid)   │
+│          │                         │                     │
+│ Mode     │                         ├─────────────────────┤
+│ Play As  │                         │ ANALYSIS            │
+│ Depth    │     14×14 BOARD         │ best move, eval,    │
+│ Delay    │     (zoomable)          │ depth, nodes, NPS,  │
+│          │                         │ time, PV line       │
+│ [New]    │                         ├─────────────────────┤
+│ [Terrain]│                         │ SEARCH TRACE        │
+│ [Pause]  │                         │ depth-by-depth      │
+│ [Step]   │                         │ iterative deepening │
+│ [Round]  │                         │ watch the engine    │
+│ [FEN]    │                         │ change its mind     │
+│          │                         ├─────────────────────┤
+│          │                         │ GAME LOG            │
+│          │                         │ color-coded moves   │
+│          │                         │ with eval + depth   │
+└──────────┴─────────────────────────┴─────────────────────┘
+│              COLLAPSIBLE DEBUG STRIP (raw protocol)       │
+└───────────────────────────────────────────────────────────┘
+```
+
+**Left Panel — Controls:**
+- Play mode: Manual (move everyone), Semi-Auto (play one color, AI plays rest), Full Auto (watch all AIs)
+- Play as: choose color in Semi-Auto
+- Depth: search depth slider (1–8+)
+- Delay: AI move speed (0ms–2s)
+- Buttons: New Game, New Game (Terrain), Pause/Resume, Step One Move, Step One Round, Show FEN
+
+**Center Panel — Board:**
+- Zoomable 14×14 cross-shaped board with coordinate labels (a–n files, 1–14 ranks)
+- Color-coded pieces per player
+- Eliminated players' pieces grayed out on board
+- Last move highlighted, selected square highlighted
+
+**Right Panel — Four Stacked Sections:**
+1. **Scores:** 2×2 color-coded grid. Current capture points + checkmate bonuses. Active player highlighted.
+2. **Analysis:** Final search result — best move, eval (cp), depth, nodes, NPS, time, principal variation.
+3. **Search Trace:** Every completed iterative deepening depth — score, best line, nodes, time. Watch the engine's opinion evolve. Clears on next search start.
+4. **Game Log:** Sequential color-coded moves. Format: `1. Red: f4  1. Blue: d9  1. Yellow: i11  1. Green: Nl10l11`. Each entry annotated with eval + depth at time of play. Scrollable.
+
+**Bottom — Debug Strip:** Collapsible raw protocol output. Hidden by default.
+
+**Design principle:** Fast. Board is the focus. Right panel tells you everything the engine is thinking without digging through logs. Search Trace is the differentiator — turns the app from a chess viewer into a reasoning observatory.
+
+**Connection to ADR-013:** The Scores panel assumes points are central. When score-aware eval lands (Stage 8+), the Analysis panel may need to display scoring context alongside centipawn eval — or the centipawn value itself must incorporate scoring context so the single number is meaningful to the user.
+
+---
+
 ## How to Add a New Decision
 
 Copy this template:

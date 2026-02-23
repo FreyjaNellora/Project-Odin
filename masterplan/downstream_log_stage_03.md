@@ -9,6 +9,8 @@
 3. **Terrain mode is a GameState flag**, not a Board flag. Board doesn't know about terrain mode — it just stores piece status. The GameState decides whether to convert eliminated players' pieces to terrain vs DKW.
 4. **DKW moves are instant.** They happen between active player turns via process_dkw_moves(). DKW moves modify the board permanently (no unmake). Board's side_to_move is temporarily changed and restored.
 5. **Checkmate timing: confirmed at the affected player's turn.** Not when check is delivered. Chain elimination loop handles cascading checkmates.
+6. **DKW moves run BEFORE elimination chain.** In `apply_move()`, `process_dkw_moves()` executes before `check_elimination_chain()`. This ordering is a permanent invariant — DKW pieces can move to positions that change whether a player has legal moves. If the order is reversed, `check_elimination_chain` may see legal moves (e.g., capturing a DKW piece) that disappear after DKW processing, leaving a player with zero moves but not eliminated. *Added post-Stage 7 bugfix.*
+7. **`handle_no_legal_moves()` is the safety net for missed eliminations.** If `check_elimination_chain` in `apply_move()` fails to detect a checkmate (edge case), `handle_no_legal_moves()` catches it when the protocol calls `handle_go()` and finds zero legal moves. It calls `determine_status_at_turn()`, eliminates the player, advances the turn, and returns a `MoveResult`. *Added post-Stage 7 bugfix.*
 
 ### API Contracts
 
@@ -29,6 +31,7 @@
 15. `rules::determine_status_at_turn(board, player) -> TurnDetermination` — checkmate/stalemate/has-moves
 16. `rules::is_draw_by_repetition(history, current_hash) -> bool` — 3-fold
 17. `rules::is_draw_by_fifty_moves(halfmove_clock) -> bool` — >= 200
+18. `GameState::handle_no_legal_moves() -> MoveResult` — Call when `legal_moves().is_empty()`. Determines checkmate vs stalemate via `determine_status_at_turn()`, eliminates the current player, advances to next alive player, returns MoveResult with eliminations. *Added post-Stage 7 bugfix.*
 
 ### Known Limitations
 

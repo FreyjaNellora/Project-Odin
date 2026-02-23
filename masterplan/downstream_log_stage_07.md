@@ -48,6 +48,13 @@ BrsSearcher::with_info_callback(evaluator: Box<dyn Evaluator>, cb: Box<dyn FnMut
 ```
 Protocol wires the callback via `Rc<RefCell<Vec<String>>>` to collect lines before flushing to stdout.
 
+7. **Two-format `eliminated` protocol message.** Elimination events are emitted on two code paths with different formats:
+   - **Normal path** (inline detection via `check_elimination_chain` in `apply_move`): emits `info string eliminated <Color>` — color only, no reason.
+   - **Safety-net path** (`handle_no_legal_moves` in `handle_go`): emits `info string eliminated <Color> <reason>` — color followed by `checkmate` or `stalemate`.
+   The UI parser (`protocol-parser.ts`) must extract only the first word after `"eliminated"` as the color. Any trailing words are the reason and must be ignored for color validation. Any future elimination path (e.g., timeout, resignation) MUST follow one of these two formats. *Added post-Stage 7 bugfix.*
+
+8. **`nextturn` emitted on both elimination paths.** Both the normal bestmove path and the handle_no_legal_moves path emit `info string nextturn <Color>` to advance the UI's turn state. The UI should treat nextturn idempotently — receiving it twice for the same color must not break state. *Added post-Stage 7 bugfix.*
+
 ### Known Limitations
 
 **`Issue-Bootstrap-Eval-Lead-Penalty-Tactical-Mismatch` (INFO):**
@@ -110,6 +117,10 @@ The bootstrap `eval_scalar` for Red at the starting position returns ~4300cp. Th
 The Searcher trait and BRS implementation were designed with Stage 10 MCTS and Stage 11 hybrid in mind. The trait is minimal (one method, two supporting types) to allow maximum flexibility in later implementations. The `info_cb` pattern was chosen over direct stdout writing to decouple the searcher from I/O and enable testing. Performance decisions (node interval, clone cost, null move guard) are documented above for Stage 10's benefit.
 
 
+
+9. **Pawn promotion uses `w` (PromotedQueen), not `q` (Queen).** The engine's move generation creates `PieceType::PromotedQueen` for all pawn promotions, which has FEN char `W` (lowercase `w` in algebraic). A move like `h8h9q` is rejected as illegal — the correct format is `h8h9w`. The UI promotion dialog uses `w`, `r`, `b`, `n` as suffixes. Any future code that constructs promotion move strings must use `w` for queen promotion, not `q`. *Added post-Stage 7 bugfix.*
+
+10. **Promotion ranks are at the midline, not the board edge.** Red promotes at rank 8 (0-indexed), Yellow at rank 5, Blue at file 8, Green at file 5. These come from `PAWN_CONFIG` in `odin-engine/src/movegen/generate.rs:33-41`. Do NOT use rank 13/0 or file 13/0 — those are the board edges, not promotion squares. *Added post-Stage 7 bugfix.*
 
 ---
 

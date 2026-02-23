@@ -2,7 +2,8 @@
 type: moc
 tags:
   - type/moc
-last_updated: 2026-02-21---
+last_updated: 2026-02-22
+---
 
 # Active Issues
 
@@ -26,6 +27,7 @@ _None._
 
 ## Recently Resolved
 
+- [[Issue-Promotion-Wrong-Ranks-No-UI]] -- UI used wrong promotion ranks (board edges instead of midline), no piece selection dialog, and wrong suffix (`q` instead of `w` for PromotedQueen). Fixed: correct ranks, PromotionDialog component, `w` suffix. (2026-02-22)
 - [[Issue-SemiAuto-HumanPlayer-Guard]] -- Semi-auto engine took over human's turn when no player selected. Fixed: null guard in shouldEnginePlay, removed disabled from player selector. (2026-02-21)
 - [[Issue-Checkmate-Detection-DKW-Ordering]] -- Checkmate not detected due to DKW ordering bug + protocol early return + UI parser dropping reason-suffixed events. All three bugs fixed. (2026-02-21)
 - [[Issue-UI-EP-False-Positive]] -- En passant false positive for Blue/Green pawns in UI display cache. Fixed: require both file AND rank to change. (2026-02-20)

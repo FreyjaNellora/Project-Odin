@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
-**Last Updated:** 2026-02-21
-**Updated By:** Claude Sonnet 4.6 (Stage 7 bugfix session — second pass)
+**Last Updated:** 2026-02-23
+**Updated By:** Claude Opus 4.6 (UI QoL session — non-stage)
 
 ---
 
@@ -12,7 +12,7 @@
 | **Current Stage** | Stage 7 complete + bugfixes; ready for Stage 8 |
 | **Current Build-Order Step** | Stage 7 complete (all steps + post-completion regressions fixed) |
 | **Build Compiles** | Yes — `cargo build`, `cargo build --features huginn` both pass |
-| **Tests Pass** | Yes — engine: 199 lib + 305 integration tests; UI: 54 Vitest |
+| **Tests Pass** | Yes — engine: 199 lib + 305 integration tests; UI: 54 Vitest (no regressions from UI QoL) |
 | **Blocking Issues** | None |
 
 ---
@@ -55,7 +55,7 @@
 | AGENT_CONDUCT.md | current | v1.0 complete. |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
 | DECISIONS.md | current | 12 ADRs (ADR-012 added Stage 7: BRS turn order). |
-| HANDOFF.md | current | Stage 7 + bugfix session state captured. |
+| HANDOFF.md | current | UI QoL session state captured. |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
 | audit_log_stage_00.md through audit_log_stage_07.md | current | All complete. |
@@ -82,6 +82,26 @@ None. All Stage 7 post-completion regressions resolved:
 - Checkmate detection DKW ordering (session 1)
 - UI parser dropping `eliminated Red checkmate` events (session 2 — this session)
 - Stage 7 integration tests updated for `info string nextturn` protocol addition (session 2)
+
+---
+
+## Non-Stage Changes
+
+**2026-02-23 — UI QoL Session** ([[Session-UI-QoL-2026-02-23]]):
+
+Added 4 new UI components and enhanced 2 existing ones outside the numbered stage pipeline:
+- `AnalysisPanel` — prominent NPS display + search summary (replaces DebugConsole info section)
+- `GameLog` — enriched move history with per-move eval/depth/nodes and player-colored borders
+- `EngineInternals` — collapsible panel: search phase, BRS surviving, MCTS sims, per-player values
+- `CommunicationLog` — raw protocol log + command input (split from DebugConsole)
+- `BoardSquare` — optional coordinate labels on each square
+- `BoardDisplay` — mouse wheel zoom (CSS transform, known buggy — polish later)
+- Right panel reorganized from single DebugConsole to stacked sections
+
+Follow-up items noted but not blocking:
+- Board zoom frame boundary shift (cosmetic, polish phase)
+- Info duplication between AnalysisPanel and EngineInternals
+- No per-player scoring log (capture/elimination point tracking)
 
 ---
 

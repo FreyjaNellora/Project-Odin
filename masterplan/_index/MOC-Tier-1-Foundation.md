@@ -40,6 +40,13 @@ The base layer everything else is built on.
 | Protocol round-trip works | 4 | position + go -> legal bestmove |
 | UI owns zero game logic | 5 | UI never validates moves or evaluates |
 
+## Post-Stage UI Components (added outside stage pipeline)
+
+- [[Component-GameLog]] — enriched move history with per-move search info
+- [[Component-EngineInternals]] — collapsible engine data panel (phase, BRS/MCTS, per-player values)
+- [[Component-CommunicationLog]] — raw protocol log + command input (split from DebugConsole)
+- See [[Session-UI-QoL-2026-02-23]]
+
 ## Dependency Chain
 
 ```

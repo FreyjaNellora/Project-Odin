@@ -40,6 +40,7 @@ Full vault instructions: `masterplan/CLAUDE.md`
 | Session history | `masterplan/sessions/` | Preserved history (HANDOFF gets overwritten). |
 | Bugs, workarounds | `masterplan/issues/` | Runtime problems and resolutions. |
 | Implementation patterns | `masterplan/patterns/` | Reusable approaches. |
+| Platform/web design | `PLATFORM_DESIGN.md` (project root) | Separate from engine masterplan. For later. |
 
 ## At Session End
 

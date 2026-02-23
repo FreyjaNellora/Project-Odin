@@ -12,6 +12,7 @@ Chronological index of build sessions. Each session note captures what was attem
 ## Sessions
 
 <!-- Add newest sessions at the top -->
+- **2026-02-23** [[Session-UI-QoL-2026-02-23]] -- UI QoL additions (non-stage): coordinate labels, enriched game log, engine internals panel, communication log, board zoom, layout reorganization. 54 Vitest (no regressions).
 - **2026-02-21** [[Session-2026-02-21-Stage07-Bugfix2]] -- Stage 7 bugfix pass 2: UI parser dropped `eliminated Red checkmate` events (Bug C); fixed 3 Stage 7 integration tests broken by protocol nextturn addition. 54 Vitest / 504 engine tests.
 - **2026-02-21** [[Session-2026-02-21-Stage07]] -- Stage 7: Plain BRS + Searcher trait. Alpha-beta, iterative deepening, quiescence, aspiration windows, null move, LMR, PV. Engine playable. 302 tests.
 - **2026-02-21** [[Session-2026-02-21-Stage06]] -- Stage 6: Bootstrap Eval + Evaluator trait. Material counting, PSTs with 4-player rotation, king safety, multi-player eval. 275 tests.

@@ -220,10 +220,15 @@ Agents must never create a Blocking or Warning issue and forget it. Every action
 5. If a new wikilink target is needed, add it to [[Wikilink-Registry]] immediately.
 
 **Issue resolution checklist:**
-1. Fill in the `## Resolution` section describing what was done.
-2. Set `status: resolved` and `date_resolved` in frontmatter.
-3. Move the entry from its severity section to `## Recently Resolved` in [[MOC-Active-Issues]].
-4. Update `last_updated`.
+1. Fill in the `## Resolution` section describing what the fix is and what files were changed.
+2. Set `status: pending-verification` in frontmatter. Do NOT set `resolved` yet.
+3. Update `last_updated`.
+
+**Verification gate.** An agent must NEVER claim a bug is fixed or mark an issue as `resolved` until the user has verified the fix through self-play or manual testing. Passing `npm test` or a clean compile is necessary but not sufficient — runtime behavior must be confirmed by a human.
+
+- After implementing a fix, tell the user what was changed and ask them to verify.
+- Only after the user confirms the fix works: set `status: resolved`, set `date_resolved`, and move the entry from its severity section to `## Recently Resolved` in [[MOC-Active-Issues]].
+- If the user reports the fix doesn't work: update the `## Resolution` section with what was tried, set `status: open`, and continue investigating.
 
 ---
 
@@ -364,6 +369,156 @@ git commit -m "[Meta] Session-end status update"
 ```
 
 This is the last commit of every session. No exceptions.
+
+---
+
+### 1.15 Debugging Discipline
+
+When investigating a bug, agents must follow a structured process that prevents analysis paralysis while still allowing deep exploration. The goal: every analysis pass must either **narrow the hypothesis space** or **produce empirical evidence**. If it does neither, stop analyzing and start testing.
+
+---
+
+#### The Core Problem This Solves
+
+An agent can spiral when it re-derives the same conclusion from different angles without gaining new information. This burns context window and produces no code. The spiral typically looks like: identify bug → second-guess identification → re-trace same logic → arrive at same answer → wonder about edge cases → re-examine same functions → repeat until context is exhausted.
+
+Productive analysis looks different: identify bug → ask "why wasn't it caught earlier?" → discover a new code path → find a specific ordering issue → identify root cause. Each pass introduces something **new and citable**.
+
+---
+
+#### Rule 1: Maintain a Hypothesis Journal
+
+When investigating a non-trivial bug (more than a one-line fix), track your reasoning explicitly. After each analysis pass, state:
+
+1. **Current hypothesis:** What you think the bug is. Must cite specific code locations (`file.rs:line`).
+2. **What's new:** The specific code, value, path, or contradiction you discovered in this pass that you did not know before. Must be citable — a line number, a variable name, an execution path.
+3. **What's eliminated:** Which prior hypotheses this pass ruled out, and why.
+
+**The spiral test:** If your hypothesis is identical to the previous pass and "what's new" is empty, you are spiraling. Stop analyzing and move to Rule 3.
+
+**Rephrasing is not progress.** "The bug is in handle_go because it returns early" and "The issue is that handle_go has an early return path" are the same hypothesis. Do not count restatement as refinement.
+
+---
+
+#### Rule 2: Trust Hierarchy
+
+When the user provides a diagnosis, implement their suggested fix FIRST. Test it. Only investigate alternatives if the fix fails or introduces new problems.
+
+The trust order for bug diagnosis:
+
+1. **User's explicit diagnosis** — Implement it. If you disagree, implement it anyway and let the test results settle the dispute. Cost of trying: minutes. Cost of ignoring and spiraling: the entire context window.
+2. **Direct code reading** — What the code actually does, traced through with specific values.
+3. **Speculation about what "might" happen** — This is the weakest form of evidence. Never spend more than one analysis pass on a "might" without converting it to empirical evidence (Rule 3).
+
+**Corollary:** If the user says "X works correctly, the problem is Y" — do not spend analysis passes questioning whether X works correctly. Address Y first. If Y's fix reveals that X is actually broken, you'll discover that empirically.
+
+---
+
+#### Rule 3: Empirical Escalation
+
+**After two consecutive analysis passes where the hypothesis did not narrow (no new code location discovered, no hypothesis eliminated), you must write a test.** Not "plan to write a test." Write it. Run it. Let the output guide the next pass.
+
+The test does not need to be perfect. A minimal reproduction is sufficient:
+
+```rust
+#[test]
+fn repro_checkmate_skipping_bug() {
+    // Set up the position where the bug occurs
+    let mut gs = GameState::from_fen4("...");
+    // Attempt the operation that fails
+    let result = gs.legal_moves();
+    // Assert what you expect vs. what happens
+    assert!(result.is_empty(), "Red should have no legal moves");
+}
+```
+
+This test accomplishes two things:
+- It grounds the analysis in concrete behavior, not speculation.
+- It persists as a regression test after the fix (per Section 1.7).
+
+**Exception:** If you cannot write a test because you don't understand the setup well enough, that itself is the signal — read more code to understand the setup, don't re-analyze the same function.
+
+---
+
+#### Rule 4: One Bug, One Focus
+
+When investigating Bug A and you discover a potential Bug B, **write Bug B down and continue working on Bug A.** Do not chase Bug B mid-investigation.
+
+How to write it down:
+- If trivial: a code comment `// TODO: potential issue — DKW ordering may affect elimination detection`
+- If non-trivial: create an issue note in `issues/` per Section 1.9
+
+The temptation to chase Bug B is strong because it feels like progress. It is not. It is scope expansion that fragments attention and burns context.
+
+**The only exception:** Bug B actively blocks the fix for Bug A (you literally cannot test Bug A's fix without fixing Bug B first). In that case, fix Bug B minimally, then return to Bug A.
+
+---
+
+#### Rule 5: Scope Lock After Diagnosis
+
+Once you have a diagnosis with a specific code location and a concrete fix plan, **stop analyzing and start implementing.** Do not spend additional passes exploring what might go wrong with the fix, what edge cases the fix might miss, or what other bugs might exist nearby.
+
+Implement → Test → Observe. If edge cases exist, the tests will reveal them. If the fix is incomplete, the failing test will tell you exactly what's still wrong. This is cheaper and more reliable than pre-analyzing every possible outcome.
+
+**Anti-pattern:** "My fix handles case X, but what about case Y? And what if Z happens? Let me trace through the code one more time to make sure..." — This is the re-analysis spiral wearing a different mask. Implement the fix for X. Write a test for Y. Run it. If it fails, fix Y as a follow-up.
+
+---
+
+#### Recognizing the Spiral — Concrete Signals
+
+You are spiraling if ANY of these are true:
+
+| Signal | Example |
+|---|---|
+| **Re-reading a function you already analyzed** without a specific new question to answer | Reading `handle_go()` a third time "just to make sure" |
+| **Questioning evidence you already accepted** without new contradictory evidence | "But does check_elimination_chain really work?" after already confirming it does |
+| **Exploring hypothetical scenarios** without converting them to tests | "What might happen if the UI sends the same position twice?" — write a test instead |
+| **Expanding scope** beyond the reported bug | "While I'm here, let me also check whether stalemate scoring works..." |
+| **Restating your conclusion in different words** | "So the issue is really that..." for the third time |
+| **Tracing execution paths you already traced** with the same starting conditions | Re-simulating the same move sequence through the same code path |
+
+You are NOT spiraling if:
+
+| Signal | Example |
+|---|---|
+| **Each pass cites a new code location** | "I found that `process_dkw_moves` at line 280 runs AFTER `check_elimination_chain` at line 260" — this is new, specific, and narrows the hypothesis |
+| **Each pass eliminates a hypothesis** | "This rules out the UI sync theory because the UI doesn't call go until after position is sent" |
+| **You discovered a contradiction** that changes the analysis | "The user said check_elimination_chain works, but I see it calls generate_legal which might return different results depending on DKW state" — this is a specific, citable new finding |
+| **You're reading a NEW function** you haven't examined yet | Moving from `handle_go` to `process_dkw_moves` for the first time |
+
+---
+
+#### Summary: The Debugging Flowchart
+
+```
+Bug reported
+    │
+    ├─ User provided diagnosis? ──YES──→ Implement it. Test it. Done (or iterate).
+    │
+    NO
+    │
+    ▼
+Read relevant code. Form hypothesis (cite file:line).
+    │
+    ▼
+┌─ Analysis pass ──────────────────────────────────────────┐
+│  Ask: "What is NEW in this pass?"                        │
+│  • New code location discovered? → Record, continue.     │
+│  • Hypothesis eliminated? → Record, continue.            │
+│  • Nothing new? → STOP ANALYZING. Write a test. (Rule 3) │
+└──────────────────────────────────────────────────────────┘
+    │
+    ▼
+Hypothesis confirmed or narrowed?
+    │
+    ├─ YES → Implement fix. Test. Ship.
+    │
+    NO (hypothesis unchanged after test)
+    │
+    ▼
+Escalate: write down what you know, what you tried,
+and what didn't work. Ask the user.
+```
 
 ---
 
@@ -1386,6 +1541,24 @@ The existing templates (`audit_log_stage_XX.md` and `downstream_log_stage_XX.md`
 | Open Questions | Unresolved design questions that may affect future stages. Example: "Zobrist keys use u64. If collision rate is too high with 4 players on 160 squares, u128 may be needed (MASTERPLAN Appendix B: Risk Register mentions this)." |
 | Reasoning | Why decisions were made. Not what was done (that is in the code), but why this approach was chosen over alternatives. |
 
+**When to retroactively update a downstream log vs. letting the next pre-audit catch it:**
+
+Most content drift (stale test counts, outdated limitation descriptions, changed baselines) is handled by the next stage's pre-audit — that's what the pre-audit "findings from upstream logs" section is for. Do NOT routinely patch prior-stage logs after bugfixes or refactors.
+
+**Retroactive updates ARE required when a bugfix or change introduces a new API contract or behavioral invariant that a future agent would need to build correctly.** The test: if a future agent reading the downstream log would make a *wrong decision* without this information (not just note a stale number), add it now.
+
+Examples of retroactive-required changes:
+- New public method added to a module (`handle_no_legal_moves()` on GameState)
+- New ordering invariant (`process_dkw_moves` must run before `check_elimination_chain`)
+- New protocol message format that parsers must handle
+- Changed function signature that downstream callers must respect
+
+Examples that the next pre-audit handles:
+- Test counts changed (302 → 504)
+- Known limitation is now outdated (turn tracking was simple, now it's complex)
+- Performance baselines shifted
+- Session notes with slightly wrong test counts (historical records — never patch)
+
 ---
 
 ## 7. APPENDICES
@@ -1437,6 +1610,13 @@ One-page summary for fast agent onboarding.
 - Everything: firehose (10,000+ observations)
 
 **When to stop and ask (Section 1.4):** Spec ambiguity, changing prior-stage APIs, architectural decisions not in spec, adding unspecified functionality.
+
+**When debugging (Section 1.15):**
+1. User gave diagnosis? → Implement it first. Test. Investigate only if it fails.
+2. Each analysis pass must cite something NEW (file:line, variable, path). No new citation = spiral.
+3. Two passes without narrowing → write a test. Not "plan to." Write it.
+4. One bug at a time. Discovering Bug B? Write it down. Keep fixing Bug A.
+5. Have a fix plan? Stop analyzing. Implement → Test → Observe.
 
 **Naming (from MASTERPLAN Section 6):** modules = snake_case, types = PascalCase, functions = snake_case, constants = SCREAMING_SNAKE.
 

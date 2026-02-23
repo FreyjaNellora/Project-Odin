@@ -128,6 +128,10 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Component-BasicUI]]` | `components/Component-BasicUI.md` | Basic UI Shell: Tauri v2, SVG board, engine IPC, debug console |
 | `[[Component-Eval]]` | `components/Component-Eval.md` | Bootstrap Evaluator: Evaluator trait, material, PST, king safety, multi-player eval |
 | `[[Component-Search]]` | `components/Component-Search.md` | Searcher trait, SearchBudget, SearchResult, BrsSearcher, BRS algorithm |
+| `[[Component-Protocol-Parser]]` | `components/Component-Protocol-Parser.md` | UI-side protocol parser: line parsing, eliminated two-format rule, message routing |
+| `[[Component-GameLog]]` | `components/Component-GameLog.md` | Enriched move history with per-move search info and player-colored entries |
+| `[[Component-EngineInternals]]` | `components/Component-EngineInternals.md` | Collapsible panel: search phase, BRS/MCTS stats, per-player values |
+| `[[Component-CommunicationLog]]` | `components/Component-CommunicationLog.md` | Raw protocol log + command input (split from DebugConsole) |
 
 ### Connections
 
@@ -156,6 +160,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Session-2026-02-21-Stage07]]` | `sessions/Session-2026-02-21-Stage07.md` | Stage 7: Plain BRS + Searcher trait implementation |
 | `[[Session-2026-02-21-BugfixSession]]` | `sessions/Session-2026-02-21-BugfixSession.md` | Stage 7 post-completion bugfixes: semi-auto regression + checkmate detection |
 | `[[Session-2026-02-21-Stage07-Bugfix2]]` | `sessions/Session-2026-02-21-Stage07-Bugfix2.md` | Stage 7 bugfix pass 2: UI parser drops eliminated reason-suffix + test fixes |
+| `[[Session-UI-QoL-2026-02-23]]` | `sessions/Session-UI-QoL-2026-02-23.md` | UI QoL: coord labels, game log, engine internals, communication log, board zoom |
 
 ### Issues
 
@@ -173,6 +178,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Issue-Bootstrap-Eval-Lead-Penalty-Tactical-Mismatch]]` | `issues/Issue-Bootstrap-Eval-Lead-Penalty-Tactical-Mismatch.md` | Lead-penalty causes BRS to prefer checks over captures (open, Stage 8 to fix) |
 | `[[Issue-SemiAuto-HumanPlayer-Guard]]` | `issues/Issue-SemiAuto-HumanPlayer-Guard.md` | Semi-auto engine took over human's turn when no player selected (resolved) |
 | `[[Issue-Checkmate-Detection-DKW-Ordering]]` | `issues/Issue-Checkmate-Detection-DKW-Ordering.md` | Checkmate not detected due to DKW ordering + protocol early return (resolved) |
+| `[[Issue-Promotion-Wrong-Ranks-No-UI]]` | `issues/Issue-Promotion-Wrong-Ranks-No-UI.md` | UI used wrong promotion ranks + no piece selection dialog (resolved) |
 
 ### Patterns
 

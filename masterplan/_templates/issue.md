@@ -21,7 +21,9 @@ tags: []
 <!-- If there's a temporary workaround, describe it -->
 
 ## Resolution
-<!-- When resolved, describe what was done. Update status to "resolved" and fill in date_resolved. -->
+<!-- When fix is implemented, describe what was done and set status to "pending-verification".
+     Only set status to "resolved" and fill in date_resolved AFTER the user has verified the fix through self-play or manual testing.
+     Valid status values: open | pending-verification | resolved -->
 
 ## Related
 <!-- Link to sessions, decisions, or other issues using existing [[wikilinks]] from the registry -->
