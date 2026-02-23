@@ -1,0 +1,78 @@
+.communication-log {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.communication-log .collapsible-header {
+  margin: 0 0 8px 0;
+}
+
+.comm-log-entries {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 200px;
+  background: #0a0a0a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 8px;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.comm-log-entries div {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* Reuse existing log line color classes */
+.communication-log .log-error {
+  color: #ff5555;
+  font-weight: bold;
+}
+
+.communication-log .log-bestmove {
+  color: #50fa7b;
+  font-weight: bold;
+}
+
+.communication-log .log-info {
+  color: #ccc;
+}
+
+.communication-log .log-routine {
+  color: #666;
+}
+
+.communication-log .log-default {
+  color: #999;
+}
+
+.communication-log .cmd-input {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.communication-log .cmd-input input {
+  flex: 1;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 6px 8px;
+  color: #ddd;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px;
+}
+
+.communication-log .cmd-input input:focus {
+  outline: none;
+  border-color: #646cff;
+}
+
+.communication-log .cmd-input button {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 4px;
+}

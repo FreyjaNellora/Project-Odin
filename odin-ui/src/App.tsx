@@ -1,18 +1,23 @@
-// Project Odin — Basic UI Shell (Stage 5)
-// Root component wiring board, engine, controls, and debug console.
+// Project Odin — UI Shell
+// Root component wiring board, engine, controls, and info panels.
 
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import { useEngine } from './hooks/useEngine';
 import { useGameState } from './hooks/useGameState';
 import BoardDisplay from './components/BoardDisplay';
 import GameControls from './components/GameControls';
-import DebugConsole from './components/DebugConsole';
+import AnalysisPanel from './components/AnalysisPanel';
+import GameLog from './components/GameLog';
+import EngineInternals from './components/EngineInternals';
+import CommunicationLog from './components/CommunicationLog';
 import StatusBar from './components/StatusBar';
+import PromotionDialog from './components/PromotionDialog';
 
 function App() {
   const engine = useEngine();
   const game = useGameState(engine.sendCommand);
+  const [showCoords, setShowCoords] = useState(true);
 
   // Wire engine messages to game state handler
   useEffect(() => {
@@ -45,6 +50,16 @@ function App() {
             onSetEngineDelay={game.setEngineDelay}
             onTogglePause={game.togglePause}
           />
+          <div className="board-options">
+            <label className="coord-toggle">
+              <input
+                type="checkbox"
+                checked={showCoords}
+                onChange={(e) => setShowCoords(e.target.checked)}
+              />
+              Coords
+            </label>
+          </div>
         </div>
 
         <div className="center-panel">
@@ -53,14 +68,24 @@ function App() {
             selectedSquare={game.selectedSquare}
             lastMoveFrom={game.lastMoveFrom}
             lastMoveTo={game.lastMoveTo}
+            showCoords={showCoords}
             onSquareClick={game.handleSquareClick}
           />
+          {game.pendingPromotion && (
+            <PromotionDialog
+              player={game.pendingPromotion.player}
+              onSelect={game.resolvePromotion}
+              onCancel={game.cancelPromotion}
+            />
+          )}
         </div>
 
         <div className="right-panel">
-          <DebugConsole
+          <AnalysisPanel latestInfo={game.latestInfo} />
+          <GameLog moveHistory={game.moveHistory} />
+          <EngineInternals latestInfo={game.latestInfo} />
+          <CommunicationLog
             lines={engine.rawLog}
-            latestInfo={game.latestInfo}
             onSendCommand={(cmd) => engine.sendCommand(cmd)}
           />
         </div>

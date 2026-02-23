@@ -1,0 +1,61 @@
+.game-log {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.game-log h3 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.game-log-entries {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 200px;
+  background: #0a0a0a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 4px;
+}
+
+.game-log-empty {
+  color: #555;
+  font-size: 12px;
+  font-style: italic;
+  padding: 4px;
+}
+
+.game-log-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 2px 4px 2px 8px;
+  border-left: 3px solid #333;
+  margin-bottom: 1px;
+  font-size: 12px;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  line-height: 1.4;
+}
+
+.move-num {
+  color: #666;
+  min-width: 24px;
+}
+
+.move-player {
+  font-weight: bold;
+  min-width: 36px;
+}
+
+.move-text {
+  color: #ddd;
+}
+
+.move-detail {
+  color: #777;
+  font-size: 11px;
+}

@@ -1,0 +1,72 @@
+.analysis-panel {
+  background: #1a1a2e;
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.analysis-panel h3 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.analysis-empty {
+  color: #555;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.nps-display {
+  font-size: 20px;
+  font-weight: bold;
+  color: #8ab4f8;
+  margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.nps-label {
+  font-size: 12px;
+  font-weight: normal;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.analysis-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 4px;
+}
+
+.analysis-key {
+  color: #777;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.analysis-value {
+  color: #ccc;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.analysis-pv {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #2a2a3e;
+}
+
+.pv-moves {
+  color: #a8d8a8;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 11px;
+  margin-left: 8px;
+  word-break: break-all;
+}

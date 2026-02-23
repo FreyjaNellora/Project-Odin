@@ -17,9 +17,25 @@ import {
 
 export type PlayMode = 'manual' | 'semi-auto' | 'full-auto';
 
+export type PromotionChoice = 'w' | 'r' | 'b' | 'n';
+
+export interface PendingPromotion {
+  baseMove: string;
+  square: number;
+  player: Player;
+}
+
+/** A move with its associated search info snapshot (captured at bestmove time). */
+export interface MoveEntry {
+  move: string;
+  player: Player;
+  info: InfoData | null;
+}
+
 export interface UseGameStateResult {
   board: (Piece | null)[];
   moveList: string[];
+  moveHistory: MoveEntry[];
   currentPlayer: Player;
   scores: [number, number, number, number];
   isGameOver: boolean;
@@ -33,6 +49,7 @@ export interface UseGameStateResult {
   engineDelay: number;
   isPaused: boolean;
   gameInProgress: boolean;
+  pendingPromotion: PendingPromotion | null;
   handleSquareClick: (sq: number) => void;
   requestEngineMove: () => void;
   newGame: (terrain: boolean) => void;
@@ -41,6 +58,8 @@ export interface UseGameStateResult {
   setHumanPlayer: (player: Player | null) => void;
   setEngineDelay: (ms: number) => void;
   togglePause: () => void;
+  resolvePromotion: (piece: PromotionChoice) => void;
+  cancelPromotion: () => void;
 }
 
 export function useGameState(
@@ -48,6 +67,7 @@ export function useGameState(
 ): UseGameStateResult {
   const [board, setBoard] = useState<(Piece | null)[]>(startingPosition);
   const [moveList, setMoveList] = useState<string[]>([]);
+  const [moveHistory, setMoveHistory] = useState<MoveEntry[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<Player>('Red');
   const [scores, setScores] = useState<[number, number, number, number]>([0, 0, 0, 0]);
   const [isGameOver, setIsGameOver] = useState(false);
@@ -62,6 +82,9 @@ export function useGameState(
   const [humanPlayer, setHumanPlayerState] = useState<Player | null>(null);
   const [engineDelay, setEngineDelayState] = useState(500);
   const [isPaused, setIsPaused] = useState(false);
+
+  // Promotion state: when set, the UI shows a piece selection dialog
+  const [pendingPromotion, setPendingPromotion] = useState<PendingPromotion | null>(null);
 
   // Track pending move validation state
   const pendingMoveRef = useRef<string | null>(null);
@@ -80,6 +103,8 @@ export function useGameState(
   const eliminatedPlayersRef = useRef<Set<Player>>(new Set());
   // Next turn as reported by the engine (authoritative, beats local computation)
   const pendingNextTurnRef = useRef<Player | null>(null);
+  // Latest info ref for snapshot capture at bestmove time
+  const latestInfoRef = useRef<InfoData | null>(null);
 
   // Setters that sync state + ref
   const setPlayMode = useCallback((mode: PlayMode) => {
@@ -273,27 +298,30 @@ export function useGameState(
         // Second click: attempt move
         const moveStr = squareName(selectedSquare) + squareName(sq);
 
-        // Check if this looks like a pawn promotion (display heuristic)
+        // Check if this looks like a pawn promotion (display heuristic).
+        // Promotion ranks match engine: Red=8, Yellow=5, Blue=file 8, Green=file 5.
         const piece = board[selectedSquare];
-        let finalMove = moveStr;
         if (piece?.pieceType === 'Pawn') {
           const toRank = rankOf(sq);
           const toFile = fileOf(sq);
           const isPromoRank =
-            (piece.owner === 'Red' && toRank === 13) ||
-            (piece.owner === 'Yellow' && toRank === 0) ||
-            (piece.owner === 'Blue' && toFile === 13) ||
-            (piece.owner === 'Green' && toFile === 0);
+            (piece.owner === 'Red' && toRank === 8) ||
+            (piece.owner === 'Yellow' && toRank === 5) ||
+            (piece.owner === 'Blue' && toFile === 8) ||
+            (piece.owner === 'Green' && toFile === 5);
           if (isPromoRank) {
-            finalMove += 'q';
+            // Show promotion piece selection dialog instead of sending immediately
+            setPendingPromotion({ baseMove: moveStr, square: sq, player: piece.owner });
+            setSelectedSquare(null);
+            return;
           }
         }
 
-        // Send position with the new move to engine for validation.
+        // Non-promotion move: send to engine for validation.
         // Follow with `isready` — if no error arrives before `readyok`,
         // the move was accepted.
-        pendingMoveRef.current = finalMove;
-        const allMoves = [...moveListRef.current, finalMove];
+        pendingMoveRef.current = moveStr;
+        const allMoves = [...moveListRef.current, moveStr];
         const posCmd = `position startpos moves ${allMoves.join(' ')}`;
 
         sendCommand(posCmd)
@@ -308,6 +336,32 @@ export function useGameState(
     },
     [selectedSquare, board, isGameOver, sendCommand, playMode, humanPlayer, currentPlayer],
   );
+
+  /** Resolve a pending promotion by appending the chosen piece suffix and sending. */
+  const resolvePromotion = useCallback(
+    (piece: PromotionChoice) => {
+      if (!pendingPromotion) return;
+      const finalMove = pendingPromotion.baseMove + piece;
+      setPendingPromotion(null);
+
+      pendingMoveRef.current = finalMove;
+      const allMoves = [...moveListRef.current, finalMove];
+      const posCmd = `position startpos moves ${allMoves.join(' ')}`;
+
+      sendCommand(posCmd)
+        .then(() => sendCommand('isready'))
+        .catch(() => {
+          setError('Failed to send command to engine');
+          pendingMoveRef.current = null;
+        });
+    },
+    [pendingPromotion, sendCommand],
+  );
+
+  /** Cancel the pending promotion (user changed their mind). */
+  const cancelPromotion = useCallback(() => {
+    setPendingPromotion(null);
+  }, []);
 
   /** Request the engine to play a move for the current player. */
   const requestEngineMove = useCallback(() => {
@@ -346,6 +400,7 @@ export function useGameState(
     (terrain: boolean) => {
       setBoard(startingPosition());
       setMoveList([]);
+      setMoveHistory([]);
       moveListRef.current = [];
       setCurrentPlayer('Red');
       currentPlayerRef.current = 'Red';
@@ -362,6 +417,8 @@ export function useGameState(
       setIsPaused(false);
       eliminatedPlayersRef.current = new Set();
       pendingNextTurnRef.current = null;
+      latestInfoRef.current = null;
+      setPendingPromotion(null);
 
       sendCommand(`setoption name Terrain value ${terrain ? 'true' : 'false'}`)
         .then(() => sendCommand('position startpos'))
@@ -402,6 +459,7 @@ export function useGameState(
         }
         case 'info': {
           setLatestInfo(msg.data);
+          latestInfoRef.current = msg.data;
           if (msg.data.values) {
             setScores(msg.data.values);
           }
@@ -416,6 +474,11 @@ export function useGameState(
             const newMoves = [...moveListRef.current, move];
             moveListRef.current = newMoves;
             setMoveList(newMoves);
+            // User moves have no search info
+            setMoveHistory((prev) => [
+              ...prev,
+              { move, player: currentPlayerRef.current, info: null },
+            ]);
             applyMoveToBoard(move);
             const nextPlayer = advancePlayer();
 
@@ -459,6 +522,14 @@ export function useGameState(
             const newMoves = [...moveListRef.current, engineMove];
             moveListRef.current = newMoves;
             setMoveList(newMoves);
+            // Capture the latest info snapshot with this move
+            const infoSnapshot = latestInfoRef.current
+              ? { ...latestInfoRef.current }
+              : null;
+            setMoveHistory((prev) => [
+              ...prev,
+              { move: engineMove, player: currentPlayerRef.current, info: infoSnapshot },
+            ]);
             applyMoveToBoard(engineMove);
 
             // Use the engine's authoritative next-turn if available; otherwise compute locally.
@@ -487,6 +558,7 @@ export function useGameState(
   return {
     board,
     moveList,
+    moveHistory,
     currentPlayer,
     scores,
     isGameOver,
@@ -500,6 +572,7 @@ export function useGameState(
     engineDelay,
     isPaused,
     gameInProgress: moveList.length > 0,
+    pendingPromotion,
     handleSquareClick,
     requestEngineMove,
     newGame,
@@ -508,6 +581,8 @@ export function useGameState(
     setHumanPlayer,
     setEngineDelay,
     togglePause,
+    resolvePromotion,
+    cancelPromotion,
   };
 }
 

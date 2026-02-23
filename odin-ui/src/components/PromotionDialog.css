@@ -1,0 +1,55 @@
+.promotion-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.promotion-dialog {
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-align: center;
+}
+
+.promotion-title {
+  color: #ccc;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.promotion-options {
+  display: flex;
+  gap: 8px;
+}
+
+.promotion-option {
+  width: 56px;
+  height: 56px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.promotion-option:hover {
+  background: #3a3a3a;
+  border-color: #666;
+}
+
+.promotion-piece {
+  font-size: 36px;
+  line-height: 1;
+  text-shadow: 0 0 2px #000;
+}

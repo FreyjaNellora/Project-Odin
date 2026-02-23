@@ -1,0 +1,90 @@
+.engine-internals {
+  background: #1a1a2e;
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.collapsible-header {
+  margin: 0;
+  font-size: 14px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.collapsible-header:hover {
+  color: #ccc;
+}
+
+.internals-content {
+  margin-top: 8px;
+}
+
+.internals-empty {
+  color: #555;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.internals-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.internals-key {
+  color: #777;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.internals-value {
+  color: #ccc;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.phase-badge {
+  background: #2a2a4e;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: bold;
+  color: #8ab4f8;
+  font-size: 11px;
+}
+
+.internals-values {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #2a2a3e;
+}
+
+.values-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.value-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px;
+  background: #0a0a1a;
+  border-radius: 3px;
+}
+
+.value-player {
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.value-score {
+  color: #ddd;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
