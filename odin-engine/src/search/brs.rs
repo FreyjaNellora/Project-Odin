@@ -146,6 +146,11 @@ struct BrsContext<'a> {
     best_depth: u8,
     /// Pre-search board context (Stage 8 hybrid scoring).
     board_ctx: BoardContext,
+    /// Snapshot of position_history at search start. Used for repetition detection.
+    game_history: Vec<u64>,
+    /// Path-local stack of Zobrist hashes pushed as we descend the tree.
+    /// Combined with game_history to count repetitions without modifying GameState.
+    rep_stack: Vec<u64>,
 }
 
 impl<'a> BrsContext<'a> {
@@ -167,6 +172,8 @@ impl<'a> BrsContext<'a> {
             best_score: 0,
             best_depth: 0,
             board_ctx,
+            game_history: position.position_history().to_vec(),
+            rep_stack: Vec::with_capacity(64),
         }
     }
 
@@ -338,6 +345,19 @@ impl<'a> BrsContext<'a> {
             return 0;
         }
 
+        // In-search repetition detection.
+        // rep_stack contains hashes pushed by ancestor nodes on the current path.
+        // The parent pushes the current hash *before* calling alphabeta, so
+        // game_count + search_count >= 3 correctly identifies the 3rd occurrence.
+        if ply > 0 {
+            let hash = self.gs.board().zobrist();
+            let game_count = self.game_history.iter().filter(|&&h| h == hash).count();
+            let search_count = self.rep_stack.iter().filter(|&&h| h == hash).count();
+            if game_count + search_count >= 3 {
+                return 0; // Draw by repetition.
+            }
+        }
+
         // Leaf node: quiescence search.
         if depth == 0 {
             return self.quiescence(alpha, beta, MAX_QSEARCH_DEPTH);
@@ -412,6 +432,7 @@ impl<'a> BrsContext<'a> {
         for (move_idx, &mv) in ordered.iter().enumerate() {
             let undo = make_move(self.gs.board_mut(), mv);
             self.nodes += 1;
+            self.rep_stack.push(self.gs.board().zobrist());
 
             // Late move reductions: search quiet late moves at reduced depth.
             let score = if move_idx >= LMR_MOVE_THRESHOLD
@@ -431,6 +452,7 @@ impl<'a> BrsContext<'a> {
                 self.alphabeta(depth - 1, alpha, beta, ply + 1)
             };
 
+            self.rep_stack.pop();
             unmake_move(self.gs.board_mut(), mv, undo);
 
             if self.should_stop() {
@@ -490,7 +512,9 @@ impl<'a> BrsContext<'a> {
 
         let undo = make_move(self.gs.board_mut(), mv);
         self.nodes += 1;
+        self.rep_stack.push(self.gs.board().zobrist());
         let score = self.alphabeta(depth - 1, alpha, beta, ply + 1);
+        self.rep_stack.pop();
         unmake_move(self.gs.board_mut(), mv, undo);
 
         score

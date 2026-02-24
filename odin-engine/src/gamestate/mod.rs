@@ -185,6 +185,12 @@ impl GameState {
         is_draw_by_repetition(&self.position_history, self.board.zobrist())
     }
 
+    /// Zobrist hash history of all positions played so far.
+    /// Used by the search to detect in-search repetitions against game history.
+    pub fn position_history(&self) -> &[u64] {
+        &self.position_history
+    }
+
     /// Check if position is a draw by 50-move rule.
     pub fn is_draw_by_fifty_moves(&self) -> bool {
         is_draw_by_fifty_moves(self.board.halfmove_clock())
