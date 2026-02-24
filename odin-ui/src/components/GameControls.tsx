@@ -1,9 +1,9 @@
-// Game controls: turn indicator, scores, play mode, speed, new game buttons.
+// Game controls: turn indicator, scores, game settings, play mode, speed, new game button.
 
 import type { Player } from '../types/board';
 import { PLAYERS } from '../types/board';
 import { PLAYER_COLORS } from '../lib/board-constants';
-import type { PlayMode } from '../hooks/useGameState';
+import type { PlayMode, GameMode, EvalProfileSetting } from '../hooks/useGameState';
 import '../styles/GameControls.css';
 
 interface GameControlsProps {
@@ -15,11 +15,18 @@ interface GameControlsProps {
   humanPlayer: Player | null;
   engineDelay: number;
   isPaused: boolean;
-  onNewGame: (terrain: boolean) => void;
+  gameMode: GameMode;
+  evalProfile: EvalProfileSetting;
+  resolvedEvalProfile: 'standard' | 'aggressive';
+  terrainMode: boolean;
+  onNewGame: () => void;
   onEngineMove: () => void;
   onSetPlayMode: (mode: PlayMode) => void;
   onSetHumanPlayer: (player: Player | null) => void;
   onSetEngineDelay: (ms: number) => void;
+  onSetGameMode: (mode: GameMode) => void;
+  onSetEvalProfile: (profile: EvalProfileSetting) => void;
+  onSetTerrainMode: (on: boolean) => void;
   onTogglePause: () => void;
 }
 
@@ -28,6 +35,12 @@ const MODE_LABELS: Record<PlayMode, string> = {
   'semi-auto': 'Semi-Auto',
   'full-auto': 'Full Auto',
 };
+
+/** Display label for the Auto eval profile option (shows resolved value). */
+function autoLabel(resolved: 'standard' | 'aggressive'): string {
+  const inner = resolved === 'aggressive' ? 'Aggro' : 'Std';
+  return `Auto (${inner})`;
+}
 
 export default function GameControls({
   currentPlayer,
@@ -38,11 +51,18 @@ export default function GameControls({
   humanPlayer,
   engineDelay,
   isPaused,
+  gameMode,
+  evalProfile,
+  resolvedEvalProfile,
+  terrainMode,
   onNewGame,
   onEngineMove,
   onSetPlayMode,
   onSetHumanPlayer,
   onSetEngineDelay,
+  onSetGameMode,
+  onSetEvalProfile,
+  onSetTerrainMode,
   onTogglePause,
 }: GameControlsProps) {
   return (
@@ -76,15 +96,91 @@ export default function GameControls({
         ))}
       </div>
 
+      {/* Config tags — show active resolved config */}
+      <div className="config-tags">
+        <span className={`config-tag config-tag-mode`}>
+          {gameMode === 'ffa' ? 'FFA' : 'LKS'}
+        </span>
+        <span className={`config-tag config-tag-profile`}>
+          {resolvedEvalProfile === 'aggressive' ? 'Aggressive' : 'Standard'}
+        </span>
+        <span className={`config-tag config-tag-terrain`}>
+          {terrainMode ? 'Terrain' : 'Normal'}
+        </span>
+      </div>
+
       {/* Error display */}
       {error && <div className="error-display">{error}</div>}
 
       {/* Game over indicator */}
       {isGameOver && <div className="game-over">Game Over</div>}
 
+      {/* Game Mode selector */}
+      <div className="control-section">
+        <span className="section-label">Game Mode</span>
+        <div className="mode-selector">
+          <button
+            className={`btn-mode ${gameMode === 'ffa' ? 'active' : ''}`}
+            onClick={() => onSetGameMode('ffa')}
+          >
+            FFA
+          </button>
+          <button
+            className={`btn-mode ${gameMode === 'lks' ? 'active' : ''}`}
+            onClick={() => onSetGameMode('lks')}
+          >
+            LKS
+          </button>
+        </div>
+      </div>
+
+      {/* Eval Profile selector */}
+      <div className="control-section">
+        <span className="section-label">Eval Profile</span>
+        <div className="mode-selector">
+          <button
+            className={`btn-mode ${evalProfile === 'auto' ? 'active' : ''}`}
+            onClick={() => onSetEvalProfile('auto')}
+          >
+            {autoLabel(resolvedEvalProfile)}
+          </button>
+          <button
+            className={`btn-mode ${evalProfile === 'standard' ? 'active' : ''}`}
+            onClick={() => onSetEvalProfile('standard')}
+          >
+            Standard
+          </button>
+          <button
+            className={`btn-mode ${evalProfile === 'aggressive' ? 'active' : ''}`}
+            onClick={() => onSetEvalProfile('aggressive')}
+          >
+            Aggressive
+          </button>
+        </div>
+      </div>
+
+      {/* Terrain toggle */}
+      <div className="control-section">
+        <span className="section-label">Terrain</span>
+        <div className="mode-selector">
+          <button
+            className={`btn-mode ${!terrainMode ? 'active' : ''}`}
+            onClick={() => onSetTerrainMode(false)}
+          >
+            Off
+          </button>
+          <button
+            className={`btn-mode ${terrainMode ? 'active' : ''}`}
+            onClick={() => onSetTerrainMode(true)}
+          >
+            On
+          </button>
+        </div>
+      </div>
+
       {/* Play mode selector */}
       <div className="control-section">
-        <span className="section-label">Mode</span>
+        <span className="section-label">Play Mode</span>
         <div className="mode-selector">
           {(['manual', 'semi-auto', 'full-auto'] as PlayMode[]).map((mode) => (
             <button
@@ -158,11 +254,8 @@ export default function GameControls({
           </button>
         )}
 
-        <button className="btn-new" onClick={() => onNewGame(false)}>
+        <button className="btn-new" onClick={onNewGame}>
           New Game
-        </button>
-        <button className="btn-new" onClick={() => onNewGame(true)}>
-          New Game (Terrain)
         </button>
       </div>
     </div>

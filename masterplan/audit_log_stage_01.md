@@ -5,22 +5,22 @@
 **Auditor:** Claude Opus 4.6
 
 ### Build State
-- Compiles: Yes (`cargo build` in 0.67s, `cargo build --features huginn` in 0.43s)
-- Tests pass: Yes (2 without huginn, 11 with huginn — all pass)
+- Compiles: Yes (`cargo build` in 0.67s)
+- Tests pass: Yes (11 total — all pass)
 - Previous downstream flags reviewed: Yes — Stage 0 downstream log reviewed
 
 ### Findings
 **From [[downstream_log_stage_00]]:**
-1. `huginn_observe!` macro is available crate-wide via `#[macro_export]`. Macro arguments must be pure (no allocating expressions).
-2. `HuginnBuffer` API: `new`, `with_default_capacity`, `new_trace`, `record`, `len`, `is_empty`, `get`, `session_id`, `current_trace_id`.
-3. No JSON serialization yet — buffer stores raw `u64` values. This is fine for Stage 1; we record raw data.
-4. No global buffer instance — must be created and passed explicitly. Stage 1 Huginn gates will accept `&mut HuginnBuffer` parameter.
-5. Data limited to 16 `u64` fields per observation. Stage 1 gates (board_mutation, zobrist_update, piece_list_sync, fen4_roundtrip) all fit within 16 fields.
+1. [Historical] `huginn_observe!` macro is available crate-wide via `#[macro_export]`. Macro arguments must be pure (no allocating expressions).
+2. [Historical] `HuginnBuffer` API: `new`, `with_default_capacity`, `new_trace`, `record`, `len`, `is_empty`, `get`, `session_id`, `current_trace_id`.
+3. [Historical] No JSON serialization yet — buffer stores raw `u64` values. This is fine for Stage 1; we record raw data.
+4. [Historical] No global buffer instance — must be created and passed explicitly. Stage 1 Huginn gates will accept `&mut HuginnBuffer` parameter.
+5. [Historical] Data limited to 16 `u64` fields per observation. Stage 1 gates (board_mutation, zobrist_update, piece_list_sync, fen4_roundtrip) all fit within 16 fields.
 
 **From [[audit_log_stage_00]]:**
 - No blocking or warning findings. Stage 0 is clean.
 - `Phase` and `Level` enums may need new variants — additive and safe.
-- `huginn_observe!` macro signature is now a contract. Will use it as-is.
+- [Historical] `huginn_observe!` macro signature is now a contract. Will use it as-is.
 
 ### Risks for This Stage
 1. **Corner square validity (Section 2.17):** The 14x14 board has 36 invalid squares in four 3x3 corners. Off-by-one errors in corner exclusion are the highest risk. Must verify exact coordinates against 4PC_RULES_REFERENCE.md: a1-c3, l1-n3, a12-c14, l12-n14.
@@ -66,7 +66,7 @@ PASS. No performance targets for Stage 1. Board array is stack-allocated (Option
 **NOTE.** 5 dead_code warnings: `MAX_PIECES_PER_PLAYER`, `valid_squares()`, `rank_number()`, `parse_square()`, `square_name()`. All are public utility functions intended for Stage 2+ consumption (move generation, protocol, debugging). Expected and acceptable. Will be consumed when downstream stages use them.
 
 #### Broken Code
-PASS. All 64 unit tests and 18 integration tests pass in both configurations (with and without huginn). No panics, no unwrap-on-None paths in production code.
+PASS. All 64 unit tests and 18 integration tests pass. No panics, no unwrap-on-None paths in production code.
 
 #### Temporary Code
 PASS. No `todo!()`, `unimplemented!()`, or `// TODO` markers in production code. Make/unmake stubs are complete functions that do real work (place/remove/move pieces with Zobrist update), not empty bodies.
@@ -77,7 +77,7 @@ N/A for Stage 1. No search or evaluation code.
 ### Future Conflict Analysis
 1. **Zobrist key count discrepancy (NOTE).** MASTERPLAN says "4,480 entries" for piece-square keys. Implementation has `196 * 7 * 4 = 5,488`. The difference: MASTERPLAN likely assumed `160 * 7 * 4 = 4,480` (valid squares only). Implementation indexes by raw square index (0-195), which means 36 invalid-square keys exist but are never accessed. This wastes ~288 bytes but avoids a validity check on every hash lookup. No conflict — the unused keys are harmless, and the indexing is simpler.
 2. **Castling encoding (NOTE).** The FEN4 castling letters (A/a, B/b, C/c, D/d) are a custom design since no standard exists. Stage 4 (Odin Protocol) must use the same encoding. Documented in FEN4 module header.
-3. **Huginn gates not yet wired (NOTE).** The MASTERPLAN specifies 4 Huginn gates for Stage 1: board_mutation, zobrist_update, fen4_roundtrip, piece_list_sync. These are not implemented as `huginn_observe!` calls because make/unmake is not yet active (Stage 2). The verification methods (`verify_zobrist`, `verify_piece_lists`) serve the same purpose in debug/test builds. Huginn gates should be added in Stage 2 when mutations become frequent during move generation.
+3. [Historical - Huginn retired] **Huginn gates not yet wired (NOTE).** The MASTERPLAN specifies 4 Huginn gates for Stage 1: board_mutation, zobrist_update, fen4_roundtrip, piece_list_sync. These are not implemented as `huginn_observe!` calls because make/unmake is not yet active (Stage 2). The verification methods (`verify_zobrist`, `verify_piece_lists`) serve the same purpose in debug/test builds. Huginn gates should be added in Stage 2 when mutations become frequent during move generation.
 
 ### Unaccounted Concerns
 1. **Player turn order in starting position.** Board initializes with Red to move and all castling rights (0xFF). The 4PC rules reference confirms Red moves first. Verified.

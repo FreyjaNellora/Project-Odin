@@ -53,7 +53,7 @@ Fix bugs found during live `tauri dev` testing and add play mode features (Manua
 - Created and resolved: [[Issue-UI-EP-False-Positive]] — en passant false positive for Blue/Green
 - Created and resolved: [[Issue-UI-Castling-Blue-Green]] — castling display broken for Blue/Green
 - Created and resolved: [[Issue-UI-AdvancePlayer-React-Batching]] — advancePlayer React 18 batching bug
-- Existing issues unchanged: [[Issue-Perft-Values-Unverified]], [[Issue-Huginn-Gates-Unwired]], [[Issue-DKW-Halfmove-Clock]], [[Issue-DKW-Invisible-Moves-UI]]
+- Existing issues unchanged: [[Issue-Perft-Values-Unverified]], [[Issue-DKW-Halfmove-Clock]], [[Issue-DKW-Invisible-Moves-UI]]
 
 ## Patterns Documented
 

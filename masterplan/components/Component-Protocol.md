@@ -37,8 +37,9 @@ The Odin Protocol is the UCI-like text protocol extended for four-player chess. 
 - Depended on by: Stage 5 Basic UI (spawns engine as child process)
 - Communicates via: stdin/stdout text protocol, [[Component-GameState]] API
 
-## Huginn Gates
-Defined but not wired (deferred per established pattern):
+## Tracing Points
+
+Potential `tracing` spans/events (Huginn was retired in Stage 8; see ADR-015):
 - `command_receive` — raw string, parsed type, parse errors
 - `response_send` — full string, what triggered it
 - `position_set` — FEN4/startpos, move list, resulting hash
@@ -54,7 +55,7 @@ Defined but not wired (deferred per established pattern):
 Not applicable for Stage 4. Protocol is not in any hot path.
 
 ## Known Issues
-- [[Issue-Huginn-Gates-Unwired]] — now includes 4 Stage 4 gates
+- ~~[[Issue-Huginn-Gates-Unwired]]~~ — resolved; Huginn retired in Stage 8 (ADR-015)
 
 ## Build History
 - [[Session-2026-02-20-Stage04]] — initial implementation

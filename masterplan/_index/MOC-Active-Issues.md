@@ -20,13 +20,13 @@ _None._
 
 ## Notes
 
-- [[Issue-Huginn-Gates-Unwired]] -- Stages 1-7 Huginn observation gates not wired; deferred until buffer plumbing exists
 - [[Issue-Bootstrap-Eval-Lead-Penalty-Tactical-Mismatch]] -- Lead-penalty heuristic causes BRS to prefer checks over captures in some positions; Stage 8 to fix
 - [[Issue-DKW-Halfmove-Clock]] -- DKW instant moves increment halfmove_clock via make_move; may cause premature 50-move rule triggers in DKW games
 - [[Issue-DKW-Invisible-Moves-UI]] -- DKW king instant moves not visible in UI rendering cache; visual desync after DKW events
 
 ## Recently Resolved
 
+- [[Issue-Huginn-Gates-Unwired]] -- Huginn telemetry system retired in Stage 8; replaced with `tracing` crate (ADR-015). Gates no longer needed. (2026-02-23)
 - [[Issue-Promotion-Wrong-Ranks-No-UI]] -- UI used wrong promotion ranks (board edges instead of midline), no piece selection dialog, and wrong suffix (`q` instead of `w` for PromotedQueen). Fixed: correct ranks, PromotionDialog component, `w` suffix. (2026-02-22)
 - [[Issue-SemiAuto-HumanPlayer-Guard]] -- Semi-auto engine took over human's turn when no player selected. Fixed: null guard in shouldEnginePlay, removed disabled from player selector. (2026-02-21)
 - [[Issue-Checkmate-Detection-DKW-Ordering]] -- Checkmate not detected due to DKW ordering bug + protocol early return + UI parser dropping reason-suffixed events. All three bugs fixed. (2026-02-21)

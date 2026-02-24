@@ -54,13 +54,13 @@ info string Error: <message>
 3. **No `ucinewgame` command.** A new `position` command replaces the game state.
 4. **Move parsing depends on legal move generation.** Every move in a `position ... moves` list triggers a full legal move generation to find the matching move. For long move lists, this is O(n * m) where n=moves and m=legal moves per position. Not a concern for protocol (not in hot path).
 5. **`setoption` only recognizes `Debug` and `Terrain`.** All other options are silently accepted and ignored.
-6. **Huginn gates not wired.** 4 gates defined (command_receive, response_send, position_set, search_request) but not implemented.
+6. **~~Huginn gates not wired.~~** *(Historical — Huginn was retired in Stage 8 and replaced with the `tracing` crate; see ADR-015.)*
 
 ### Performance Baselines
 
 | Metric | Value | Notes |
 |---|---|---|
-| Test count (no huginn) | 229 | 156 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 |
+| Test count | 229 | 156 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 |
 | Perft values | 20/395/7800/152050 | Unchanged from Stage 2 |
 
 ### Open Questions

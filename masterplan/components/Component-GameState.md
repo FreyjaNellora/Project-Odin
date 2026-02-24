@@ -75,9 +75,9 @@ The `apply_move` method is the core of GameState. Its internal sequence is:
 - Depended on by: [[stage_04_protocol]], [[stage_06_bootstrap_eval]], [[stage_07_plain_brs]], [[stage_10_mcts]]
 - Communicates via: [[Connection-Board-to-GameState]], [[Connection-MoveGen-to-GameState]]
 
-## Huginn Gates
+## Tracing Points
 
-Specified in [[MASTERPLAN]] Stage 3:
+Potential `tracing` spans/events (Huginn was retired in Stage 8; see ADR-015):
 - `turn_transition` -- track turn rotation, skipped players, and reasons
 - `check_detection` -- which king tested, what attackers found
 - `checkmate_stalemate` -- check/stalemate rulings

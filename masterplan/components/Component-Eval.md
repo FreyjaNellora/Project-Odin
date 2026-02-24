@@ -64,13 +64,11 @@ Provides position evaluation for search. Without eval, search cannot compare pos
 - Depended on by: [[stage_07_plain_brs]], [[stage_08_brs_hybrid]], [[stage_10_mcts]], [[stage_16_nnue_integration]]
 - Communicates via: [[Connection-GameState-to-Eval]], [[Connection-Eval-to-Search]]
 
-## Huginn Gates
+## Tracing Points
 
-Specified in [[MASTERPLAN]] Stage 6:
-- `eval_call` (Verbose) -- position hash, player, component scores (material, positional, king_safety, threat, lead, ffa), final score
-- `eval_comparison` (Normal) -- two positions compared, scores, which is better
-
-Not wired (see [[Issue-Huginn-Gates-Unwired]]).
+Potential `tracing` spans/events (Huginn was retired in Stage 8; see ADR-015):
+- `eval_call` (TRACE) -- position hash, player, component scores (material, positional, king_safety, threat, lead, ffa), final score
+- `eval_comparison` (DEBUG) -- two positions compared, scores, which is better
 
 ## Gotchas
 

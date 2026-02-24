@@ -17,6 +17,10 @@ import {
 
 export type PlayMode = 'manual' | 'semi-auto' | 'full-auto';
 
+export type GameMode = 'ffa' | 'lks';
+
+export type EvalProfileSetting = 'auto' | 'standard' | 'aggressive';
+
 export type PromotionChoice = 'w' | 'r' | 'b' | 'n';
 
 export interface PendingPromotion {
@@ -49,14 +53,21 @@ export interface UseGameStateResult {
   engineDelay: number;
   isPaused: boolean;
   gameInProgress: boolean;
+  gameMode: GameMode;
+  evalProfile: EvalProfileSetting;
+  terrainMode: boolean;
+  resolvedEvalProfile: 'standard' | 'aggressive';
   pendingPromotion: PendingPromotion | null;
   handleSquareClick: (sq: number) => void;
   requestEngineMove: () => void;
-  newGame: (terrain: boolean) => void;
+  newGame: () => void;
   handleEngineMessage: (msg: EngineMessage) => void;
   setPlayMode: (mode: PlayMode) => void;
   setHumanPlayer: (player: Player | null) => void;
   setEngineDelay: (ms: number) => void;
+  setGameMode: (mode: GameMode) => void;
+  setEvalProfile: (profile: EvalProfileSetting) => void;
+  setTerrainMode: (on: boolean) => void;
   togglePause: () => void;
   resolvePromotion: (piece: PromotionChoice) => void;
   cancelPromotion: () => void;
@@ -85,6 +96,14 @@ export function useGameState(
 
   // Promotion state: when set, the UI shows a piece selection dialog
   const [pendingPromotion, setPendingPromotion] = useState<PendingPromotion | null>(null);
+
+  // Game settings state (Stage 8)
+  const [gameMode, setGameModeState] = useState<GameMode>('ffa');
+  const [evalProfile, setEvalProfileState] = useState<EvalProfileSetting>('auto');
+  const [terrainMode, setTerrainModeState] = useState(false);
+  const gameModeRef = useRef<GameMode>('ffa');
+  const evalProfileRef = useRef<EvalProfileSetting>('auto');
+  const terrainModeRef = useRef(false);
 
   // Track pending move validation state
   const pendingMoveRef = useRef<string | null>(null);
@@ -128,6 +147,27 @@ export function useGameState(
     engineDelayRef.current = ms;
   }, []);
 
+  const setGameMode = useCallback((mode: GameMode) => {
+    setGameModeState(mode);
+    gameModeRef.current = mode;
+  }, []);
+
+  const setEvalProfile = useCallback((profile: EvalProfileSetting) => {
+    setEvalProfileState(profile);
+    evalProfileRef.current = profile;
+  }, []);
+
+  const setTerrainMode = useCallback((on: boolean) => {
+    setTerrainModeState(on);
+    terrainModeRef.current = on;
+  }, []);
+
+  // Resolve "auto" eval profile based on current game mode
+  const resolvedEvalProfile: 'standard' | 'aggressive' =
+    evalProfile === 'auto'
+      ? (gameMode === 'ffa' ? 'aggressive' : 'standard')
+      : evalProfile;
+
   /** Advance to the next non-eliminated player in rotation. Returns the new player. */
   const advancePlayer = useCallback((): Player => {
     let candidate = PLAYERS[(PLAYERS.indexOf(currentPlayerRef.current) + 1) % 4];
@@ -154,6 +194,10 @@ export function useGameState(
 
   /** Send position + go using the ref-based move list (for auto-play chains). */
   const sendGoFromRef = useCallback(() => {
+    // Guard: don't send if we're already waiting for a bestmove response.
+    // Prevents duplicate searches when pause/resume overlaps with an in-flight search.
+    if (awaitingBestmoveRef.current) return;
+
     const moves = moveListRef.current;
     const posCmd =
       moves.length > 0
@@ -380,11 +424,15 @@ export function useGameState(
         const player = currentPlayerRef.current;
         if (shouldEnginePlay(player)) {
           autoPlayRef.current = true;
-          setTimeout(() => {
-            if (autoPlayRef.current) {
-              sendGoFromRef();
-            }
-          }, engineDelayRef.current);
+          // If a search is already in flight, just set autoPlayRef and let the
+          // bestmove handler chain the next move naturally via maybeChainEngineMove.
+          if (!awaitingBestmoveRef.current) {
+            setTimeout(() => {
+              if (autoPlayRef.current) {
+                sendGoFromRef();
+              }
+            }, engineDelayRef.current);
+          }
         }
         return false;
       } else {
@@ -395,9 +443,9 @@ export function useGameState(
     });
   }, [shouldEnginePlay, sendGoFromRef]);
 
-  /** Start a new game. */
+  /** Start a new game. Reads game settings from state and sends commands in strict order. */
   const newGame = useCallback(
-    (terrain: boolean) => {
+    () => {
       setBoard(startingPosition());
       setMoveList([]);
       setMoveHistory([]);
@@ -420,7 +468,14 @@ export function useGameState(
       latestInfoRef.current = null;
       setPendingPromotion(null);
 
-      sendCommand(`setoption name Terrain value ${terrain ? 'true' : 'false'}`)
+      // Send settings in strict order: gamemode -> evalprofile -> terrain -> position -> isready
+      const mode = gameModeRef.current;
+      const profile = evalProfileRef.current;
+      const terrain = terrainModeRef.current;
+
+      sendCommand(`setoption name GameMode value ${mode}`)
+        .then(() => sendCommand(`setoption name EvalProfile value ${profile}`))
+        .then(() => sendCommand(`setoption name Terrain value ${terrain ? 'true' : 'false'}`))
         .then(() => sendCommand('position startpos'))
         .then(() => sendCommand('isready'))
         .then(() => {
@@ -572,6 +627,10 @@ export function useGameState(
     engineDelay,
     isPaused,
     gameInProgress: moveList.length > 0,
+    gameMode,
+    evalProfile,
+    terrainMode,
+    resolvedEvalProfile,
     pendingPromotion,
     handleSquareClick,
     requestEngineMove,
@@ -580,6 +639,9 @@ export function useGameState(
     setPlayMode,
     setHumanPlayer,
     setEngineDelay,
+    setGameMode,
+    setEvalProfile,
+    setTerrainMode,
     togglePause,
     resolvePromotion,
     cancelPromotion,

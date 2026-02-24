@@ -5,14 +5,14 @@
 **Auditor:** Claude Opus 4.6
 
 ### Build State
-- Compiles: Yes (`cargo build` and `cargo build --features huginn`)
+- Compiles: Yes (`cargo build`)
 - Tests pass: Yes (229 total: 156 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04)
 - Previous downstream flags reviewed: Stages 0-4 (full dependency chain)
 
 ### Findings
 
 **From Stage 0 downstream log:**
-- Huginn macro and buffer available. No gates wired (deferred). No impact on Stage 5.
+- [Historical] Huginn macro and buffer available. No gates wired (deferred). No impact on Stage 5.
 
 **From Stage 1 downstream log:**
 - Board is `[Option<Piece>; 196]`, index = `rank * 14 + file`. 36 corners invalid. UI must mirror square geometry.

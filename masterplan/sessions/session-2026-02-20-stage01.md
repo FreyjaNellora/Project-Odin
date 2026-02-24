@@ -16,7 +16,7 @@ Implemented the full board representation layer for four-player chess. This is t
 - **Global Zobrist keys via `OnceLock`:** Thread-safe singleton avoids threading `&ZobristKeys` everywhere.
 - **FEN4 custom format:** No standard exists for 4PC. Designed with player prefixes (R/B/Y/G), corner markers ('x'), and per-player castling notation (A/a B/b C/c D/d).
 - **PromotedQueen as FEN char 'W':** Avoids collision with regular Queen 'Q'.
-- **Deferred Huginn gates to Stage 2:** Make/unmake is not yet active, so observation points would fire only during setup. Debug verification methods exist instead.
+- **[Historical - Huginn retired Stage 8] Deferred Huginn gates to Stage 2:** Make/unmake is not yet active, so observation points would fire only during setup. Debug verification methods exist instead.
 
 ## Files Created
 
@@ -29,14 +29,14 @@ Implemented the full board representation layer for four-player chess. This is t
 
 ## Test Results
 
-- 64 tests (no huginn), 73 tests (with huginn) — all pass
+- 64 tests — all pass [Historical note: originally 73 with Huginn feature, Huginn retired Stage 8]
 - `cargo fmt` clean
 - `cargo clippy`: 5 dead_code warnings (utility functions awaiting Stage 2+ consumers)
 
 ## Notes for Future
 
 - Board does not implement `Clone` — Stage 2 may need it for testing
-- Huginn gates should be wired in Stage 2 when make/unmake is hot
+- [Historical - Huginn retired Stage 8] Huginn gates should be wired in Stage 2 when make/unmake is hot
 - Piece lists use `Vec` — consider `ArrayVec` if profiling shows allocation pressure
 
 ---

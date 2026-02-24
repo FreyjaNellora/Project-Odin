@@ -40,13 +40,13 @@
 3. **No auto-claim implementation.** The spec mentions "autoclaim triggers when eliminated 2nd-place leads 3rd-place by 21+ points." Currently only check_claim_win for active players is implemented.
 4. **GameOverReason enum defined but not stored.** The GameState stores game_over bool and winner, but not WHY the game ended. Future stages may want this.
 5. **No move history stored.** GameState only stores position hashes, not the moves themselves. For protocol/UI replay, move history would need to be added.
-6. **Huginn gates not wired.** 7 gates specified in the spec remain unwired. Accumulating with earlier stages.
+6. **~~Huginn gates not wired.~~** *(Historical — Huginn was retired in Stage 8 and replaced with the `tracing` crate; see ADR-015.)*
 
 ### Performance Baselines
 
 | Metric | Value | Notes |
 |---|---|---|
-| Test count (no huginn) | 164 | 108 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 |
+| Test count | 164 | 108 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 |
 | 1000 random games (normal mode, debug) | ~104s | Permanent invariant test |
 | 1000 random games (terrain mode, debug) | ~104s | Permanent invariant test |
 | Perft values | 20/395/7800/152050 | Unchanged from Stage 2 |

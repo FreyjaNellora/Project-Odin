@@ -89,7 +89,7 @@
 
 | Metric | Value | Notes |
 |---|---|---|
-| Engine test count (no huginn) | 229 | Unchanged — Stage 5 adds no engine tests |
+| Engine test count | 229 | Unchanged — Stage 5 adds no engine tests |
 | Vitest test count | 45 | 29 board-constants + 16 protocol-parser |
 | Tauri backend compile (fresh) | ~11s | Debug profile |
 | TypeScript compile | <1s | `tsc --noEmit` |

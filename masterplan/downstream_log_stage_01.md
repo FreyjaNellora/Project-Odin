@@ -68,7 +68,7 @@
 
 3. **Piece lists use `Vec`, not fixed-size arrays.** This means heap allocation per player. If profiling shows this is a bottleneck in make/unmake (Stage 2), consider switching to fixed-capacity `ArrayVec<(PieceType, Square), 16>`.
 
-4. **Huginn gates not yet wired.** The 4 Huginn gates specified in MASTERPLAN (board_mutation, zobrist_update, fen4_roundtrip, piece_list_sync) are not implemented as `huginn_observe!` calls. Verification methods exist (`verify_zobrist`, `verify_piece_lists`) for debug use. Wire Huginn gates in Stage 2 when make/unmake becomes the hot path.
+4. **~~Huginn gates not yet wired.~~** *(Historical — Huginn was retired in Stage 8 and replaced with the `tracing` crate; see ADR-015.)* Verification methods exist (`verify_zobrist`, `verify_piece_lists`) for debug use.
 
 5. **No `Clone` or `Copy` on Board.** Board contains `Vec` fields (piece lists) and a static reference. If make/unmake in Stage 2 needs board copying, derive or implement `Clone`.
 
@@ -78,8 +78,7 @@
 |---|---|---|
 | `cargo build` (incremental) | ~0.18s | Dev profile |
 | `cargo build --release` | ~0.33s | Binary: 129,024 bytes |
-| Test count (no huginn) | 64 | 44 unit + 2 stage-00 + 18 stage-01 |
-| Test count (with huginn) | 73 | 53 unit + 2 stage-00 + 18 stage-01 |
+| Test count | 64 | 44 unit + 2 stage-00 + 18 stage-01 |
 | Clippy warnings | 5 dead_code | Utility functions awaiting Stage 2+ consumers |
 
 ### Open Questions

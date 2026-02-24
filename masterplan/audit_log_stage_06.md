@@ -5,14 +5,14 @@
 **Auditor:** Claude Opus 4.6
 
 ### Build State
-- Compiles: Yes (`cargo build` and `cargo build --features huginn`)
+- Compiles: Yes (`cargo build`)
 - Tests pass: Yes (229 total: 156 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04)
 - Previous downstream flags reviewed: Stages 0-3 (full dependency chain: Stage 6 → 3 → 2 → 1 → 0)
 
 ### Findings
 
 **From Stage 0 downstream log:**
-- Huginn macro and buffer available. `Phase::Eval` variant exists. No gates wired yet (deferred per [[Issue-Huginn-Gates-Unwired]]). Stage 6 will define `eval_call` and `eval_comparison` gate schemas but not wire them (following established pattern).
+- [Historical] Huginn macro and buffer available. `Phase::Eval` variant exists. No gates wired yet (deferred per [Resolved - Huginn retired in Stage 8, replaced by `tracing` crate]). Stage 6 will define `eval_call` and `eval_comparison` gate schemas but not wire them (following established pattern).
 
 **From Stage 1 downstream log:**
 - `Board::piece_list(player)` returns `&[(PieceType, Square)]` — primary iteration target for material/positional scoring. Does NOT include piece status; must use `board.piece_at(sq)` to check alive/dead/terrain.

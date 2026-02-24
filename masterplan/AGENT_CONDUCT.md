@@ -12,9 +12,9 @@ This document defines HOW AI agents behave while building Project Odin. It is on
 
 | Document | Defines | Authority Over |
 |----------|---------|---------------|
-| `MASTERPLAN.md` ([[MASTERPLAN]]) | WHAT each stage builds | Stage specs, acceptance criteria, architecture, Huginn gate lists |
+| `MASTERPLAN.md` ([[MASTERPLAN]]) | WHAT each stage builds | Stage specs, acceptance criteria, architecture, tracing points |
 | `4PC_RULES_REFERENCE.md` ([[4PC_RULES_REFERENCE]]) | The game rules | Board layout, piece movement, scoring, game modes |
-| `AGENT_CONDUCT.md` (this) | HOW agents work | Behavior rules, audit procedures, Huginn reporting, code standards |
+| `AGENT_CONDUCT.md` (this) | HOW agents work | Behavior rules, audit procedures, code standards |
 
 **Every agent that touches the codebase must read this document before beginning any work.**
 
@@ -36,7 +36,7 @@ Before writing a single line of code for any stage, follow these steps in order.
 - What this stage builds (deliverables)
 - Build order (sequential steps)
 - Acceptance criteria (definition of done)
-- Huginn gates (observation points to add)
+- Tracing points (observation points to add)
 - "What you DON'T need" (scope boundaries)
 
 **Step 2: Read all upstream audit logs.** Trace the dependency chain from MASTERPLAN Appendix A. For every stage this one depends on (direct and transitive), read `audit_log_stage_XX.md`. Look for:
@@ -56,7 +56,6 @@ Example: Stage 8 depends on Stage 7, which depends on Stage 6, which depends on 
 ```
 cargo build
 cargo test
-cargo build --features huginn
 ```
 If anything fails, STOP. Do not proceed with new work on a broken foundation. Record the failure in the pre-audit section of this stage's audit log.
 
@@ -77,7 +76,7 @@ Every commit must leave the project in a compilable, test-passing state. No exce
 
 The authoritative invariant table is in `MASTERPLAN.md` ([[MASTERPLAN]]) Section 4.1 (14 invariants, Stages 0-9). Consult that table for the full list. Key invariants for quick reference:
 
-- **Stage 0:** Prior-stage tests never deleted. Huginn compiles to nothing when off.
+- **Stage 0:** Prior-stage tests never deleted.
 - **Stage 2:** Perft values are forever. Zobrist make/unmake round-trip. Attack query API is the board boundary.
 - **Stage 3:** Game playouts complete without crashes.
 - **Stage 5:** UI owns zero game logic.
@@ -112,7 +111,7 @@ If existing behavior genuinely needs to change (rare), the agent must:
 - Implementing something explicitly described in the stage spec (build order items, key types, acceptance criteria)
 - Writing tests for behavior described in the spec
 - Fixing a bug that is clearly a defect (test fails, panic on valid input, wrong output for documented behavior)
-- Adding Huginn observation points listed in the stage's Huginn gates section
+- Adding tracing instrumentation at key boundaries
 - Refactoring internal implementation without changing the public API
 
 **Stop and ask when:**
@@ -123,7 +122,6 @@ If existing behavior genuinely needs to change (rare), the agent must:
 - You discover a bug in a prior stage that requires non-trivial changes
 - You want to add functionality not mentioned in the spec, even if it seems helpful
 - Any change to `Cargo.toml` dependencies beyond what the spec requires
-- Any change to the Huginn macro interface or buffer structure
 
 ---
 
@@ -285,12 +283,11 @@ If the auditor marks something BLOCKING but the implementor disagrees, the BLOCK
 - All training code (`odin-nnue/`)
 - All masterplan documents (`masterplan/`)
 - `README.md`, `STATUS.md`, `HANDOFF.md`, `DECISIONS.md`
-- `.gitignore` (exclude: build artifacts, node_modules, NNUE weight files > 10MB, Huginn trace files)
+- `.gitignore` (exclude: build artifacts, node_modules, NNUE weight files > 10MB)
 
 **What does NOT get versioned:**
 - Build artifacts (`target/`, `dist/`, `node_modules/`)
 - NNUE weight files (`.onnue`) -- these are large binaries. Store separately or use Git LFS.
-- Huginn trace files (`.jsonl`) -- these are debug data, not source.
 
 ---
 
@@ -522,6 +519,37 @@ and what didn't work. Ask the user.
 
 ---
 
+### 1.16 Deferred-Debt Escalation Rule
+
+**The problem this solves:** A system or feature can be deferred at Stage N with the note "will wire in Stage N+1." Then Stage N+1 defers to N+2. Then N+2 defers to N+3. After 8 stages of silent deferral, the project carries dead code that was never functional, and the user discovers it only when they try to use it. This happened with Huginn (see ADR-015).
+
+**The rule:** If any work item, feature, integration, or plumbing task has been deferred for **2 or more consecutive stages**, it becomes a **mandatory escalation item**. The agent must:
+
+1. **Flag it loudly in HANDOFF.md** under a dedicated `## Deferred Debt` section. Each item must include:
+   - What it is
+   - How many stages it has been deferred
+   - WHY it is stuck (the actual blocker, not just "not needed yet")
+   - What would unblock it (specific technical approach)
+   - Whether the design itself might be flawed
+
+2. **Promote the issue severity.** If the deferred item has a vault issue note, promote it from NOTE to WARNING after 2 stages of deferral. After 3 stages, promote to BLOCKING or explicitly record a decision (in DECISIONS.md) that the feature is being intentionally abandoned.
+
+3. **Tell the user directly.** Do not silently carry deferred debt. If something has been pushed back 2+ times, the user must hear about it in plain language: "This has been deferred for N stages. Here's why it's stuck and what we should do about it."
+
+**What counts as deferral:**
+- "Will wire in the next stage"
+- "Deferred per established pattern"
+- "Not needed yet, will add when relevant"
+- Any variant of "will do later" applied to the same item across multiple stages
+
+**What does NOT count:**
+- Intentional sequencing per the build order (e.g., NNUE training waiting for self-play infrastructure is not deferral — it's dependency ordering)
+- Items whose prerequisite stage hasn't been reached yet
+
+**The spirit of the rule:** If you're turning something off to make the problem go away temporarily, that is not a fix. Raise your voice and speak up. Silent deferral compounds into silent failure.
+
+---
+
 ## 2. COMPREHENSIVE AUDIT CHECKLIST
 
 ---
@@ -578,7 +606,7 @@ More code than necessary for the same result.
 - Duplicate logic that could be shared (two functions that do nearly the same thing for different piece types).
 - Over-abstraction: trait hierarchies or generic parameters that serve only one concrete type. If there is only one `impl`, you do not need the trait yet (exception: `Evaluator` and `Searcher` traits are defined before their second implementor, by design).
 - Builder patterns, factory functions, or configuration objects for things that could be a simple constructor.
-- Excessive logging or debug output in non-Huginn code paths.
+- Excessive logging or debug output.
 
 ---
 
@@ -651,7 +679,6 @@ Uppercase/lowercase mixing, different terms for the same concept, abbreviation i
 - Abbreviation inconsistency: `sq` vs. `square` vs. `sqr`. Pick one per context (variable names can abbreviate, type names should not).
 - Concept naming drift: `position` vs. `board` vs. `state` used interchangeably when they mean different things in this project. `Board` is the piece layout. `GameState` is the full game. Define `position` once and use it consistently.
 - Player naming: `Red`/`Blue`/`Yellow`/`Green` vs. numeric indices (0, 1, 2, 3). The enum should be `Player::Red`, etc. Numeric indices should only appear in array indexing, never in logic.
-- Huginn naming: all Huginn-related identifiers should begin with `huginn_` or be in the `huginn::` module. No Huginn code should use names that look like engine code.
 
 ---
 
@@ -678,14 +705,12 @@ Comparing the state of the codebase before and after stage work to catch things 
 1. **Before work begins,** record:
    - Full `cargo test` output (test count, all pass)
    - Binary size: `cargo build --release`
-   - Binary size with Huginn: `cargo build --release --features huginn`
    - Public API surface of the stage's module (all `pub fn`, `pub struct`, `pub enum`, `pub trait`)
 
 2. **After work completes,** record the same metrics.
 
 3. **Compare:**
    - Test count should have increased (new tests for new functionality). If it decreased, tests were deleted -- investigate why.
-   - Binary size with Huginn enabled vs. disabled should differ only by Huginn code. If the gap grew significantly, Huginn code may be leaking into non-gated paths.
    - Public API should contain only what the stage spec requires. If extra public items appeared, justify each one.
    - All pre-existing tests still pass.
 
@@ -717,8 +742,6 @@ Code paths that can crash the engine.
 - Division by zero (visit count = 0 in UCB1 calculation, time remaining = 0 in time management).
 - Recursion without depth limits (BRS search, MCTS selection).
 
-**Huginn must NEVER panic.** A Huginn bug should silently drop data, not crash the engine.
-
 ---
 
 ### 2.13 Test Coverage Gaps
@@ -743,7 +766,7 @@ Something that was fast becoming slow.
 - Eval calls per second as a baseline after Stage 6.
 - BRS nodes per second as a baseline after Stage 7.
 - MCTS simulations per second as a baseline after Stage 10.
-- Allocations in hot paths: `Vec::push` in movegen (should pre-allocate), `Box::new` in MCTS node creation (should use arena after Stage 19), `String` creation in non-Huginn code during search.
+- Allocations in hot paths: `Vec::push` in movegen (should pre-allocate), `Box::new` in MCTS node creation (should use arena after Stage 19), `String` creation during search.
 - Unnecessary cloning of large structs.
 - Hash table operations that degrade as the table fills up.
 
@@ -757,21 +780,18 @@ Memory leaks, unbounded growth, and allocation patterns.
 - MCTS tree growth: if the tree is never pruned or reused between searches, memory usage grows without bound across a game. Verify that MCTS tree memory is bounded.
 - Position history in `GameState.position_history: Vec<u64>`: grows every move, never shrinks. In long games (200+ moves), this could become large. Consider bounded storage.
 - Transposition table: verify it is a fixed-size allocation, not growing.
-- Huginn ring buffer: verify it wraps and drops old data silently, does not grow.
 - Rust-specific: `Rc` cycles, `Arc` without weak references where cycles are possible, `Box<dyn Trait>` in collections that grow without bound.
 
 ---
 
 ### 2.16 Feature Flag Contamination
 
-Huginn code leaking into non-Huginn builds.
+Feature-gated code leaking into default builds.
 
 **What to look for:**
-- Any Huginn-related type, function, or import that appears outside of `#[cfg(feature = "huginn")]` blocks.
-- The `huginn_observe!` macro compiles to nothing when the flag is off, but if the macro's arguments have side effects (function calls, allocations), those side effects still execute. **Macro arguments must be pure references or copies, never function calls that allocate.**
-- Tests that only pass with `--features huginn` enabled. All non-Huginn tests must pass without the flag.
-- Binary size comparison: track the difference between `cargo build --release` and `cargo build --release --features huginn` across stages. If it grows unexpectedly, Huginn code is pulling in unnecessary dependencies.
-- The `huginn` module should not have `pub` items that non-Huginn code could import. Everything in `huginn::` should be feature-gated.
+- Any feature-gated type, function, or import that appears outside its `#[cfg(feature = "...")]` blocks.
+- Tests that only pass with a specific feature flag enabled. All default tests must pass without optional flags.
+- Binary size comparison: track `cargo build --release` across stages. Unexpected growth may indicate unnecessary dependencies.
 
 ---
 
@@ -832,7 +852,7 @@ Modules that depend on each other, creating coupling.
 **What to look for:**
 - Module A imports from Module B and Module B imports from Module A. In Rust this is technically possible within a crate but indicates design problems.
 - The architecture is layered: Board -> MoveGen -> GameState -> Search -> Eval. Each layer should depend only on layers below it. If eval imports from search, that is a circular dependency.
-- Exception: Huginn can observe any module because it is a cross-cutting concern. But Huginn must never be a dependency OF any module -- no engine code imports from Huginn.
+- Exception: Tracing instrumentation can observe any module because it is a cross-cutting concern. But tracing configuration must never be a dependency OF any module -- no engine logic imports from tracing configuration.
 
 ---
 
@@ -882,7 +902,7 @@ Documentation that describes behavior the code no longer exhibits.
 - MASTERPLAN references to code structures that have changed.
 - Downstream log entries that describe API contracts that were subsequently modified.
 - Inline comments explaining "why" that reference conditions that no longer exist.
-- Huginn gate descriptions in the MASTERPLAN that do not match the actual observation points in code.
+- Tracing instrumentation in the MASTERPLAN that does not match the actual observation points in code.
 
 ---
 
@@ -898,418 +918,30 @@ Code that compiles and passes existing tests but is logically wrong in ways not 
 
 ---
 
-## 3. HUGINN REPORTING SPECIFICATION
+## 3. OBSERVABILITY
 
-The MASTERPLAN (Section 2.1) defines WHAT Huginn observes -- the gates listed per stage. This section defines HOW Huginn reports, stores, organizes, and exposes that data. These are complementary. An agent adding Huginn gates reads the MASTERPLAN for what to observe and this section for how to format and store the observation.
+The engine uses the `tracing` crate for structured logging and diagnostics. This replaced a custom compile-gated telemetry system (Huginn) that was retired in Stage 8 (see ADR-015).
 
----
+### 3.1 Tracing Usage
 
-### 3.1 Report Format: Structured JSON Lines (JSONL)
+- Use `tracing::debug!` for search/eval diagnostic output
+- Use `tracing::info!` for high-level events (search start/complete, position set)
+- Use `tracing::trace!` for verbose per-node data (only in development)
+- All tracing calls are zero-cost when filtered out at runtime
 
-Each observation is a single JSON object on one line. One observation = one line. No multi-line JSON.
-
-**Schema for every observation:**
-```json
-{
-  "ts": 1423847291,
-  "session_id": "a1b2c3d4",
-  "trace_id": "e5f6g7h8",
-  "gate": "alpha_beta_prune",
-  "stage": 7,
-  "phase": "brs",
-  "level": "verbose",
-  "data": { }
-}
-```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `ts` | u64 | Monotonic clock nanoseconds from engine start. Not wall clock. Allows correlation without timezone issues. |
-| `session_id` | string | Generated once per engine process. All traces in one session share this. |
-| `trace_id` | string | Generated per search invocation (from `go` to `bestmove`). All observations within one search share this. **Primary correlation key.** |
-| `gate` | string | Observation point name, matching the MASTERPLAN's Huginn gate names exactly (e.g., `"board_mutation"`, `"zobrist_update"`, `"alpha_beta_prune"`). |
-| `stage` | u8 | The stage number that defined this gate. For provenance. |
-| `phase` | string | `"brs"`, `"mcts"`, `"eval"`, `"movegen"`, `"setup"`, or `"summary"`. Which engine phase emitted this. |
-| `level` | string | `"minimal"`, `"normal"`, `"verbose"`, or `"everything"`. The verbosity level that emitted this. |
-| `data` | object | Gate-specific payload. Defined per gate (see Section 3.7). |
-
----
-
-### 3.2 Storage: Ring Buffer + Optional File Sink
-
-**Primary storage: In-memory ring buffer.** The `HuginnBuffer` from Stage 0.
-- Fixed-size, pre-allocated at engine startup.
-- Default capacity: 65,536 entries (2^16).
-- Each entry is a fixed-size slot (max 4 KB per serialized observation).
-- When full, oldest entries are silently overwritten. No warning, no error, no panic.
-- **No allocation during search.** The buffer is pre-allocated. Observations are written into existing slots.
-- Configurable via `setoption name HuginnBufferSize value <N>`.
-
-**Secondary storage: Optional file sink.**
-- Enabled via `setoption name HuginnFile value <path>`.
-- Observations are flushed from the ring buffer to a JSONL file during post-search processing (after `bestmove` is returned).
-- Appends to the file. One line per observation.
-- The file can be analyzed with standard tools: `grep`, `jq`, Python `json` module.
-
-**Default: in-memory only.** File sink is opt-in. For development, the in-memory buffer is sufficient for the most recent search. For deep analysis or batch auditing, enable file sink.
-
----
-
-### 3.3 Organization: 5-Level Trace Hierarchy
-
-This is how Huginn data stays navigable instead of becoming a wall of noise.
+### 3.2 Environment Configuration
 
 ```
-Level 1: Session         — one engine process lifetime
-  Level 2: Search/Trace  — one `go` to `bestmove` cycle (identified by trace_id)
-    Level 3: Phase       — BRS or MCTS within a search
-      Level 4: Path      — move sequence from root (BRS) or selection path (MCTS)
-        Level 5: Gate    — individual observation point
-```
-
-**Querying pattern:** Filter by `trace_id` first (get everything from one search), then filter by `phase`, `gate`, or `level`. The JSONL format makes `grep` and `jq` usable for ad-hoc queries:
-
-```bash
-# All observations from search trace "e5f6g7h8"
-grep '"trace_id":"e5f6g7h8"' huginn.jsonl
-
-# Only alpha-beta prune events from that search
-grep '"trace_id":"e5f6g7h8"' huginn.jsonl | grep '"gate":"alpha_beta_prune"'
-
-# Only anomalies (minimal-level events are summaries and anomalies)
-grep '"level":"minimal"' huginn.jsonl
-```
-
-**Per-search summary:** After each search completes, Huginn automatically generates a summary observation:
-
-```json
-{
-  "gate": "search_summary",
-  "level": "minimal",
-  "data": {
-    "best_move": "d2d4",
-    "score_cp": 150,
-    "depth": 8,
-    "total_nodes": 523847,
-    "brs_time_ms": 234,
-    "mcts_time_ms": 1766,
-    "mcts_sims": 4823,
-    "surviving_moves": 5,
-    "observations_by_gate": { "alpha_beta_prune": 12847, "eval_call": 48293, ... },
-    "observations_by_level": { "minimal": 1, "normal": 34, "verbose": 891 },
-    "anomalies": []
-  }
-}
-```
-
-This summary is always emitted at `minimal` level. It is the headline for the search.
-
----
-
-### 3.4 Verbosity Level Contract
-
-What goes in each level. The goal: Minimal shows the answer, Normal shows the reasoning, Verbose shows every step, Everything shows every detail.
-
----
-
-#### Minimal (target: fewer than 10 observations per search)
-
-- **Search summary** (one per search): best move, score, depth, node count, phase times, surviving move count.
-- **Anomalies only:** Zobrist mismatch detected, hash collision detected, score exceeds sane bounds, assertion-like failures.
-- Gate firing: only gates that detected a problem.
-
-Use Minimal for production monitoring and quick sanity checks.
-
----
-
-#### Normal (target: 20-50 observations per search)
-
-Everything in Minimal, plus:
-
-- **Board context** (Stage 8): the full `BoardContext` output at search start.
-- **Phase transition:** BRS result with surviving moves and their scores, handoff to MCTS.
-- **Iterative deepening progression:** depth, best move, score, node count, time for each completed depth.
-- **MCTS root summary:** visit distribution for top 5 moves.
-- **Eval call summary:** count, average, min, max for this search.
-
-Use Normal for routine development auditing. Run 5-10 test positions at Normal, check the summaries.
-
----
-
-#### Verbose (target: 200-2,000 observations per search)
-
-Everything in Normal, plus:
-
-- Individual alpha-beta cutoffs with depth, alpha/beta values, cutoff move.
-- Move ordering sequence at root node.
-- Killer and history heuristic state.
-- Each MCTS simulation's selection path and leaf evaluation.
-- Cheap filter classification at opponent nodes (interacting vs. background).
-- Hybrid reply scoring for each scored move.
-- Progressive narrowing: which moves were cut at each depth.
-- Accumulator update details (features added/removed per move).
-
-Use Verbose when investigating a specific position where the engine plays poorly.
-
----
-
-#### Everything (target: 10,000+ observations per search)
-
-Everything in Verbose, plus:
-
-- Every eval call with full component breakdown.
-- Every TT probe (hit/miss/store) at every node.
-- Every move generation call with full move list.
-- SEE computation per capture.
-- Quantization comparison (float vs. quantized) at every NNUE layer.
-
-Use Everything only for debugging specific issues. Will fill the ring buffer quickly. Always enable file sink when using this level.
-
----
-
-### 3.5 How Agents Use Huginn Data During Audits
-
-**Routine audit (every stage):**
-1. Run the engine with `--features huginn` at Normal verbosity on 5-10 test positions.
-2. For each search, check the search summary for anomalies (the `anomalies` array in the summary should be empty).
-3. Verify the phase transition: did BRS produce a reasonable number of surviving moves? Did MCTS agree with BRS on the best move, or disagree?
-4. Check eval summary: are min/max evals in reasonable ranges (not near overflow)?
-5. If anything looks off, re-run at Verbose on that specific position to get the detailed trace.
-
-**Debugging a specific bug:**
-1. Enable Everything verbosity.
-2. Enable file sink (`setoption name HuginnFile value /tmp/huginn_debug.jsonl`).
-3. Run the failing position.
-4. Filter the trace by the relevant gate. Example: Zobrist mismatch detected -> filter by `"zobrist_update"` gate -> find the exact operation where the hash diverged.
-
-**Verifying a new Huginn gate:**
-1. Run a known position at the gate's verbosity level.
-2. Verify the gate fires (its observations appear in the trace).
-3. Verify the payload contains the expected fields (see Section 3.7).
-4. Verify the data values match manual calculation.
-
-**Cross-search comparison:**
-For positions where the engine plays poorly, collect traces at Normal and compare against positions where it plays well. Look for structural differences: different surviving move counts, BRS-MCTS disagreement, anomalous eval values, different board context readings.
-
----
-
-### 3.6 Trace Correlation: Following a Decision Through the Pipeline
-
-Within a trace, moves are encoded in the same notation format (`d2d4`, `e1g1`). Filtering by a specific move string across all gates shows every point where that move was considered, scored, pruned, or selected.
-
-**Example: trace a move that survives to selection**
-
-| Step | Gate | What you see |
-|------|------|-------------|
-| 1 | `move_generation` | Move appears in legal move list |
-| 2 | `move_ordering` | Move's ordering score and position in sequence |
-| 3 | `alpha_beta_prune` (absence) | Move was NOT pruned (not in prune gate = survived) |
-| 4 | `brs_surviving` | Move appears with its BRS score |
-| 5 | `phase_transition` | Move passes threshold into MCTS |
-| 6 | `mcts_expansion` | Move expanded as child of root |
-| 7 | `mcts_simulation` (multiple) | Move appears in selection paths |
-| 8 | `mcts_root_summary` | Move's visit count and value |
-| 9 | `search_summary` | Move selected as bestmove |
-
-**Example: trace a move that was pruned**
-
-| Step | Gate | What you see |
-|------|------|-------------|
-| 1 | `move_generation` | Move appears in legal move list |
-| 2 | `alpha_beta_prune` | Move pruned at depth X with alpha/beta values |
-| 3 | (nothing) | Move does not appear in any subsequent gate |
-
-**Procedure:** Filter the JSONL by the move string:
-```bash
-grep '"d2d4"' huginn.jsonl | grep '"trace_id":"<target_trace>"'
-```
-This gives the complete lifecycle of that move through the pipeline.
-
----
-
-### 3.7 Gate Payload Schemas
-
-For each gate defined in the MASTERPLAN, the `data` object must contain these fields. This section is populated incrementally as stages are built. Representative examples:
-
----
-
-**Stage 1 gates:**
-
-`board_mutation`:
-```json
-{
-  "square": 42,
-  "previous": { "type": "Pawn", "owner": "Red" },
-  "new": null,
-  "hash_before": "0x1a2b3c4d5e6f7890",
-  "hash_after": "0x9f8e7d6c5b4a3210"
-}
-```
-
-`zobrist_update`:
-```json
-{
-  "operation": "xor_out",
-  "key_index": 1247,
-  "key_value": "0xabcdef0123456789",
-  "hash_before": "0x1a2b3c4d5e6f7890",
-  "hash_after": "0x9f8e7d6c5b4a3210"
-}
-```
-
-`piece_list_sync`:
-```json
-{
-  "player": "Red",
-  "array_count": 16,
-  "list_count": 16,
-  "match": true
-}
+RUST_LOG=odin_engine=debug    # Development
+RUST_LOG=odin_engine=info     # Normal operation
+RUST_LOG=odin_engine=trace    # Verbose debugging
 ```
 
 ---
 
-**Stage 2 gates:**
+## 4. WHAT AUTOMATED TRACING CANNOT CATCH
 
-`move_generation`:
-```json
-{
-  "position_hash": "0x1a2b3c4d5e6f7890",
-  "player": "Red",
-  "pseudo_legal_count": 42,
-  "legal_count": 35,
-  "moves": ["d2d3", "d2d4", "e2e3", ...]
-}
-```
-
-`perft`:
-```json
-{
-  "depth": 3,
-  "expected_nodes": 12345,
-  "actual_nodes": 12345,
-  "match": true
-}
-```
-
----
-
-**Stage 7 gates:**
-
-`alpha_beta_prune`:
-```json
-{
-  "depth": 5,
-  "alpha": -150,
-  "beta": 200,
-  "score": 210,
-  "move": "e4e5",
-  "node_type": "min",
-  "cutoff": true
-}
-```
-
-`iterative_deepening`:
-```json
-{
-  "depth": 6,
-  "best_move": "d2d4",
-  "score_cp": 150,
-  "nodes": 234567,
-  "time_ms": 423,
-  "pv": ["d2d4", "c7c5", "e2e4"]
-}
-```
-
----
-
-**Stage 8 gates:**
-
-`board_context`:
-```json
-{
-  "weakest_player": "Green",
-  "root_danger_level": 0.72,
-  "per_opponent": [
-    { "player": "Blue", "aggression_toward_root": 0.85, "best_target": "Red" },
-    { "player": "Yellow", "aggression_toward_root": 0.23, "best_target": "Green" },
-    { "player": "Green", "aggression_toward_root": 0.41, "best_target": "Yellow" }
-  ]
-}
-```
-
-`reply_scoring`:
-```json
-{
-  "opponent": "Blue",
-  "move": "f6f5",
-  "objective_strength": 120,
-  "harm_to_root": 0.73,
-  "likelihood": 0.82,
-  "final_score": 0.69
-}
-```
-
----
-
-**Stage 10 gates:**
-
-`mcts_simulation`:
-```json
-{
-  "sim_number": 847,
-  "selection_path": ["d2d4", "c7c5", "e2e4", "f7f5"],
-  "leaf_eval": [0.62, 0.15, 0.08, 0.15],
-  "leaf_depth": 4
-}
-```
-
----
-
-**Stage 11 gates:**
-
-`phase_transition`:
-```json
-{
-  "brs_time_ms": 234,
-  "surviving_moves": [
-    { "move": "d2d4", "score_cp": 150 },
-    { "move": "e2e4", "score_cp": 130 },
-    { "move": "c2c4", "score_cp": 95 }
-  ],
-  "eliminated_count": 27,
-  "threshold_cp": 0,
-  "mcts_budget_ms": 1766
-}
-```
-
----
-
-New gates are defined following this pattern as each stage is implemented. The gate name, stage number, and payload schema must be documented here when added.
-
----
-
-### 3.8 Huginn Anti-Patterns
-
-Things Huginn must never do. Violations of these are BLOCKING audit findings.
-
-1. **Never format strings during search.** Observations are raw data (integers, enum variants as u8, hash values as u64). JSON serialization happens during post-search processing only. During search, the `huginn_observe!` macro copies raw values into the ring buffer slot.
-
-2. **Never allocate during search.** The ring buffer is pre-allocated. If an observation exceeds the slot size, truncate it. Do not allocate a larger buffer.
-
-3. **Never branch on Huginn data.** The engine must never read from the Huginn buffer. Data flows one way: engine -> Huginn. Never Huginn -> engine. No `if huginn_buffer.last_score > 200 { ... }`.
-
-4. **Never introduce conditional compilation beyond the feature gate.** Do not add `#[cfg(debug_assertions)]` or other conditional compilation to Huginn code. Either `cfg(feature = "huginn")` is on and all Huginn code is active, or it is off and none of it exists.
-
-5. **Never panic.** If Huginn encounters an error (buffer full, serialization failure, malformed input), it silently drops the observation and continues. A Huginn bug must never crash the engine.
-
-6. **Never cause side effects from macro arguments.** `huginn_observe!(board.expensive_clone())` is wrong -- the clone executes even when the macro body is empty. Arguments must be pure references: `huginn_observe!(&board, square, hash)`.
-
----
-
-## 4. WHAT HUGINN CANNOT CATCH
-
-Huginn sees data. It does not understand design. These are the categories of problems that require human or agent judgment and cannot be detected by automated observation alone. When auditing, actively look for these -- passing all Huginn gates and tests does NOT mean the code is correct.
+Tracing can record data. It does not understand design. These are the categories of problems that require human or agent judgment and cannot be detected by automated observation alone. When auditing, actively look for these -- passing all tracing checks and tests does NOT mean the code is correct.
 
 ---
 
@@ -1368,7 +1000,7 @@ Taking shortcuts that will cost significantly more to fix later than to do corre
 
 ### 4.5 Algorithmic Correctness
 
-Huginn can see that the BRS search explored 50,000 nodes and returned move d2d4 with score +150. It cannot see whether the alpha-beta algorithm is correctly implemented or whether the hybrid scoring formula is mathematically sound.
+Automated tracing can record that the BRS search explored 50,000 nodes and returned move d2d4 with score +150. It cannot see whether the alpha-beta algorithm is correctly implemented or whether the hybrid scoring formula is mathematically sound.
 
 **Examples:**
 - BRS negamax with the sign convention wrong for one player (correct for Red and Yellow, wrong for Blue and Green).
@@ -1390,7 +1022,7 @@ Correct but slow. The algorithm produces the right answer but takes 100x longer 
 - NNUE that does full recomputation on every move instead of incremental updates.
 - Board context scanner that checks every piece against every square (O(n^2)) instead of targeting relevant areas.
 
-**How to catch it:** Profiling with `cargo flamegraph` or `criterion` benchmarks. Performance baselines in downstream logs. Huginn can sometimes reveal these (e.g., `accumulator_update` gate showing full recompute when incremental was expected) but cannot detect all of them.
+**How to catch it:** Profiling with `cargo flamegraph` or `criterion` benchmarks. Performance baselines in downstream logs. Tracing can sometimes reveal these (e.g., accumulator updates showing full recompute when incremental was expected) but cannot detect all of them.
 
 ---
 
@@ -1504,7 +1136,7 @@ The existing templates (`audit_log_stage_XX.md` and `downstream_log_stage_XX.md`
 
 | Section | What to write |
 |---------|--------------|
-| Build State | Does `cargo build`, `cargo test`, and `cargo build --features huginn` pass? Yes/No for each. If no, describe the failure. |
+| Build State | Does `cargo build` and `cargo test` pass? Yes/No for each. If no, describe the failure. |
 | Previous downstream flags reviewed | For each upstream dependency, list the stage number and any Must-Know, Known Limitations, or Open Questions that affect this stage. Quote the specific text. |
 | Findings | Anything discovered during the review that might affect this stage's work. |
 | Risks for This Stage | What could go wrong? What are the tricky parts? Reference specific audit checklist items (Section 2) that are most relevant. |
@@ -1523,7 +1155,7 @@ The existing templates (`audit_log_stage_XX.md` and `downstream_log_stage_XX.md`
 | Search/Eval Integrity | (From Stage 6 onward) Do evaluations produce sane values? Does search find known best moves? Reference Section 2.26. Write "N/A" for stages before eval/search exist. |
 | Future Conflict Analysis | Reference the dependency map (MASTERPLAN Appendix A). Which future stages depend on this one? What could go wrong for them? Flag specific concerns. |
 | Unaccounted Concerns | Anything that doesn't fit other sections. Things that feel wrong but you can't prove. Gut instincts about fragile code. |
-| Reasoning & Methods | HOW was the audit conducted? Which tools were used, which positions were tested, what manual reviews were done, what Huginn verbosity was used? This lets future agents reproduce the audit. |
+| Reasoning & Methods | HOW was the audit conducted? Which tools were used, which positions were tested, what manual reviews were done, what tracing level was used? This lets future agents reproduce the audit. |
 | Issue Resolution | All **Blocking** issues for this stage must be resolved. All **Warning** issues must be either resolved or explicitly acknowledged with a documented reason to defer (including which stage will address it). **Note**-level issues may remain open. Reference [[MOC-Active-Issues]] and list the disposition of each open issue. |
 
 **Specific observations are required.** Do not write "looks fine" or "no issues." Instead write: "Checked all 12 public functions for naming consistency per Section 2.8 -- all follow snake_case convention. Verified no mixed abbreviations (all use `square` not `sq`)." Even negative findings should be specific about what was checked.
@@ -1574,7 +1206,7 @@ One-page summary for fast agent onboarding.
 1. Read stage spec in MASTERPLAN
 2. Read upstream audit logs (trace dependency chain)
 3. Read upstream downstream logs
-4. `cargo build && cargo test && cargo build --features huginn` -- all must pass
+4. `cargo build && cargo test` -- all must pass
 5. Fill pre-audit section
 6. Begin work
 
@@ -1585,7 +1217,7 @@ One-page summary for fast agent onboarding.
 4. No naming inconsistencies introduced (Section 2.8)
 5. No magic numbers (Section 2.22)
 6. No `.unwrap()` in engine code (Section 2.12)
-7. Huginn gates compile to nothing when flag is off (Section 2.16)
+7. No feature flag contamination (Section 2.16)
 8. Zobrist make/unmake round-trip still works (Section 2.18)
 9. Public API surface is minimal (Section 2.24)
 10. Before/after metrics recorded (Section 2.10)
@@ -1603,11 +1235,10 @@ One-page summary for fast agent onboarding.
 - Post-audit blocking finding → fix before tagging stage complete
 - Deep regression (prior stage) → document, branch, isolate fix, re-run full suite
 
-**Huginn verbosity summary:**
-- Minimal: headline only (< 10 observations)
-- Normal: the reasoning (20-50 observations)
-- Verbose: every step (200-2,000 observations)
-- Everything: firehose (10,000+ observations)
+**Tracing levels (Section 3):**
+- `info` -- high-level events (search start/complete, position set)
+- `debug` -- search/eval diagnostics
+- `trace` -- verbose per-node data (development only)
 
 **When to stop and ask (Section 1.4):** Spec ambiguity, changing prior-stage APIs, architectural decisions not in spec, adding unspecified functionality.
 
@@ -1628,75 +1259,9 @@ One-page summary for fast agent onboarding.
 
 ---
 
-### Appendix B: Huginn Gate Registry
+### Appendix B: Observability Notes
 
-Master table of all Huginn gates. Populated incrementally as stages are built. Start with the gates defined in the MASTERPLAN, add payload schemas from Section 3.7 as they are implemented.
-
-| Gate Name | Stage | Default Level | Key Payload Fields | Purpose |
-|-----------|-------|---------------|-------------------|---------|
-| `board_mutation` | 1 | verbose | square, previous, new, hash_before/after | Track every piece placement/removal |
-| `zobrist_update` | 1 | everything | operation, key_index, key_value, hash_before/after | Trace hash corruption to exact XOR |
-| `fen4_roundtrip` | 1 | normal | input, parsed_hash, serialized, match | Catch parse/serialize mismatches |
-| `piece_list_sync` | 1 | verbose | player, array_count, list_count, match | Catch array/list desync |
-| `move_generation` | 2 | normal | position_hash, player, pseudo/legal counts, moves | Track movegen output |
-| `make_unmake` | 2 | verbose | move, hash_before/after, captured, flags, hash_restored | Verify state restoration |
-| `legality_filter` | 2 | verbose | rejected_move, reason, attacker | Why each move was rejected |
-| `perft` | 2 | normal | depth, expected, actual, match | Verify move generation counts |
-| `turn_transition` | 3 | normal | previous, next, skipped, reason | Track turn rotation |
-| `check_detection` | 3 | verbose | king, attackers | Which king tested, what found |
-| `checkmate_stalemate` | 3 | normal | determination, position | Check/stalemate rulings |
-| `elimination` | 3 | normal | reason, points, terrain_conversions, dkw | Elimination events |
-| `scoring` | 3 | normal | who, how_many, action, totals | Score changes |
-| `dkw_move` | 3 | normal | king_pos, move, legal_set | DKW random moves |
-| `game_over` | 3 | minimal | condition, scores, winner | Game termination |
-| `command_receive` | 4 | normal | raw, parsed_type, errors | Protocol input |
-| `response_send` | 4 | normal | full_string, trigger | Protocol output |
-| `position_set` | 4 | normal | fen4/startpos, move_list, resulting_hash | Position setup tracking |
-| `search_request` | 4 | normal | time_controls, depth_limits, options | Search go command parameters |
-| `eval_call` | 6 | verbose | hash, player, score, components | Evaluation breakdown |
-| `eval_comparison` | 6 | normal | hash, scores_per_player | 4-perspective comparison |
-| `alpha_beta_prune` | 7 | verbose | depth, alpha, beta, score, move, node_type | Search cutoffs |
-| `quiescence` | 7 | verbose | entry/exit, stand_pat, captures | Quiescence search |
-| `iterative_deepening` | 7 | normal | depth, best_move, score, nodes, time, pv | ID progression |
-| `brs_reply_selection` | 7 | verbose | opponent, candidates, selected, scores | Reply choice |
-| `board_context` | 8 | normal | full BoardContext | Pre-search board read |
-| `board_context_delta` | 8 | verbose | changes, updated, fallback | Delta refresh tracking |
-| `cheap_filter` | 8 | verbose | passed, background, classifications | Move classification |
-| `reply_scoring` | 8 | verbose | opponent, move, strength, harm, likelihood, score | Hybrid scoring |
-| `progressive_narrowing` | 8 | verbose | depth, max_allowed, considered, truncated | Candidate narrowing |
-| `tt_lookup` | 9 | everything | hash, hit/miss, stored_data | TT probes |
-| `tt_store` | 9 | everything | stored, replaced, reason | TT writes |
-| `move_ordering` | 9 | verbose | sequence, scores | Move order produced |
-| `killer_see` | 9 | verbose | killer_moves, see_values, captures_reordered | Killer move and SEE tracking |
-| `mcts_simulation` | 10 | verbose | sim_number, path, leaf_eval, depth | MCTS simulations |
-| `mcts_selection` | 10 | everything | children_ucb1, selected, perspective | UCB1 selection |
-| `mcts_expansion` | 10 | verbose | position, move, prior, widening_check | Node expansion |
-| `mcts_root_summary` | 10 | normal | visit_distribution, selected, temperature | Root statistics |
-| `phase_transition` | 11 | normal | brs_time, survivors, eliminated, threshold, mcts_budget | BRS->MCTS handoff |
-| `surviving_comparison` | 11 | normal | brs_ranking, mcts_ranking | Agreement check |
-| `time_allocation` | 11 | normal | tactical/quiet, planned_split, actual | Time budgeting |
-| `search_controller` | 11 | normal | full lifecycle go->bestmove | Complete search trace |
-| `regression_test` | 12 | normal | expected, actual, pass/fail | Regression checks |
-| `self_play_anomaly` | 12 | minimal | bad_move, trace_context | Obvious blunders |
-| `time_budget` | 13 | normal | remaining, complexity, budget, split | Time management |
-| `time_overrun` | 13 | minimal | budget_exceeded, context, abort | Overrun detection |
-| `panic_time` | 13 | minimal | trigger_condition, adjusted_behavior | Panic time activation |
-| `accumulator_update` | 14 | verbose | features_added/removed, perspective, type | NNUE accumulator |
-| `nnue_forward` | 14 | verbose | accumulator, per_layer, scalar, vector | NNUE inference |
-| `quantization` | 14 | verbose | float_values, quantized_values, layer_boundary | Float vs. quantized comparison |
-| `weight_load` | 14 | normal | architecture_hash, feature_set_id, param_count, checksum | NNUE weight file loading |
-| `data_generation` | 15 | normal | position_hash, brs_target, mcts_target, game_result | Training data extraction |
-| `training_sample_validation` | 15 | normal | position, brs_vs_mcts_disagreement, flagged | Training data QC |
-| `eval_swap` | 16 | normal | nnue_vs_bootstrap, accumulator_state | Integration monitoring |
-| `accumulator_lifecycle` | 16 | verbose | push/pop_through_search, state_leak_check | Accumulator state through search tree |
-| `nnue_vs_bootstrap` | 16 | normal | position, nnue_score, bootstrap_score, disagreement_cp | Side-by-side eval comparison (temporary) |
-| `dkw_random_move` | 17 | normal | king_pos, move_selected, interference_with_active | DKW move in variant context |
-| `terrain_conversion` | 17 | normal | pieces_converted, positions, movegen_diff | Terrain mode piece conversion |
-| `chess960_setup` | 17 | normal | arrangement, bishop_colors, king_between_rooks | Chess960 position validation |
-| `scoring_anomaly` | 17 | minimal | score_change, expected_per_table, actual, flagged | Score changes not matching point table |
-| `search_summary` | 0+ | minimal | best_move, score, depth, nodes, times, anomalies | Per-search headline |
-
-This table grows with each stage. When a new gate is added, record it here with its default verbosity level and key fields.
+The custom Huginn telemetry system (compile-gated ring buffer with JSONL output) was retired in Stage 8 and replaced with the `tracing` crate. See Section 3 for current tracing configuration. The original Huginn gate registry is preserved in git history for reference (pre-Stage 8 commits).
 
 ---
 

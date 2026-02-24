@@ -14,7 +14,7 @@ The base layer everything else is built on.
 
 | Stage | Spec | Audit Log | Downstream Log |
 |---|---|---|---|
-| 0 -- Skeleton + Huginn | [[stage_00_skeleton]] | [[audit_log_stage_00]] | [[downstream_log_stage_00]] |
+| 0 -- Project Skeleton | [[stage_00_skeleton]] | [[audit_log_stage_00]] | [[downstream_log_stage_00]] |
 | 1 -- Board Representation | [[stage_01_board]] | [[audit_log_stage_01]] | [[downstream_log_stage_01]] |
 | 2 -- Move Generation | [[stage_02_movegen]] | [[audit_log_stage_02]] | [[downstream_log_stage_02]] |
 | 3 -- Game State & Rules | [[stage_03_gamestate]] | [[audit_log_stage_03]] | [[downstream_log_stage_03]] |
@@ -24,14 +24,13 @@ The base layer everything else is built on.
 ## Key Decisions
 
 - [[DECISIONS]] ADR-001: Array-first board with clean abstraction boundary
-- [[DECISIONS]] ADR-007: Huginn as compile-gated ghost observer
+- [[DECISIONS]] ADR-007: Huginn (superseded by ADR-015 -- replaced with `tracing` crate)
 
 ## Invariants Established
 
 | Invariant | Stage | Detail in [[MASTERPLAN]] Section 4.1 |
 |---|---|---|
 | Prior-stage tests never deleted | 0 | Tests from earlier stages never removed |
-| Huginn compiles to nothing when off | 0 | Zero Huginn symbols in release binary |
 | Board tests pass, FEN4 round-trips | 1 | Board representation correctness |
 | Perft values are forever | 2 | Once established, never change |
 | Zobrist make/unmake round-trip | 2 | Exact hash restoration |

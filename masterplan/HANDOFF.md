@@ -1,62 +1,54 @@
 # HANDOFF — Last Session Summary
 
-**Date:** 2026-02-23
-**Stage:** 7 complete; non-stage UI QoL session
-**Next:** Stage 8 (BRS/Paranoid Hybrid Layer)
+**Date:** 2026-02-24
+**Stage:** 8 complete (pending user verification) + UI bugfix applied
+**Next:** User runs more games to test, then tag v1.8 and begin Stage 9
 
-## What Was Done
+## What Was Done This Session
 
-**UI QoL additions** (non-stage, out-of-band improvements):
+### UI Bugfix: Pause/Resume Race Condition
 
-1. **Square coordinate labels** — each board square shows algebraic notation (e.g. "e4") in bottom-left corner with subtle coloring. Toggleable via "Coords" checkbox in left panel.
+User found a bug during Stage 8 testing: pausing and resuming auto-play could cause one player to move twice in a row. Diagnosed and fixed in `useGameState.ts`.
 
-2. **Prominent NPS display** — new `AnalysisPanel` component shows NPS as large bold number (e.g. "102,456 NPS") with search summary (depth, score, nodes, time, PV).
+**Root cause:** When the user resumes while a search is in flight, both the resume handler and the bestmove handler's `maybeChainEngineMove` scheduled `sendGoFromRef()`. Neither checked `awaitingBestmoveRef` before sending. The engine received two `position + go` commands, searched for the same player twice, and the duplicate move corrupted the moveList.
 
-3. **Enriched Game Log** — new `GameLog` component. Each move entry: `{moveNum}. {Player}: {move} ({eval}cp, d{depth}, {nodes} nodes)`. Player-colored left borders. Data captured via `latestInfoRef` snapshot at bestmove time in `useGameState.ts`.
+**Fix (two guards):**
+1. `sendGoFromRef` (line 199): `if (awaitingBestmoveRef.current) return;` — prevents duplicate `go` commands
+2. `togglePause` (line 425): `if (!awaitingBestmoveRef.current)` — skips scheduling timeout if search is in flight; just sets `autoPlayRef = true` and lets the bestmove handler chain naturally
 
-4. **Engine Internals panel** — new `EngineInternals` component. Collapsible. Shows search phase (BRS/MCTS badge), BRS surviving candidates, MCTS sims, selective depth, per-player values grid.
-
-5. **Communication Log** — new `CommunicationLog` component. Raw protocol log + command input, split from DebugConsole. Collapsible. Keeps existing color coding.
-
-6. **Board zoom** — mouse wheel zoom via CSS `transform: scale()`, clamped 0.5x-2.0x. **Known buggy** — frame boundary occasionally shifts. Low priority, save for polish phase.
-
-7. **Layout reorganization** — right panel changed from single DebugConsole to vertical stack: Analysis → Game Log → Engine Internals → Communication Log. Board container enlarged.
+See [[Issue-UI-Pause-Resume-Race-Condition]] for full diagnosis.
 
 ## What's Next
 
-**Stage 8** — BRS hybrid scoring and move classification. Read `masterplan/MASTERPLAN.md` Stage 8 spec before starting.
+**User testing continues.** The user wants to run more games before proceeding to Stage 9. Do NOT start Stage 9 until user confirms.
 
-**UI follow-up items** (low priority, not blocking):
-- Dedup info overlap between AnalysisPanel and EngineInternals
-- Add per-player scoring log (capture/elimination point tracking per move)
-- Polish board zoom behavior
-- Explore Huginn integration for richer debug data in Communication Log
+After user approval:
+1. Tag `stage-08-complete` / `v1.8`
+2. Begin Stage 9: TT & Move Ordering (per MASTERPLAN)
 
 ## Known Issues
 
-- Board zoom slightly buggy (frame boundary shifts) — cosmetic only, ignore for now
-- Some info duplicated between AnalysisPanel and EngineInternals panels
+- W5 (stale GameState fields during search): acceptable for bootstrap eval, revisit for NNUE
+- W4 (lead penalty tactical mismatch): mitigated by Aggressive profile for FFA
+- Board scanner data frozen during search — delta updater deferred to v2
+- `tracing` crate added as dependency but no `tracing::debug!` calls placed yet
 
 ## Files Modified This Session
 
-### New files
-- `odin-ui/src/components/AnalysisPanel.tsx` + `styles/AnalysisPanel.css`
-- `odin-ui/src/components/GameLog.tsx` + `styles/GameLog.css`
-- `odin-ui/src/components/EngineInternals.tsx` + `styles/EngineInternals.css`
-- `odin-ui/src/components/CommunicationLog.tsx` + `styles/CommunicationLog.css`
-- `masterplan/sessions/Session-UI-QoL-2026-02-23.md`
-- `masterplan/components/Component-GameLog.md`
-- `masterplan/components/Component-EngineInternals.md`
-- `masterplan/components/Component-CommunicationLog.md`
+### UI
+- `odin-ui/src/hooks/useGameState.ts` — two guard additions (lines 199, 425)
 
-### Modified files
-- `odin-ui/src/components/BoardDisplay.tsx` — zoom, showCoords prop
-- `odin-ui/src/components/BoardSquare.tsx` — coordinate labels
-- `odin-ui/src/hooks/useGameState.ts` — MoveEntry, moveHistory, info snapshots
-- `odin-ui/src/App.tsx` — new layout wiring
-- `odin-ui/src/App.css` — right panel stacking, larger board
-- `masterplan/_index/Wikilink-Registry.md` — new entries
-- `masterplan/_index/MOC-Sessions.md` — new session entry
-- `masterplan/_index/MOC-Tier-1-Foundation.md` — new component links
-- `masterplan/stage_05_basic_ui.md` — Post-Stage Additions section
-- `masterplan/stage_18_full_ui.md` — Pre-Stage Notes section
+### Documentation
+- `masterplan/issues/Issue-UI-Pause-Resume-Race-Condition.md` — created
+- `masterplan/sessions/Session-2026-02-24-Bugfix-Pause-Resume.md` — created
+- `masterplan/STATUS.md` — updated
+- `masterplan/HANDOFF.md` — updated (this file)
+- `masterplan/_index/Wikilink-Registry.md` — updated
+- `masterplan/_index/MOC-Sessions.md` — updated
+
+## Test Counts
+
+- Unit tests: 233
+- Integration tests: 128
+- Total: 361, 3 ignored, 0 failures
+- UI Vitest: 54 (unchanged)

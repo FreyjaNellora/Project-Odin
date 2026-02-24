@@ -5,7 +5,7 @@
 **Auditor:** Claude Sonnet 4.6 (Stage 7 session)
 
 ### Build State
-- Compiles: Yes — `cargo build` succeeded (0.02s incremental). `cargo build --features huginn` succeeded (0.79s).
+- Compiles: Yes — `cargo build` succeeded (0.02s incremental).
 - Tests pass: Yes — 275 total (191 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 + 11 stage-06). 0 failed.
 - Previous downstream flags reviewed: Stages 0, 1, 2, 3, 6 (full dependency chain per MASTERPLAN Appendix A).
 
@@ -33,7 +33,7 @@
 
 **Active issues reviewed (per AGENT_CONDUCT 1.9):**
 - `[[Issue-Vec-Clone-Cost-Pre-MCTS]]` (WARNING): last updated Stage 6. Still relevant and Stage 7 does not worsen it. No action needed this stage; Stage 10 will address.
-- `[[Issue-Huginn-Gates-Unwired]]` (NOTE): Stage 7 adds 4 new gates. Issue will be updated this session.
+- [Resolved - Huginn retired in Stage 8, replaced by `tracing` crate] (NOTE): Stage 7 adds 4 new gates. Issue will be updated this session.
 - `[[Issue-DKW-Halfmove-Clock]]` (NOTE): not affected by Stage 7.
 - `[[Issue-DKW-Invisible-Moves-UI]]` (NOTE): not affected by Stage 7.
 

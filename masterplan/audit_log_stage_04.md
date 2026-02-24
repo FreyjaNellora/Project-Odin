@@ -5,7 +5,7 @@
 **Auditor:** Claude Opus 4.6
 
 ### Build State
-- Compiles: Yes (`cargo build` in 0.01s, `cargo build --features huginn` in 1.85s)
+- Compiles: Yes (`cargo build` in 0.01s)
 - Tests pass: Yes (164 total: 108 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03)
 - Previous downstream flags reviewed: Yes — Stage 0, 1, 2, 3 downstream logs reviewed
 
@@ -29,11 +29,11 @@
 3. `Fen4Error` is not currently re-exported from `board/mod.rs` — need to add re-export.
 
 **From [[downstream_log_stage_00]]:**
-1. `huginn_observe!` macro available. Stage 4 gates will be deferred per established pattern.
+1. [Historical] `huginn_observe!` macro available. Stage 4 gates will be deferred per established pattern.
 
 **From [[MOC-Active-Issues]]:**
 - WARNING: [[Issue-Perft-Values-Unverified]] — not blocking Stage 4.
-- NOTE: [[Issue-Huginn-Gates-Unwired]] — will accumulate 4 more gates this stage.
+- NOTE: [Resolved - Huginn retired in Stage 8, replaced by `tracing` crate] — will accumulate 4 more gates this stage.
 - NOTE: [[Issue-DKW-Halfmove-Clock]] — not relevant to protocol layer.
 
 ### Risks for This Stage
@@ -68,7 +68,7 @@
 | Acceptance: `go` returns legal move | PASS | `test_go_returns_legal_move`, `test_go_bestmove_is_legal` |
 | Acceptance: Malformed input handled gracefully | PASS | `test_malformed_input_no_crash` |
 | Permanent invariant: Protocol round-trip | PASS | `test_protocol_roundtrip_startpos`, `_fen4`, `_with_moves` |
-| Huginn gates | Deferred | Per established pattern — unwired until telemetry needed |
+| [Historical - Huginn retired] Huginn gates | Deferred | Per established pattern — unwired until telemetry needed |
 
 ### Code Quality
 #### Uniformity
@@ -106,14 +106,14 @@ N/A for Stage 4. No search or evaluation code. The `go` command returns a random
 ### Reasoning & Methods
 1. Built incrementally: types → parser → emitter → engine → main loop → integration tests
 2. All code tested with `cargo test` (229 tests), `cargo clippy --all-targets` (0 warnings), `cargo fmt`
-3. Verified `cargo build --features huginn` compiles (protocol code has no Huginn dependency)
+3. [Historical - Huginn retired] Verified `cargo build --features huginn` compiled (protocol code had no Huginn dependency)
 4. Tested move matching by verifying bestmove output is in the legal move list
 5. Tested error resilience by sending garbage inputs and verifying no panics
 6. Verified prior invariants: perft values (20/395/7800), all prior-stage tests pass
 
 ### Issue Resolution
 - WARNING [[Issue-Perft-Values-Unverified]]: Still open, not relevant to Stage 4. Perft values verified unchanged.
-- NOTE [[Issue-Huginn-Gates-Unwired]]: Now accumulates 4 more gates from Stage 4 (command_receive, response_send, position_set, search_request). Still deferred.
+- NOTE [Resolved - Huginn retired in Stage 8, replaced by `tracing` crate]: Now accumulates 4 more gates from Stage 4 (command_receive, response_send, position_set, search_request). Still deferred.
 - NOTE [[Issue-DKW-Halfmove-Clock]]: Unchanged, not relevant to protocol layer.
 
 

@@ -14,7 +14,7 @@ Hybrid search, transposition table, MCTS, and the controller that ties them toge
 
 | Stage | Spec | Audit Log | Downstream Log |
 |---|---|---|---|
-| 8 -- BRS/Paranoid Hybrid | [[stage_08_brs_hybrid]] | [[audit_log_stage_08]] | [[downstream_log_stage_08]] |
+| 8 -- BRS/Paranoid Hybrid | [[stage_08_brs_hybrid]] / [[stage_08_build_order]] | [[audit_log_stage_08]] | [[downstream_log_stage_08]] |
 | 9 -- TT & Move Ordering | [[stage_09_tt_ordering]] | [[audit_log_stage_09]] | [[downstream_log_stage_09]] |
 | 10 -- MCTS Strategic Search | [[stage_10_mcts]] | [[audit_log_stage_10]] | [[downstream_log_stage_10]] |
 | 11 -- Hybrid Integration | [[stage_11_hybrid_integration]] | [[audit_log_stage_11]] | [[downstream_log_stage_11]] |

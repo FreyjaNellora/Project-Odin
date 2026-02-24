@@ -39,9 +39,9 @@ The parser must extract only the **first word** after `"eliminated"` as the colo
 - Depended on by: [[Component-BasicUI]] (useGameState consumes parsed messages)
 - Communicates via: [[Connection-Protocol-to-UI]]
 
-## Huginn Gates
+## Tracing Points
 
-None. UI-side component; Huginn is engine-side only.
+None. UI-side component; tracing is engine-side only.
 
 ## Gotchas
 

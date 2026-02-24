@@ -36,7 +36,7 @@ Data flow: `Position -> NNUE eval -> BRS/Paranoid prunes losing moves -> Survivi
 
 1. **Correctness first.** A wrong answer fast is worse than a slow correct answer.
 2. **Incremental build.** Each stage produces a testable, runnable artifact. Engine is playable (weakly) after Stage 7.
-3. **Observability.** Huginn (the telemetry system) lets us see inside the engine at every step. No black boxes.
+3. **Observability.** The `tracing` crate provides structured logging and diagnostics at every step. No black boxes.
 4. **No redundancy.** The UI is a display layer. It does not validate moves, check legality, or compute evaluations.
 5. **Independent stages.** Each stage can be developed and audited using only its own spec, the audit/downstream logs from prior stages, and the code itself.
 
@@ -68,9 +68,6 @@ Data flow: `Position -> NNUE eval -> BRS/Paranoid prunes losing moves -> Survivi
 |    |                                                     |
 |  Board Representation (Stage 1)                          |
 |                                                          |
-|  Huginn Telemetry (Stage 0 core, grows per stage)        |
-|  EXTERNAL OBSERVER -- zero engine impact, compile-gated  |
-|                                                          |
 |  Transposition Table & Move Ordering (Stage 9)           |
 +---------------------------------------------------------+
 ```
@@ -79,7 +76,7 @@ Data flow: `Position -> NNUE eval -> BRS/Paranoid prunes losing moves -> Survivi
 
 ```
 TIER 1 — FOUNDATION (Stages 0-5)
-  0: Skeleton + Huginn Core
+  0: Project Skeleton
   1: Board Representation
   2: Move Generation + Attack Query API
   3: Game State & Rules
@@ -115,37 +112,13 @@ Each stage produces a testable, runnable artifact. The engine is playable (weakl
 
 ---
 
-## 2.1 HUGINN SPECIFICATION
+## 2.1 OBSERVABILITY
 
-Huginn (Odin's raven of thought) is the telemetry and tracer system. It exists solely for debugging and development.
+The engine uses the `tracing` crate for structured logging and diagnostics. `tracing::debug!`, `tracing::info!`, and `tracing::trace!` calls are placed at key boundaries (board mutations, search decisions, eval components) to provide visibility into engine internals during development.
 
-### The Iron Rule: Huginn Must Be a Ghost
+In release builds, tracing output is filtered to minimal levels. During development, set `RUST_LOG=odin_engine=debug` to see diagnostic output.
 
-- Huginn **never writes** to any engine data structure.
-- Huginn **never allocates** memory in any engine hot path.
-- Huginn **never introduces branches** into engine code paths.
-- When off (default for play/competition), the engine compiles as if Huginn **does not exist** -- literally absent from the binary.
-- When on (dev builds), it operates as a **post-hoc reader**: snapshots engine state at observation points, copies data to its own external buffer, processes it after `bestmove` is returned.
-
-### The Snitch Model
-
-Huginn is a QC inspector standing at every gate. It doesn't decide what gets through, doesn't slow anyone down, doesn't touch anything. But it witnesses and accounts for everything that passes through its gate. Every time data crosses a boundary -- board to movegen, movegen to search, BRS to MCTS, NNUE input to output -- Huginn is standing there taking notes.
-
-### Implementation
-
-- **Compile flag:** `cfg(feature = "huginn")` in Cargo.toml, default off.
-- **Observation macro:** `huginn_observe!(...)` -- compiles to absolutely nothing when off. When on, snapshots state into Huginn's external buffer.
-- **Huginn-owned memory:** Ring buffer separate from all engine allocations. Silent drop on overflow.
-- **Post-search processing:** Trace correlation and JSON serialization happen after `bestmove` is returned.
-- **Verbosity levels:** Minimal, Normal, Verbose, Everything.
-
-### Growth Model
-
-Huginn is born in Stage 0 (macro + buffer). Every subsequent stage adds observation points for what that stage builds. By Stage 19, Huginn has gates at every boundary.
-
-### Reporting Specification
-
-Full Huginn reporting specification (JSONL format, ring buffer, trace hierarchy, verbosity contracts, agent usage guide) is defined in `AGENT_CONDUCT.md` ([[AGENT_CONDUCT]]) Section 3.
+The `tracing` crate was adopted in Stage 8, replacing a custom compile-gated telemetry system that proved impractical to wire through the engine's API surface.
 
 ---
 
@@ -165,12 +138,12 @@ Full Huginn reporting specification (JSONL format, ring buffer, trace hierarchy,
 
 ---
 
-### STAGE 0: Project Skeleton + Huginn Core
+### STAGE 0: Project Skeleton
 
 **Tier:** 1 — Foundation
 **Dependencies:** None
 
-**The problem:** You need a project structure, build system, and the telemetry macro available before writing any engine code. Every subsequent stage needs to place observation points from day one.
+**The problem:** You need a project structure and build system before writing any engine code.
 
 **What you're building:**
 
@@ -178,19 +151,13 @@ Full Huginn reporting specification (JSONL format, ring buffer, trace hierarchy,
 
 2. **Build system.** Cargo for Rust, npm for UI. `cargo build` and `cargo test` work out of the box. CI config files.
 
-3. **Huginn core.** Three things:
-   - The `huginn` feature flag in `Cargo.toml` (default off)
-   - The `huginn_observe!` macro that compiles to nothing when off
-   - The `HuginnBuffer` ring buffer + `TraceEvent` struct
-
-4. **Proof-of-life test.** Compile with and without `--features huginn`, verify identical behavior and that the feature-off binary contains zero Huginn symbols.
+3. **Proof-of-life test.** Compile the project, verify `cargo build` and `cargo test` work.
 
 **Build order:**
 1. Create directory structure
 2. Initialize Cargo workspace + React project
-3. Write the Huginn macro and buffer
-4. Write the proof-of-life test
-5. Set up linting, formatting, CI
+3. Write the proof-of-life test
+4. Set up linting, formatting, CI
 
 **What you DON'T need:**
 - Any engine code. This is pure scaffolding.
@@ -210,7 +177,6 @@ Project_Odin/
 |   |   +-- protocol/     # Stage 4
 |   |   +-- eval/         # Stage 6, 14-16
 |   |   +-- search/       # Stage 7, 8, 9, 10, 11
-|   |   +-- huginn/       # Stage 0 core, grows per stage
 |   |   +-- variants/     # Stage 17
 |   +-- tests/
 +-- odin-ui/
@@ -220,17 +186,8 @@ Project_Odin/
 +-- tools/
 ```
 
-**Huginn macro pattern:**
-```rust
-#[cfg(not(feature = "huginn"))]
-macro_rules! huginn_observe {
-    ($($args:tt)*) => {};
-}
-```
-
 **Acceptance criteria:**
-- `cargo build` succeeds, `cargo build --features huginn` succeeds
-- `huginn_observe!` compiles to nothing without the feature (verified by binary inspection)
+- `cargo build` succeeds
 - UI initializes with `npm install && npm run dev`
 
 ---
@@ -284,11 +241,11 @@ struct Board {
 }
 ```
 
-**Huginn gates (this stage):**
-- Board mutation gate: every `set_piece`/`remove_piece` -- what changed, where, what was there before
-- Zobrist update gate: every XOR -- old hash, key, new hash (traces hash corruption to the exact op)
-- FEN4 gate: input string vs. resulting board state (catches parse/serialize mismatches)
-- Piece list sync gate: array vs. piece list after every mutation (catches desync at the moment it happens)
+**Tracing points (this stage):**
+- Board mutation: every `set_piece`/`remove_piece` -- what changed, where, what was there before
+- Zobrist update: every XOR -- old hash, key, new hash (traces hash corruption to the exact op)
+- FEN4: input string vs. resulting board state (catches parse/serialize mismatches)
+- Piece list sync: array vs. piece list after every mutation (catches desync at the moment it happens)
 
 **Acceptance criteria:**
 - All 160 valid squares identified, all 36 corners rejected
@@ -347,11 +304,11 @@ struct Board {
 Red:    +rank    Blue:   +file    Yellow: -rank    Green:  -file
 ```
 
-**Huginn gates (this stage):**
-- Move generation gate: position hash, player, pseudo-legal count, legal count, full move list
-- Make/unmake gate: move, hash before/after, captured piece, special flags, hash restoration check on unmake
-- Legality filter gate: each rejected move + why (which opponent attacks the king, from where)
-- Perft gate: node count at each depth (mismatches caught with full trace context)
+**Tracing points (this stage):**
+- Move generation: position hash, player, pseudo-legal count, legal count, full move list
+- Make/unmake: move, hash before/after, captured piece, special flags, hash restoration check on unmake
+- Legality filter: each rejected move + why (which opponent attacks the king, from where)
+- Perft: node count at each depth (mismatches caught with full trace context)
 
 **Acceptance criteria:**
 - Perft at depths 1-4 matches independently verified values
@@ -417,14 +374,14 @@ struct GameState {
 }
 ```
 
-**Huginn gates (this stage):**
-- Turn transition gate: previous/next player, skipped players, reason
-- Check detection gate: which king tested, attackers found, from where
-- Checkmate/stalemate gate: determination, position, attacking pieces
-- Elimination gate: reason, points awarded, terrain conversions, DKW activation
-- Scoring gate: who earned, how many, from what action, running totals
-- DKW gate: king position, move selected, legal move set
-- Game-over gate: condition met, final scores, winner
+**Tracing points (this stage):**
+- Turn transition: previous/next player, skipped players, reason
+- Check detection: which king tested, attackers found, from where
+- Checkmate/stalemate: determination, position, attacking pieces
+- Elimination: reason, points awarded, terrain conversions, DKW activation
+- Scoring: who earned, how many, from what action, running totals
+- DKW: king position, move selected, legal move set
+- Game-over: condition met, final scores, winner
 
 **Acceptance criteria:**
 - Correct turn rotation with eliminated player skipping
@@ -485,11 +442,11 @@ info depth <N> seldepth <N> score cp <N> v1 <N> v2 <N> v3 <N> v4 <N> nodes <N> n
 # Move notation: d2d4, d7d8q (promotion), e1g1 (castling as king move)
 ```
 
-**Huginn gates (this stage):**
-- Command receive gate: raw string, parsed type, parse errors
-- Response send gate: full string, what triggered it
-- Position set gate: FEN4/startpos, move list, resulting hash
-- Search request gate: time controls, depth limits, options
+**Tracing points (this stage):**
+- Command receive: raw string, parsed type, parse errors
+- Response send: full string, what triggered it
+- Position set: FEN4/startpos, move list, resulting hash
+- Search request: time controls, depth limits, options
 
 **Acceptance criteria:**
 - Engine responds to `odin` with id, `isready` with `readyok`
@@ -526,7 +483,6 @@ info depth <N> seldepth <N> score cp <N> v1 <N> v2 <N> v3 <N> v4 <N> nodes <N> n
 **What you DON'T need:**
 - Any game logic. The UI sends moves to the engine, the engine validates. The UI never computes legal moves, detects check, or evaluates positions.
 - Visual polish (Stage 18). This is functional scaffolding.
-- Huginn trace viewer (Stage 18). But this stage does build the display surface -- when `info string huginn ...` arrives, the debug console renders it.
 
 **The rule: UI owns ZERO game logic.** It does not validate moves. It does not compute legal moves. It does not detect check/checkmate. It sends intended moves to the engine, the engine responds with the new position or an error.
 
@@ -590,9 +546,9 @@ eval_for_player(p) =
     + ffa_points(p) * weight
 ```
 
-**Huginn gates (this stage):**
-- Eval call gate: position hash, player perspective, raw score, component breakdown (material, positional, king safety, threat, lead penalty, FFA points)
-- Eval comparison gate: same position evaluated from all 4 perspectives side by side (catches perspective bugs)
+**Tracing points (this stage):**
+- Eval call: position hash, player perspective, raw score, component breakdown (material, positional, king safety, threat, lead penalty, FFA points)
+- Eval comparison: same position evaluated from all 4 perspectives side by side (catches perspective bugs)
 
 **Acceptance criteria:**
 - Evaluation returns different values for materially different positions
@@ -684,11 +640,11 @@ The "best reply" at each MIN node is, in plain BRS (this stage), the objectively
 - MCTS (Stage 10). BRS works standalone.
 - Move ordering beyond iterative deepening PV. Full ordering comes in Stage 9.
 
-**Huginn gates (this stage):**
-- Alpha-beta prune gate: depth, alpha, beta, cutoff score, cutoff move, node type
-- Quiescence gate: entry/exit, stand-pat score, captures evaluated
-- Iterative deepening gate: depth, best move, score, node count, time, PV
-- BRS reply selection gate: opponent, candidates considered, selected move, score
+**Tracing points (this stage):**
+- Alpha-beta prune: depth, alpha, beta, cutoff score, cutoff move, node type
+- Quiescence: entry/exit, stand-pat score, captures evaluated
+- Iterative deepening: depth, best move, score, node count, time, PV
+- BRS reply selection: opponent, candidates considered, selected move, score
 
 **Acceptance criteria:**
 - Engine plays legal moves via the protocol
@@ -788,12 +744,12 @@ depth 7+:   top 3
 
 **Why this works at depth 6-12:** This search runs 6-12 plies to answer "which of my moves survive tactical scrutiny?" At that depth the cheap filter runs at maybe a few thousand opponent nodes, the hybrid scoring runs ~1000 total evaluations, progressive narrowing keeps deep nodes tight, delta refresh happens 3-6 times total. The surviving moves get handed to MCTS for strategic evaluation.
 
-**Huginn gates (this stage):**
-- Board context gate: full BoardContext output
-- Board context delta gate: what changed, what was updated, full re-read fallback triggered?
-- Cheap filter gate: how many moves passed vs. background, which classified as interacting
-- Reply scoring gate: every scored move -- opponent, objective strength, harm to root, likelihood, final score
-- Progressive narrowing gate: depth, max allowed, how many considered vs. truncated
+**Tracing points (this stage):**
+- Board context: full BoardContext output
+- Board context delta: what changed, what was updated, full re-read fallback triggered?
+- Cheap filter: how many moves passed vs. background, which classified as interacting
+- Reply scoring: every scored move -- opponent, objective strength, harm to root, likelihood, final score
+- Progressive narrowing: depth, max allowed, how many considered vs. truncated
 
 **Acceptance criteria:**
 - Reply selection picks contextually realistic opponent moves
@@ -853,11 +809,11 @@ struct TTEntry {
 
 **Move compression for TT:** The canonical Move is a u32 (31 bits). The TT stores a compressed u16 containing only from_square and to_square. On TT hit, reconstruct the full Move by searching the current move list for the matching from/to pair. This is unambiguous in legal move lists (no two legal moves share both from and to squares, except promotions -- disambiguate by trying each). The tradeoff: 10 bytes per TT entry instead of 12, at the cost of a move list scan on TT hit.
 
-**Huginn gates (this stage):**
-- TT lookup gate: hash, hit/miss, stored depth/score/type/move on hit
-- TT store gate: what's stored, replaced entry, replacement reason
-- Move ordering gate: sequence produced with ordering scores
-- Killer/SEE gate: killer moves per ply, SEE values per capture, capture reordering
+**Tracing points (this stage):**
+- TT lookup: hash, hit/miss, stored depth/score/type/move on hit
+- TT store: what's stored, replaced entry, replacement reason
+- Move ordering: sequence produced with ordering scores
+- Killer/SEE: killer moves per ply, SEE values per capture, capture reordering
 
 **Acceptance criteria:**
 - TT cutoffs reduce node count by >50% at depth 6
@@ -919,11 +875,11 @@ struct MctsNode {
 }
 ```
 
-**Huginn gates (this stage):**
-- Simulation gate: selection path, leaf evaluation (4-vec), visit count before/after
-- Selection gate (Verbose+): children UCB1 scores, child selected, player perspective
-- Expansion gate: position, move, prior assigned, progressive widening check
-- Root summary gate: full visit distribution, selected move, temperature
+**Tracing points (this stage):**
+- Simulation: selection path, leaf evaluation (4-vec), visit count before/after
+- Selection (Verbose+): children UCB1 scores, child selected, player perspective
+- Expansion: position, move, prior assigned, progressive widening check
+- Root summary: full visit distribution, selected move, temperature
 
 **Acceptance criteria:**
 - MCTS finds reasonable moves in simple positions
@@ -983,11 +939,11 @@ fn search(position, time_budget) -> Move:
     return best
 ```
 
-**Huginn gates (this stage):**
-- Phase transition gate: surviving moves with BRS scores, time spent/remaining, threshold, eliminated count
-- Surviving move comparison gate: BRS ranking vs. MCTS ranking (disagreements are informative)
-- Time allocation gate: tactical/quiet detection, planned split, actual time consumed
-- Search controller gate: full lifecycle from `go` to `bestmove`
+**Tracing points (this stage):**
+- Phase transition: surviving moves with BRS scores, time spent/remaining, threshold, eliminated count
+- Surviving move comparison: BRS ranking vs. MCTS ranking (disagreements are informative)
+- Time allocation: tactical/quiet detection, planned split, actual time consumed
+- Search controller: full lifecycle from `go` to `bestmove`
 
 **Acceptance criteria:**
 - Hybrid finds better moves than BRS alone or MCTS alone (measured by test positions or self-play)
@@ -1027,9 +983,9 @@ fn search(position, time_budget) -> Move:
 - Opening books or endgame tablebases. The engine plays from the start.
 - A rating list. Just relative comparison between versions.
 
-**Huginn gates (this stage):**
-- Regression detection gate: expected best move/eval, actual result, pass/fail
-- Self-play anomaly gate: flags obviously bad moves (hung queen, walked into mate) with full Huginn trace for autopsy
+**Tracing points (this stage):**
+- Regression detection: expected best move/eval, actual result, pass/fail
+- Self-play anomaly: flags obviously bad moves (hung queen, walked into mate) with full trace for autopsy
 
 **Acceptance criteria:**
 - Match manager runs 1000+ games stably
@@ -1065,10 +1021,10 @@ fn search(position, time_budget) -> Move:
 **What you DON'T need:**
 - Complex learning-based time management. The heuristic formula works.
 
-**Huginn gates (this stage):**
-- Time budget gate: remaining time, increment, complexity, computed budget, BRS/MCTS split
-- Time overrun gate: budget exceeded, what was happening, graceful abort?
-- Panic time gate: trigger condition, adjusted behavior
+**Tracing points (this stage):**
+- Time budget: remaining time, increment, complexity, computed budget, BRS/MCTS split
+- Time overrun: budget exceeded, what was happening, graceful abort?
+- Panic time: trigger condition, adjusted behavior
 
 **Acceptance criteria:**
 - Engine manages time correctly across full games (doesn't flag)
@@ -1149,11 +1105,11 @@ impl AccumulatorStack {
 - Trained weights. Use random weights to verify the pipeline works.
 - SIMD optimization (Stage 19). Scalar code first.
 
-**Huginn gates (this stage):**
-- Accumulator update gate: features added/removed, perspective, incremental vs. full recompute
-- Forward pass gate: accumulator values, per-layer output, final scalar + vector outputs
-- Quantization gate (Verbose+): float vs. quantized values at layer boundaries
-- Weight load gate: architecture hash, feature set ID, parameter count, checksum
+**Tracing points (this stage):**
+- Accumulator update: features added/removed, perspective, incremental vs. full recompute
+- Forward pass: accumulator values, per-layer output, final scalar + vector outputs
+- Quantization (Verbose+): float vs. quantized values at layer boundaries
+- Weight load: architecture hash, feature set ID, parameter count, checksum
 
 **Acceptance criteria:**
 - Feature transformer produces correct output for known inputs
@@ -1199,9 +1155,9 @@ impl AccumulatorStack {
 - Distributed training. Single-GPU PyTorch is fine.
 - Fancy data augmentation. The 4-player symmetry provides some naturally.
 
-**Huginn gates (this stage):**
-- Data generation gate: position hash, BRS target, MCTS target, game result (catches malformed data)
-- Training sample validation gate: flags positions where BRS and MCTS disagree significantly
+**Tracing points (this stage):**
+- Data generation: position hash, BRS target, MCTS target, game result (catches malformed data)
+- Training sample validation: flags positions where BRS and MCTS disagree significantly
 
 **Acceptance criteria:**
 - Training script runs, loss decreases
@@ -1251,10 +1207,10 @@ impl AccumulatorStack {
 - BRS with NNUE: > 500K nps
 - MCTS with NNUE: > 5K simulations/sec
 
-**Huginn gates (this stage):**
-- Eval swap gate: NNUE vs. bootstrap used, accumulator state. During transition, logs BOTH evaluations side-by-side for the same position.
-- Accumulator lifecycle gate: tracks through full search lifecycle (catches state leaking between branches)
-- NNUE-vs-bootstrap comparison gate (temporary): flags positions with >200cp disagreement
+**Tracing points (this stage):**
+- Eval swap: NNUE vs. bootstrap used, accumulator state. During transition, logs BOTH evaluations side-by-side for the same position.
+- Accumulator lifecycle: tracks through full search lifecycle (catches state leaking between branches)
+- NNUE-vs-bootstrap comparison (temporary): flags positions with >200cp disagreement
 
 **Acceptance criteria:**
 - NNUE engine beats bootstrap engine in self-play (>55% win rate)
@@ -1296,11 +1252,11 @@ impl AccumulatorStack {
 - New game modes beyond what's specified. No teams mode evaluation tuning (that can come later).
 - Mode-specific NNUE retraining (can do in a future training cycle).
 
-**Huginn gates (this stage):**
-- DKW random move gate: position, move, interference with active players
-- Terrain conversion gate: pieces converted, positions, movegen diff before/after
-- Chess960 setup gate: arrangement, bishop colors, king-between-rooks validation
-- Scoring anomaly gate: flags score changes not matching the point table
+**Tracing points (this stage):**
+- DKW random move: position, move, interference with active players
+- Terrain conversion: pieces converted, positions, movegen diff before/after
+- Chess960 setup: arrangement, bishop colors, king-between-rooks validation
+- Scoring anomaly: flags score changes not matching the point table
 
 **Acceptance criteria:**
 - DKW games play to completion correctly
@@ -1324,7 +1280,7 @@ impl AccumulatorStack {
 
 2. **Visual enhancements.** Move arrows, last move highlight, check highlight, terrain piece styling.
 
-3. **Comprehensive debug panel.** Best move + eval, per-player scores/values, depth/nodes/NPS, BRS surviving moves list, MCTS visit distribution bar chart, phase indicator, timeout reasons, Huginn trace viewer (expandable tree).
+3. **Comprehensive debug panel.** Best move + eval, per-player scores/values, depth/nodes/NPS, BRS surviving moves list, MCTS visit distribution bar chart, phase indicator, timeout reasons.
 
 4. **Self-play dashboard.** Start/stop, speed control, game count, aggregate stats (win rates, avg game length, avg time/move), live board view.
 
@@ -1335,16 +1291,14 @@ impl AccumulatorStack {
 2. Play mode logic (who moves when, engine auto-play)
 3. Visual enhancements
 4. Debug panel with all specified fields
-5. Huginn trace viewer
-6. Self-play dashboard
-7. Extended game controls
+5. Self-play dashboard
+6. Extended game controls
 
 **What you DON'T need:**
 - Game logic. The UI still owns ZERO game logic. Everything goes through the engine.
 - Online play. This is local only.
 
-**Huginn gates (this stage):**
-None new in the engine. But this stage completes the Huginn display surface: expandable trace tree, simulation histogram, BRS/MCTS phase timeline, eval flow visualizer. This is where all observation points from every previous stage become visible.
+**Tracing points (this stage):** None new in the engine.
 
 **Acceptance criteria:**
 - Can play a full game against engine
@@ -1406,7 +1360,6 @@ These rules apply to every stage after the feature is introduced. They are not s
 | Invariant | Introduced | What It Means |
 |-----------|-----------|---------------|
 | **Prior-stage tests never deleted** | Stage 0 | Tests from earlier stages are never removed or modified to accommodate new code. |
-| **Huginn compiles to nothing when off** | Stage 0 | `cargo build` (without `--features huginn`) produces a binary with zero Huginn symbols. |
 | **Board representation tests pass** | Stage 1 | Board representation tests pass, FEN4 round-trips work. |
 | **Perft values are forever** | Stage 2 | Once perft values are established, they never change. Any stage that causes perft to fail has a bug. |
 | **Zobrist round-trip** | Stage 2 | `make -> unmake` restores the exact Zobrist hash. Always. (Zobrist keys are defined in Stage 1, but the invariant is enforceable from Stage 2 when make/unmake logic exists.) |
@@ -1480,7 +1433,6 @@ Every stage undergoes two audits:
 |--------|-----------|---------|
 | Project | Title Case | Project Odin |
 | Engine | PascalCase | Odin |
-| Telemetry | "Huginn" | Huginn trace |
 | Rust modules | snake_case | `move_gen`, `board_repr` |
 | Rust types | PascalCase | `GameState`, `MctsNode` |
 | Rust functions | snake_case | `generate_legal_moves` |
@@ -1501,7 +1453,6 @@ Every stage undergoes two audits:
 | **NNUE** | Efficiently Updatable Neural Network. Fast neural evaluation with incremental updates. |
 | **PUCT** | Predictor + Upper Confidence bounds for Trees. MCTS selection with neural priors. |
 | **UCB1** | Upper Confidence Bound 1. Bandit algorithm for MCTS selection. |
-| **Huginn** | Odin's telemetry/tracer. Passive, read-only, external observer. Compile-gated: absent from release builds. |
 | **Perft** | Performance test. Counting leaf nodes at given depth to verify move generation. |
 | **Zobrist** | Position hash using XOR of random values per piece-square combination. |
 | **DKW** | Dead King Walking. Eliminated king continues making random moves. |
@@ -1520,7 +1471,7 @@ Every stage undergoes two audits:
 
 ```
 TIER 1 — FOUNDATION
-Stage 0  --- (none) ---------> Skeleton + Huginn Core
+Stage 0  --- (none) ---------> Project Skeleton
 Stage 1  --- 0 ---------------> Board Representation
 Stage 2  --- 1 ---------------> Move Generation + Attack Query API
 Stage 3  --- 2 ---------------> Game State & Rules
@@ -1563,7 +1514,7 @@ Stage 19 --- 16 + 12 ---------> Optimization & Hardening
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
 | 160-square board makes NNUE too large | Medium | High | Start with simplified feature set (no king-relative), upgrade if needed |
-| Hybrid reply heuristics need extensive tuning | High | Medium | Self-play framework (Stage 12) provides feedback early. Huginn's reply scoring gate shows exactly which replies were chosen and why. |
+| Hybrid reply heuristics need extensive tuning | High | Medium | Self-play framework (Stage 12) provides feedback early. |
 | MCTS too slow for real-time play | Medium | High | Progressive widening, strong NNUE priors reduce needed simulations |
 | Terrain mode creates degenerate endgames | Low | Low | Terrain is opt-in; engine can learn to play around it |
 | DKW random moves create noise in search | Medium | Low | Model as chance nodes in MCTS; in BRS, ignore (they're random) |

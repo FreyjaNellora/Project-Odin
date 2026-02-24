@@ -5,7 +5,7 @@ tags:
   - stage/07
   - area/search
 status: active
-last_updated: 2026-02-21
+last_updated: 2026-02-23
 ---
 
 # Component: Search (Searcher Trait + BRS)
@@ -20,6 +20,7 @@ Selects the best move from a given position within a time/depth/node budget. Wit
 
 - `search/mod.rs` — Searcher trait, SearchBudget, SearchResult (permanent contracts)
 - `search/brs.rs` — BrsSearcher, BrsContext, all BRS algorithm logic
+- `search/board_scanner.rs` — BoardContext, hybrid reply scoring, progressive narrowing (Stage 8) — see [[Component-BoardScanner]]
 
 ## Key Types
 
@@ -27,7 +28,7 @@ Selects the best move from a given position within a time/depth/node budget. Wit
 - **SearchBudget** — `max_depth: Option<u8>`, `max_nodes: Option<u64>`, `max_time_ms: Option<u64>`. All fields optional; None = no limit.
 - **SearchResult** — `best_move: Move`, `score: i16`, `depth: u8`, `nodes: u64`, `pv: Vec<Move>`. Score always from root player's perspective.
 - **BrsSearcher** — Concrete searcher. Owns `Box<dyn Evaluator>` and an optional info callback. Constructed per `go` command.
-- **BrsContext** (private) — Internal mutable state for one search call. Holds cloned GameState, evaluator ref, root player, node count, start time, budget, stopped flag, PV table.
+- **BrsContext** (private) — Internal mutable state for one search call. Holds cloned GameState, evaluator ref, root player, node count, start time, budget, stopped flag, PV table, board context (Stage 8).
 
 ## Public API
 
@@ -75,8 +76,9 @@ Selects the best move from a given position within a time/depth/node budget. Wit
   - Iterate all legal moves. LMR: after move #3 at depth ≥ 3, non-captures get depth - 1. Re-search at full depth if score > alpha.
   - Standard alpha-beta: update alpha on improvement, prune when alpha >= beta.
 - **MIN node (opponent's turn):**
-  - Static eval for all opponent moves to find the single strongest reply.
-  - Play it and recurse once (no branching at MIN nodes).
+  - Stage 8: Uses `select_hybrid_reply()` from [[Component-BoardScanner]] — classifies moves, applies progressive narrowing, scores with hybrid formula (harm × likelihood + strength × (1-likelihood)).
+  - Falls back to plain BRS if no relevant moves found.
+  - Play the selected reply and recurse once (no branching at MIN nodes).
   - If eliminated / no legal moves: skip via `set_side_to_move(next)` (Zobrist-safe, symmetric).
 
 ## Internal Flow: quiescence(alpha, beta, qs_depth)
@@ -108,22 +110,20 @@ info depth <d> score cp <s> v1 <r> v2 <b> v3 <y> v4 <g> nodes <n> nps <nps> time
 
 ## Connections
 
-- Depends on: [[Component-Eval]] (eval_scalar at leaf nodes), [[Component-GameState]] (clone, is_game_over, legal_moves), [[Component-MoveGen]] (generate_legal, make_move, unmake_move, is_in_check)
+- Depends on: [[Component-Eval]] (eval_scalar at leaf nodes), [[Component-GameState]] (clone, is_game_over, legal_moves), [[Component-MoveGen]] (generate_legal, make_move, unmake_move, is_in_check), [[Component-BoardScanner]] (hybrid reply scoring at MIN nodes, Stage 8)
 - Depended on by: [[Component-Protocol]] (wires BrsSearcher in handle_go)
 - Communicates via: [[Connection-Eval-to-Search]], [[Connection-Search-to-Protocol]]
 
-## Huginn Gates
+## Tracing Points
 
-Specified in Stage 7 (see [[Issue-Huginn-Gates-Unwired]]):
+Potential `tracing` spans/events (Huginn was retired in Stage 8; see ADR-015):
 
-| Gate | Location | Level |
+| Span/Event | Location | Level |
 |---|---|---|
-| `alpha_beta_prune` | MAX node cutoff in alphabeta() | Verbose |
-| `quiescence` | Entry/exit of quiescence() | Verbose |
-| `iterative_deepening` | After each completed depth | Normal |
-| `brs_reply_selection` | MIN node: opponent, candidates, selected move | Verbose |
-
-Not yet wired.
+| `alpha_beta_prune` | MAX node cutoff in alphabeta() | TRACE |
+| `quiescence` | Entry/exit of quiescence() | TRACE |
+| `iterative_deepening` | After each completed depth | DEBUG |
+| `brs_reply_selection` | MIN node: opponent, candidates, selected move | TRACE |
 
 ## Gotchas
 
@@ -160,6 +160,7 @@ Not yet wired.
 ## Build History
 
 - [[Session-2026-02-21-Stage07]] — initial implementation
+- [[Session-2026-02-23-Stage08]] — hybrid reply scoring, board scanner, progressive narrowing
 
 ## Related
 

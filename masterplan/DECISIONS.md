@@ -142,8 +142,11 @@ The user's directive: "get your steps in order! figure out what needs to be buil
 
 ### ADR-007: Huginn Telemetry — Compile-Gated Ghost Observer
 
+**Status: SUPERSEDED by ADR-015**
+Huginn was retired in Stage 8. The `tracing` crate replaced it. See ADR-015.
+
 **Date:** 2026-02-18
-**Status:** Active
+**Status:** Superseded by ADR-015
 **Affects:** Stage 0 and every subsequent stage
 
 **Decision:** Huginn exists from Stage 0, grows per stage, and is controlled by a single compile flag (`cfg(feature = "huginn")`). When off, the engine compiles as if Huginn does not exist. When on, it operates as a post-hoc reader with zero engine impact.
@@ -159,8 +162,11 @@ The user's directive: "get your steps in order! figure out what needs to be buil
 
 ### ADR-008: Huginn Reporting — JSONL with Ring Buffer
 
+**Status: SUPERSEDED by ADR-015**
+Huginn was retired in Stage 8. The `tracing` crate replaced it. See ADR-015.
+
 **Date:** 2026-02-19
-**Status:** Active
+**Status:** Superseded by ADR-015
 **Affects:** Stage 0 ([[stage_00_skeleton]]), `AGENT_CONDUCT.md` ([[AGENT_CONDUCT]]) Section 3
 
 **Decision:** Huginn observations are stored as JSON Lines (one JSON object per line) in a pre-allocated ring buffer (65,536 entries, oldest silently overwritten). Optional file sink for persistent logging. 5-level trace hierarchy (Session > Search > Phase > Path > Gate). 4 verbosity levels (Minimal < 10/search, Normal 20-50, Verbose 200-2000, Everything 10,000+).
@@ -330,6 +336,41 @@ The user's directive: "get your steps in order! figure out what needs to be buil
 **Design principle:** Fast. Board is the focus. Right panel tells you everything the engine is thinking without digging through logs. Search Trace is the differentiator — turns the app from a chess viewer into a reasoning observatory.
 
 **Connection to ADR-013:** The Scores panel assumes points are central. When score-aware eval lands (Stage 8+), the Analysis panel may need to display scoring context alongside centipawn eval — or the centipawn value itself must incorporate scoring context so the single number is meaningful to the user.
+
+---
+
+### ADR-015: Retire Huginn, Adopt `tracing` Crate
+
+**Date:** 2026-02-23
+**Status:** Active
+**Supersedes:** ADR-007, ADR-008
+**Affects:** All stages (Stage 0 through 19)
+
+**Decision:** The custom Huginn telemetry system (compile-gated ghost observer with `huginn_observe!` macro, `HuginnBuffer` ring buffer, JSONL trace format) is retired entirely. All Huginn code has been deleted from the engine. The `tracing` crate (v0.1) replaces it as the observability solution. Diagnostic output uses `tracing::debug!`, `tracing::info!`, and `tracing::trace!` macros at key engine boundaries.
+
+**What was removed:**
+- `odin-engine/src/huginn/` directory (mod.rs + buffer.rs, ~350 lines)
+- `huginn` feature flag from Cargo.toml
+- `huginn_observe!` macro (both on/off branches)
+- All `#[cfg(feature = "huginn")]` blocks across search/board_scanner modules
+- Huginn-specific integration tests (3 tests from stage_00_proof_of_life.rs)
+
+**What was added:**
+- `tracing = "0.1"` dependency in Cargo.toml
+- Tracing instrumentation to be added incrementally at former gate points
+
+**Alternatives considered:**
+- **Keep Huginn, fix the plumbing:** The fundamental problem was that `HuginnBuffer` had no global instance. Threading `&mut HuginnBuffer` through every API signature (Board, MoveGen, GameState, Eval, Search) would pollute the entire API surface. A global/static instance would require unsafe code or a mutex in hot paths. Eight stages of deferred wiring proved this was impractical.
+- **Runtime-toggled logging (log4rs):** Adds branches to hot paths. The `tracing` crate's subscriber model avoids this — unsubscribed spans/events compile to near-zero overhead.
+- **Keep Huginn as dead code, wire later:** Carrying dead code for 8 stages with no plan to resolve the plumbing problem is deferred debt. The user explicitly requested removal after identifying the pattern.
+
+**Why `tracing` was chosen:**
+1. **Works out of the box.** `tracing::debug!("msg", field = value)` — no buffer plumbing, no feature gates, no macro gymnastics.
+2. **Zero-cost when filtered.** With no subscriber attached (production), tracing macros compile to no-ops. With a subscriber (development), output goes to stderr, files, or structured formats.
+3. **Industry standard.** Tokio ecosystem, well-maintained, familiar to Rust developers.
+4. **Incremental adoption.** Can add `tracing::debug!` calls one at a time without touching API signatures. No Big Bang wiring required.
+
+**Lesson learned:** If a system requires plumbing through every API surface but that plumbing is deferred at every stage, the design is fundamentally flawed. This should have been caught by Stage 2 at latest. A new deferred-debt escalation rule has been added to AGENT_CONDUCT to prevent similar accumulation.
 
 ---
 

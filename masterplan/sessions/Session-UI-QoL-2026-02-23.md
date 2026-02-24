@@ -71,7 +71,7 @@ stage: non-stage (UI QoL)
 1. **Board zoom is buggy** — frame boundary occasionally shifts on scroll. Low priority — save for polish phase. See [[stage_19_polish]].
 2. **Duplicate info across panels** — some data (depth, nodes, NPS) appears in both AnalysisPanel and EngineInternals. Needs dedup pass — AnalysisPanel should own search summary, EngineInternals should own only engine-specific fields (phase, BRS surviving, MCTS sims, per-player values).
 3. **No per-player scoring log** — no UI for tracking point changes from captures/eliminations per move. Would need engine to emit explicit scoring events or UI to diff `values` between moves. Future feature for [[stage_18_full_ui]].
-4. **Huginn integration opportunity** — engine-side Huginn observation points could provide richer debug data for the Communication Log or a dedicated Huginn panel. Not implemented this session.
+4. **Tracing integration opportunity** — engine-side `tracing` instrumentation could provide richer debug data for the Communication Log or a dedicated diagnostics panel. Not implemented this session.
 
 ## Test Results
 

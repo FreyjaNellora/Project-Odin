@@ -11,7 +11,7 @@ tags:
 
 ## Summary
 
-Implemented the complete Stage 7 deliverable: the `Searcher` trait (permanent search boundary) and `BrsSearcher` (Best-Reply Search with alpha-beta, iterative deepening, quiescence, aspiration windows, null move pruning, LMR, PV tracking). Engine is now playable for the first time. All 302 tests pass. Huginn build compiles. Post-audit complete.
+Implemented the complete Stage 7 deliverable: the `Searcher` trait (permanent search boundary) and `BrsSearcher` (Best-Reply Search with alpha-beta, iterative deepening, quiescence, aspiration windows, null move pruning, LMR, PV tracking). Engine is now playable for the first time. All 302 tests pass. Post-audit complete.
 
 ## What Was Done
 
@@ -84,7 +84,6 @@ Implemented the complete Stage 7 deliverable: the `Searcher` trait (permanent se
 - `odin-engine/src/protocol/mod.rs` — handle_go wired to BrsSearcher
 - `masterplan/audit_log_stage_07.md` — pre-audit + post-audit
 - `masterplan/downstream_log_stage_07.md` — API contracts, performance baselines, known limitations
-- `masterplan/issues/Issue-Huginn-Gates-Unwired.md` — added 4 Stage 7 gates
 - `masterplan/_index/MOC-Active-Issues.md` — updated
 - `masterplan/_index/MOC-Sessions.md` — added this session
 - `masterplan/_index/Wikilink-Registry.md` — added new targets
@@ -95,7 +94,6 @@ Implemented the complete Stage 7 deliverable: the `Searcher` trait (permanent se
 ## Test Results
 
 - 302 total: 196 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 + 11 stage-06 + 22 stage-07
-- Huginn build: compiles
 - Clippy: clean (at session end)
 - 2 `#[ignore]` tests (analysis helpers, not counted in CI)
 

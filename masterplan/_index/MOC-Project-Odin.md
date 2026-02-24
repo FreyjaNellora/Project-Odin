@@ -10,7 +10,7 @@ last_updated: 2026-02-19
 ## Core Documents
 
 - [[MASTERPLAN]] -- Full project spec (20 stages, architecture, invariants)
-- [[AGENT_CONDUCT]] -- Agent behavior rules, audit procedures, Huginn reporting
+- [[AGENT_CONDUCT]] -- Agent behavior rules, audit procedures
 - [[DECISIONS]] -- Architectural decision records (ADRs)
 - [[4PC_RULES_REFERENCE]] -- Four-player chess rules
 - [[STATUS]] -- Current project state

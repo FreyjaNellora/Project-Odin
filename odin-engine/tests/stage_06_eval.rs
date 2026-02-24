@@ -4,14 +4,14 @@
 // and acceptance criteria from the MASTERPLAN.
 
 use odin_engine::board::{Board, PieceType, Player};
-use odin_engine::eval::{BootstrapEvaluator, Evaluator};
+use odin_engine::eval::{BootstrapEvaluator, EvalProfile, Evaluator};
 use odin_engine::gamestate::GameState;
 
 // ── Acceptance Criterion 1: Different values for materially different positions ──
 
 #[test]
 fn test_materially_different_positions_get_different_scores() {
-    let evaluator = BootstrapEvaluator::new();
+    let evaluator = BootstrapEvaluator::new(EvalProfile::Standard);
     let gs_full = GameState::new_standard_ffa();
     let score_full = evaluator.eval_scalar(&gs_full, Player::Red);
 
@@ -42,7 +42,7 @@ fn test_materially_different_positions_get_different_scores() {
 
 #[test]
 fn test_evaluation_is_perspective_dependent() {
-    let evaluator = BootstrapEvaluator::new();
+    let evaluator = BootstrapEvaluator::new(EvalProfile::Standard);
 
     // Remove Blue's queen to create asymmetry.
     let mut board = Board::starting_position();
@@ -71,7 +71,7 @@ fn test_evaluation_is_perspective_dependent() {
 
 #[test]
 fn test_eval_performance_under_10us() {
-    let evaluator = BootstrapEvaluator::new();
+    let evaluator = BootstrapEvaluator::new(EvalProfile::Standard);
     let gs = GameState::new_standard_ffa();
 
     let iterations = 10_000;
@@ -101,7 +101,7 @@ fn test_evaluator_trait_compiles() {
         (scalar, vec)
     }
 
-    let evaluator = BootstrapEvaluator::new();
+    let evaluator = BootstrapEvaluator::new(EvalProfile::Standard);
     let gs = GameState::new_standard_ffa();
     let (scalar, vec) = use_evaluator(&evaluator, &gs);
 
@@ -115,7 +115,7 @@ fn test_evaluator_trait_compiles() {
 
 #[test]
 fn test_eval_scalar_and_4vec_consistent() {
-    let evaluator = BootstrapEvaluator::new();
+    let evaluator = BootstrapEvaluator::new(EvalProfile::Standard);
 
     // Create asymmetric position: remove Blue's queen.
     let mut board = Board::starting_position();
@@ -149,7 +149,7 @@ fn test_eval_scalar_and_4vec_consistent() {
 
 #[test]
 fn test_starting_position_approximate_symmetry() {
-    let evaluator = BootstrapEvaluator::new();
+    let evaluator = BootstrapEvaluator::new(EvalProfile::Standard);
     let gs = GameState::new_standard_ffa();
 
     let scores: Vec<i16> = Player::ALL
@@ -185,7 +185,7 @@ fn test_starting_position_approximate_symmetry() {
 
 #[test]
 fn test_eliminated_player_low_score() {
-    let evaluator = BootstrapEvaluator::new();
+    let evaluator = BootstrapEvaluator::new(EvalProfile::Standard);
     let mut gs = GameState::new_standard_ffa();
 
     // Resign Blue to make them DKW, then let their king get stuck/eliminated.
@@ -205,7 +205,7 @@ fn test_eliminated_player_low_score() {
 
 #[test]
 fn test_4vec_bounded_01() {
-    let evaluator = BootstrapEvaluator::new();
+    let evaluator = BootstrapEvaluator::new(EvalProfile::Standard);
     let gs = GameState::new_standard_ffa();
     let vec = evaluator.eval_4vec(&gs);
 
@@ -218,7 +218,7 @@ fn test_4vec_bounded_01() {
 
 #[test]
 fn test_eval_during_random_games_no_panic() {
-    let evaluator = BootstrapEvaluator::new();
+    let evaluator = BootstrapEvaluator::new(EvalProfile::Standard);
 
     for seed in 0..100u64 {
         let mut gs = GameState::new_standard_ffa();

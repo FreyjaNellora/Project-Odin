@@ -42,9 +42,9 @@ Header toggles visibility. Default: expanded. Useful for hiding the noisy raw lo
 
 Uses a `scrollRef` to auto-scroll to the bottom on new lines.
 
-## Huginn Integration Opportunity
+## Tracing Integration Opportunity
 
-Engine-side Huginn observation points could emit additional debug data visible here. Not yet implemented — noted for future sessions.
+Engine-side `tracing` spans/events could emit additional debug data visible here. Not yet implemented — noted for future sessions.
 
 ## Related
 

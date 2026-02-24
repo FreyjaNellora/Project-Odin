@@ -16,7 +16,7 @@
 use std::time::Instant;
 
 use odin_engine::board::{Board, Piece, PieceType, Player};
-use odin_engine::eval::BootstrapEvaluator;
+use odin_engine::eval::{BootstrapEvaluator, EvalProfile};
 use odin_engine::gamestate::{GameMode, GameState};
 use odin_engine::movegen;
 use odin_engine::protocol::{Command, OdinEngine, SearchLimits};
@@ -28,7 +28,7 @@ use odin_engine::search::{SearchBudget, Searcher};
 // ---------------------------------------------------------------------------
 
 fn make_searcher() -> BrsSearcher {
-    BrsSearcher::new(Box::new(BootstrapEvaluator::new()))
+    BrsSearcher::new(Box::new(BootstrapEvaluator::new(EvalProfile::Standard)))
 }
 
 fn depth_budget(depth: u8) -> SearchBudget {

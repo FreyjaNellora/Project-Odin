@@ -8,7 +8,7 @@ dist/
 # NNUE weight files (large binaries)
 *.onnue
 
-# Huginn trace files (debug data)
+# Debug trace files
 *.jsonl
 
 # OS files

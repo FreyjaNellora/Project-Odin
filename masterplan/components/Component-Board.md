@@ -48,9 +48,9 @@ Verification: `verify_zobrist()`, `verify_piece_lists()`.
 - [[stage_04_protocol]] will parse FEN4 from external input
 - [[stage_06_bootstrap_eval]] will read piece positions for evaluation
 
-## Huginn Gates
+## Tracing Points
 
-Specified but not yet wired (see [[Issue-Huginn-Gates-Unwired]]):
+Potential `tracing` spans/events (Huginn was retired in Stage 8; see ADR-015):
 - `board_mutation` -- track piece placement/removal
 - `zobrist_update` -- trace hash XOR operations
 - `fen4_roundtrip` -- verify parse/serialize consistency

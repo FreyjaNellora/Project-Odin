@@ -3,12 +3,6 @@
 // UCI-like text protocol extended for four-player chess.
 // Commands on stdin, responses on stdout.
 // Malformed input produces error messages, never crashes.
-//
-// Huginn gates defined but not wired (deferred per established pattern):
-// - command_receive: raw string, parsed type, parse errors
-// - response_send: full string, what triggered it
-// - position_set: FEN4/startpos, move list, resulting hash
-// - search_request: time controls, depth limits, options
 
 mod emitter;
 mod parser;
@@ -122,6 +116,35 @@ impl OdinEngine {
                     || value.eq_ignore_ascii_case("on")
                     || value == "1";
             }
+            "gamemode" | "game_mode" => {
+                let v = value.to_lowercase();
+                match v.as_str() {
+                    "ffa" | "freeforall" | "free_for_all" => {
+                        self.options.game_mode = GameMode::FreeForAll;
+                    }
+                    "lks" | "lastkingstanding" | "last_king_standing" => {
+                        self.options.game_mode = GameMode::LastKingStanding;
+                    }
+                    _ => {} // Silently ignore unknown values
+                }
+            }
+            "evalprofile" | "eval_profile" => {
+                let v = value.to_lowercase();
+                match v.as_str() {
+                    "standard" | "std" => {
+                        self.options.eval_profile =
+                            Some(crate::eval::EvalProfile::Standard);
+                    }
+                    "aggressive" | "aggro" => {
+                        self.options.eval_profile =
+                            Some(crate::eval::EvalProfile::Aggressive);
+                    }
+                    "auto" | "none" => {
+                        self.options.eval_profile = None;
+                    }
+                    _ => {} // Silently ignore unknown values
+                }
+            }
             _ => {
                 // Accept and silently ignore unrecognized options (UCI convention)
             }
@@ -131,8 +154,9 @@ impl OdinEngine {
     fn handle_position_fen4(&mut self, fen: &str, moves: &[String]) {
         match Board::from_fen4(fen) {
             Ok(board) => {
+                let mode = self.options.game_mode;
                 let terrain = self.options.terrain_mode;
-                self.game_state = Some(GameState::new(board, GameMode::FreeForAll, terrain));
+                self.game_state = Some(GameState::new(board, mode, terrain));
                 if let Err(e) = self.apply_moves(moves) {
                     self.send(&format_error(&e));
                     self.game_state = None;
@@ -145,11 +169,13 @@ impl OdinEngine {
     }
 
     fn handle_position_startpos(&mut self, moves: &[String]) {
-        if self.options.terrain_mode {
-            self.game_state = Some(GameState::new_standard_ffa_terrain());
-        } else {
-            self.game_state = Some(GameState::new_standard_ffa());
-        }
+        let mode = self.options.game_mode;
+        let terrain = self.options.terrain_mode;
+        self.game_state = Some(GameState::new(
+            Board::starting_position(),
+            mode,
+            terrain,
+        ));
         if let Err(e) = self.apply_moves(moves) {
             self.send(&format_error(&e));
             self.game_state = None;
@@ -213,8 +239,9 @@ impl OdinEngine {
             info_buf_cb.borrow_mut().push(line);
         });
 
+        let profile = self.options.resolved_eval_profile();
         let mut searcher =
-            BrsSearcher::with_info_callback(Box::new(BootstrapEvaluator::new()), cb);
+            BrsSearcher::with_info_callback(Box::new(BootstrapEvaluator::new(profile)), cb);
         let result = searcher.search(&position, budget);
 
         // Apply the best move to determine post-move state for UI synchronization.

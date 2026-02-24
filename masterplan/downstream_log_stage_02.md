@@ -38,7 +38,7 @@
 2. **Legal filtering is expensive.** Every pseudo-legal move is made/checked/unmade. Pin detection optimization deferred to later.
 3. **Attack tables use heap-allocated Vecs.** Could be replaced with fixed-size arrays for performance. Not a priority.
 4. **No game-level rulings.** No checkmate, stalemate, draw, or elimination detection. Stage 3 builds on top of this.
-5. **Huginn gates not wired.** The spec lists 4 Huginn gates for this stage; none are implemented yet. Will add when telemetry infrastructure is needed.
+5. **~~Huginn gates not wired.~~** *(Historical — Huginn was retired in Stage 8 and replaced with the `tracing` crate; see ADR-015.)*
 6. **Perft values not independently verified.** No reference 4PC engine exists. Values are self-consistent but unverified externally.
 
 ### Performance Baselines

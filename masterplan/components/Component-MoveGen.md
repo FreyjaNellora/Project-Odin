@@ -51,9 +51,9 @@ Move generation:
 - [[stage_07_plain_brs]] -- will use `generate_legal` and `make_move`/`unmake_move` for search
 - [[stage_09_tt_ordering]] -- will add move ordering on top of `generate_pseudo_legal`
 
-## Huginn Gates
+## Tracing Points
 
-Specified but not yet wired (see [[Issue-Huginn-Gates-Unwired]]):
+Potential `tracing` spans/events (Huginn was retired in Stage 8; see ADR-015):
 - `move_generation` -- track move counts and lists
 - `make_unmake` -- verify state restoration
 - `legality_filter` -- why moves were rejected

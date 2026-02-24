@@ -1,5 +1,3 @@
-pub mod huginn;
-
 pub mod board;
 pub mod eval;
 pub mod gamestate;

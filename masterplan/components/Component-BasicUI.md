@@ -58,9 +58,9 @@ Desktop application shell for visualizing the 4-player chess board, making moves
 - Depended on by: [[stage_18_full_ui]] (will extend/replace these scaffolding components)
 - Communicates via: [[Connection-Protocol-to-UI]]
 
-## Huginn Gates
+## Tracing Points
 
-None. Stage 5 is UI-only; Huginn is engine-side.
+None. Stage 5 is UI-only; tracing is engine-side.
 
 ## Gotchas
 

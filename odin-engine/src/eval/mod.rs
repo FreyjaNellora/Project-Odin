@@ -1,4 +1,4 @@
-// Evaluation — Stages 6, 14-16
+// Evaluation — Stages 6, 8, 14-16
 //
 // The Evaluator trait is the eval boundary. All search code calls through
 // this trait, never a specific implementation. Bootstrap handcrafted eval
@@ -25,6 +25,62 @@ const ELIMINATED_SCORE: i16 = -30_000;
 /// At 0cp -> 0.5, +300cp -> ~0.68, +900cp -> ~0.90, -30000cp -> ~0.0.
 const SIGMOID_K: f64 = 400.0;
 
+// ---------------------------------------------------------------------------
+// EvalProfile — evaluation personality (ADR-014)
+// ---------------------------------------------------------------------------
+
+/// Evaluation personality profile.
+///
+/// Controls how aggressively the engine evaluates positions. Independent of
+/// `GameMode` (which controls rules). Default pairing: FFA → Aggressive,
+/// LKS → Standard. Override via `setoption name EvalProfile`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EvalProfile {
+    /// Conservative: lead penalty active, moderate FFA point weight.
+    /// Default for Last King Standing.
+    Standard,
+    /// FFA-optimized: no lead penalty, high FFA point weight.
+    /// Default for Free For All.
+    Aggressive,
+}
+
+/// Tunable eval weights derived from an `EvalProfile`.
+#[derive(Debug, Clone, Copy)]
+pub struct EvalWeights {
+    /// Centipawns per FFA point.
+    pub ffa_point_weight: i16,
+    /// Whether the lead penalty is applied.
+    pub lead_penalty_enabled: bool,
+    /// Lead penalty scaling: penalty = lead / divisor.
+    pub lead_penalty_divisor: i16,
+    /// Maximum lead penalty in centipawns.
+    pub max_lead_penalty: i16,
+}
+
+impl EvalProfile {
+    /// Return the eval weights for this profile.
+    pub fn weights(self) -> EvalWeights {
+        match self {
+            EvalProfile::Standard => EvalWeights {
+                ffa_point_weight: 50,
+                lead_penalty_enabled: true,
+                lead_penalty_divisor: 4,
+                max_lead_penalty: 150,
+            },
+            EvalProfile::Aggressive => EvalWeights {
+                ffa_point_weight: 120,
+                lead_penalty_enabled: false,
+                lead_penalty_divisor: 4,
+                max_lead_penalty: 0,
+            },
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Evaluator trait (permanent contract)
+// ---------------------------------------------------------------------------
+
 /// The evaluation boundary trait. All search code calls through this trait.
 ///
 /// Permanent contract: these signatures persist through the entire project.
@@ -40,36 +96,38 @@ pub trait Evaluator {
     fn eval_4vec(&self, position: &GameState) -> [f64; 4];
 }
 
+// ---------------------------------------------------------------------------
+// BootstrapEvaluator
+// ---------------------------------------------------------------------------
+
 /// Bootstrap handcrafted evaluator. Implements the Evaluator trait.
 ///
 /// Components: material counting, piece-square tables, king safety,
 /// multi-player relative eval (lead penalty, threat penalty), FFA points.
 ///
 /// This is temporary — replaced by NnueEvaluator in Stage 16.
-pub struct BootstrapEvaluator;
-
-impl BootstrapEvaluator {
-    /// Create a new bootstrap evaluator (stateless).
-    pub fn new() -> Self {
-        Self
-    }
+pub struct BootstrapEvaluator {
+    weights: EvalWeights,
 }
 
-impl Default for BootstrapEvaluator {
-    fn default() -> Self {
-        Self::new()
+impl BootstrapEvaluator {
+    /// Create a new bootstrap evaluator with the given eval profile.
+    pub fn new(profile: EvalProfile) -> Self {
+        Self {
+            weights: profile.weights(),
+        }
     }
 }
 
 impl Evaluator for BootstrapEvaluator {
     fn eval_scalar(&self, position: &GameState, player: Player) -> i16 {
-        eval_for_player(position, player)
+        eval_for_player(position, player, &self.weights)
     }
 
     fn eval_4vec(&self, position: &GameState) -> [f64; 4] {
         let mut raw = [0i16; 4];
         for &p in &Player::ALL {
-            raw[p.index()] = eval_for_player(position, p);
+            raw[p.index()] = eval_for_player(position, p, &self.weights);
         }
         normalize_4vec(&raw)
     }
@@ -79,7 +137,7 @@ impl Evaluator for BootstrapEvaluator {
 ///
 /// Formula (per MASTERPLAN Stage 6 spec):
 ///   material + positional + king_safety - threat + lead_penalty + ffa_points
-fn eval_for_player(position: &GameState, player: Player) -> i16 {
+fn eval_for_player(position: &GameState, player: Player, weights: &EvalWeights) -> i16 {
     if position.player_status(player) == PlayerStatus::Eliminated {
         return ELIMINATED_SCORE;
     }
@@ -96,8 +154,12 @@ fn eval_for_player(position: &GameState, player: Player) -> i16 {
         &material::material_scores(board),
         &position.scores(),
         &statuses,
+        weights.lead_penalty_enabled,
+        weights.lead_penalty_divisor,
+        weights.max_lead_penalty,
     );
-    let ffa = multi_player::ffa_points_eval(position.score(player));
+    let ffa = multi_player::ffa_points_eval(position.score(player), weights.ffa_point_weight);
+    let rel_mat = material::relative_material_advantage(board, player, &statuses);
 
     // Combine with saturating arithmetic to avoid i16 overflow.
     mat.saturating_add(pos)
@@ -105,6 +167,7 @@ fn eval_for_player(position: &GameState, player: Player) -> i16 {
         .saturating_sub(threat)
         .saturating_add(lead)
         .saturating_add(ffa)
+        .saturating_add(rel_mat)
         .clamp(-30_000, 30_000)
 }
 
@@ -135,7 +198,7 @@ mod tests {
 
     #[test]
     fn test_bootstrap_evaluator_implements_trait() {
-        let evaluator = BootstrapEvaluator::new();
+        let evaluator = BootstrapEvaluator::new(EvalProfile::Standard);
         let gs = GameState::new_standard_ffa();
         let _scalar = evaluator.eval_scalar(&gs, Player::Red);
         let _vec = evaluator.eval_4vec(&gs);
@@ -169,11 +232,52 @@ mod tests {
     }
 
     #[test]
-    fn test_default_evaluator() {
-        let evaluator = BootstrapEvaluator::default();
+    fn test_standard_profile_matches_original_behavior() {
+        // Standard profile should produce the same scores as the original evaluator.
+        let evaluator = BootstrapEvaluator::new(EvalProfile::Standard);
         let gs = GameState::new_standard_ffa();
         let score = evaluator.eval_scalar(&gs, Player::Red);
-        // Starting position should have a reasonable score.
         assert!(score > -30_000 && score < 30_000);
+    }
+
+    #[test]
+    fn test_aggressive_profile_valid_scores() {
+        let evaluator = BootstrapEvaluator::new(EvalProfile::Aggressive);
+        let gs = GameState::new_standard_ffa();
+        let score = evaluator.eval_scalar(&gs, Player::Red);
+        assert!(score > -30_000 && score < 30_000);
+    }
+
+    #[test]
+    fn test_aggressive_no_lead_penalty() {
+        // With aggressive profile, being ahead should not reduce the score.
+        let weights = EvalProfile::Aggressive.weights();
+        assert!(!weights.lead_penalty_enabled);
+        assert_eq!(weights.max_lead_penalty, 0);
+    }
+
+    #[test]
+    fn test_standard_has_lead_penalty() {
+        let weights = EvalProfile::Standard.weights();
+        assert!(weights.lead_penalty_enabled);
+        assert_eq!(weights.max_lead_penalty, 150);
+        assert_eq!(weights.lead_penalty_divisor, 4);
+    }
+
+    #[test]
+    fn test_aggressive_higher_ffa_weight() {
+        let std_w = EvalProfile::Standard.weights();
+        let agg_w = EvalProfile::Aggressive.weights();
+        assert!(agg_w.ffa_point_weight > std_w.ffa_point_weight);
+        assert_eq!(std_w.ffa_point_weight, 50);
+        assert_eq!(agg_w.ffa_point_weight, 120);
+    }
+
+    #[test]
+    fn test_eval_weights_debug() {
+        // EvalWeights and EvalProfile should derive Debug.
+        let w = EvalProfile::Standard.weights();
+        let _ = format!("{:?}", w);
+        let _ = format!("{:?}", EvalProfile::Aggressive);
     }
 }

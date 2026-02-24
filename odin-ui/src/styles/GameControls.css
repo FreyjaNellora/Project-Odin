@@ -69,6 +69,37 @@
   border-radius: 4px;
 }
 
+/* Config tags — colored badge pills showing active resolved config */
+.config-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin: 2px 0;
+}
+
+.config-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: bold;
+  letter-spacing: 0.3px;
+}
+
+.config-tag-mode {
+  background: #1a2a3a;
+  color: #6ab4f8;
+}
+
+.config-tag-profile {
+  background: #1a2e1a;
+  color: #6ad86a;
+}
+
+.config-tag-terrain {
+  background: #2e2a1a;
+  color: #d8b46a;
+}
+
 /* Control sections */
 .control-section {
   display: flex;

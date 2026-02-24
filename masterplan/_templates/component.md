@@ -25,8 +25,8 @@ last_updated: {{date}}
 - Depended on by: [[]]
 - Communicates via: [[]]
 
-## Huginn Gates
-<!-- Which observation points exist in this component? -->
+## Tracing Points
+<!-- Which tracing spans/events exist in this component? -->
 
 ## Gotchas
 <!-- Non-obvious behavior, edge cases, things that surprised you -->

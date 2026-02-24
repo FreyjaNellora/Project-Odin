@@ -5,8 +5,8 @@
 **Auditor:** Claude Opus 4.6
 
 ### Build State
-- Compiles: Yes (`cargo build` in 1.00s, `cargo build --features huginn` in 0.46s)
-- Tests pass: Yes (64 without huginn — 44 unit + 2 stage-00 + 18 stage-01; all pass)
+- Compiles: Yes (`cargo build` in 1.00s)
+- Tests pass: Yes (64 total — 44 unit + 2 stage-00 + 18 stage-01; all pass)
 - Previous downstream flags reviewed: Yes — Stage 0 and Stage 1 downstream logs reviewed
 
 ### Findings
@@ -18,11 +18,11 @@
 4. Zobrist hash incrementally maintained by all Board mutation methods.
 5. **REQUIRES CHANGE:** `en_passant: Option<u8>` stores a file index (0-13). This is insufficient for 4PC — Blue/Green pawns move along files, not ranks. En passant target squares for Blue/Green are on specific ranks, not identifiable by file alone. Must change to store full target square (`Option<Square>`). Zobrist ep keys need expansion from 14 (one per file) to 196 (one per square index).
 6. Piece lists use `Vec`, not fixed-size arrays. Acceptable for correctness-first approach.
-7. Huginn gates not yet wired — will add when make/unmake becomes active per Stage 1 downstream log recommendation.
+7. [Historical] Huginn gates not yet wired — will add when make/unmake becomes active per Stage 1 downstream log recommendation.
 
 **From [[downstream_log_stage_00]]:**
-1. `huginn_observe!` macro available crate-wide. Arguments must be pure.
-2. `HuginnBuffer` API: `new`, `record`, etc. No global buffer instance.
+1. [Historical] `huginn_observe!` macro available crate-wide. Arguments must be pure.
+2. [Historical] `HuginnBuffer` API: `new`, `record`, etc. No global buffer instance.
 
 **From [[audit_log_stage_01]]:**
 1. No blocking or warning findings.
@@ -85,7 +85,7 @@
 - Perft(4) = 152,050 nodes in ~0.56s (debug build). Acceptable.
 
 #### Dead Code
-- **NOTE:** Huginn gates listed in spec (move_generation, make_unmake, legality_filter, perft) are not yet wired. Deferred per pre-audit finding #7 — will add when Huginn gates become relevant.
+- [Historical - Huginn retired] **NOTE:** Huginn gates listed in spec (move_generation, make_unmake, legality_filter, perft) are not yet wired. Deferred per pre-audit finding #7 — will add when Huginn gates become relevant.
 - `prev_player` in `moves.rs` is an internal utility. No dead public API.
 
 #### Broken Code

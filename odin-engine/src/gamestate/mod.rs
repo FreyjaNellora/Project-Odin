@@ -41,10 +41,15 @@ pub enum EliminationReason {
     DkwKingStuck,
 }
 
-/// Game mode.
+/// Game mode — determines win conditions and game-over rules.
+///
+/// `FreeForAll`: Most points wins. Claim-win (21+ point lead with 2 active) enabled.
+/// `LastKingStanding`: Last player alive wins. Points tracked for display but
+/// do not affect game-over conditions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GameMode {
     FreeForAll,
+    LastKingStanding,
 }
 
 /// Result of applying a move.
@@ -59,7 +64,6 @@ pub struct MoveResult {
 
 /// The full game state.
 #[derive(Clone)]
-#[allow(dead_code)] // game_mode used when Teams mode is added
 pub struct GameState {
     board: Board,
     player_status: [PlayerStatus; 4],
@@ -103,7 +107,21 @@ impl GameState {
         Self::new(Board::starting_position(), GameMode::FreeForAll, true)
     }
 
+    /// Create a standard Last King Standing game from the starting position.
+    pub fn new_standard_lks() -> Self {
+        Self::new(Board::starting_position(), GameMode::LastKingStanding, false)
+    }
+
+    /// Create a standard Last King Standing game with terrain mode enabled.
+    pub fn new_standard_lks_terrain() -> Self {
+        Self::new(Board::starting_position(), GameMode::LastKingStanding, true)
+    }
+
     // --- Accessors ---
+
+    pub fn game_mode(&self) -> GameMode {
+        self.game_mode
+    }
 
     pub fn board(&self) -> &Board {
         &self.board
@@ -519,32 +537,48 @@ impl GameState {
             return;
         }
 
-        // Check claim win (21+ lead with exactly 2 active)
-        if let Some(winner) = check_claim_win(&self.scores, &self.player_status) {
-            self.game_over = true;
-            self.winner = Some(winner);
-            result.game_ended = true;
+        // Check claim win (21+ lead with exactly 2 active) — FFA only.
+        // In LKS, points are tracked for display but don't trigger game-over.
+        if self.game_mode == GameMode::FreeForAll {
+            if let Some(winner) = check_claim_win(&self.scores, &self.player_status) {
+                self.game_over = true;
+                self.winner = Some(winner);
+                result.game_ended = true;
+            }
         }
     }
 
     /// End the game, determine winner.
+    ///
+    /// FFA: winner = active player with highest score.
+    /// LKS: winner = last standing player (ignores scores).
     fn end_game(&mut self, result: &mut MoveResult) {
         self.game_over = true;
         result.game_ended = true;
 
-        // Winner is the active player with the highest score
-        // (or the last standing player)
-        let mut best_player = None;
-        let mut best_score = i32::MIN;
-        for &player in &Player::ALL {
-            if self.player_status[player.index()] == PlayerStatus::Active
-                && self.scores[player.index()] > best_score
-            {
-                best_score = self.scores[player.index()];
-                best_player = Some(player);
+        match self.game_mode {
+            GameMode::LastKingStanding => {
+                // Last standing player wins, regardless of score.
+                self.winner = Player::ALL
+                    .iter()
+                    .copied()
+                    .find(|&p| self.player_status[p.index()] == PlayerStatus::Active);
+            }
+            GameMode::FreeForAll => {
+                // Active player with the highest score wins.
+                let mut best_player = None;
+                let mut best_score = i32::MIN;
+                for &player in &Player::ALL {
+                    if self.player_status[player.index()] == PlayerStatus::Active
+                        && self.scores[player.index()] > best_score
+                    {
+                        best_score = self.scores[player.index()];
+                        best_player = Some(player);
+                    }
+                }
+                self.winner = best_player;
             }
         }
-        self.winner = best_player;
     }
 }
 

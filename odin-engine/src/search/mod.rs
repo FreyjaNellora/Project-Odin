@@ -7,6 +7,7 @@
 // Stage 10: MctsSearcher (MCTS strategic search)
 // Stage 11: HybridController (composes BRS and MCTS through this trait)
 
+pub mod board_scanner;
 pub mod brs;
 
 use crate::gamestate::GameState;

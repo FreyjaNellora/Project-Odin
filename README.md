@@ -13,7 +13,7 @@ Position -> NNUE eval -> BRS/Paranoid filters losing moves -> Surviving moves ->
 | Layer | Role |
 |-------|------|
 | **NNUE** | Fast neural evaluation (~1us incremental). Replaces handcrafted eval. |
-| **BRS/Paranoid Hybrid** | Tactical search (depth 6-12). Finds captures, forks, mates. Alpha-beta. |
+| **BRS/Paranoid Hybrid** | Tactical search (depth 6-12). Finds captures, forks, mates. Alpha-beta with opponent modeling. |
 | **MCTS** | Strategic search. Long-term planning, alliance dynamics, king safety. |
 
 The hybrid addresses what pure alpha-beta and pure MCTS each get wrong in 4-player chess: alpha-beta can't see deep strategy, MCTS can miss shallow tactics.
@@ -25,10 +25,9 @@ The hybrid addresses what pure alpha-beta and pure MCTS each get wrong in 4-play
 | Component | Stack |
 |-----------|-------|
 | Engine | Rust |
-| UI | TypeScript + React |
+| UI | TypeScript + React (Tauri desktop app) |
 | NNUE Training | Python + PyTorch |
 | Communication | Odin Protocol (UCI-like, stdin/stdout) |
-| Telemetry | Huginn (compile-gated, zero-cost when off) |
 
 ---
 
@@ -36,7 +35,7 @@ The hybrid addresses what pure alpha-beta and pure MCTS each get wrong in 4-play
 
 See `masterplan/STATUS.md` for current stage and progress.
 
-**Current state:** Pre-implementation (planning and documentation phase).
+**Current state:** Stage 8 complete. Engine plays four-player chess with BRS/Paranoid hybrid search, GameMode/EvalProfile support (FFA + LKS), and a functional Tauri UI.
 
 ---
 
@@ -62,7 +61,7 @@ Each stage produces a testable, runnable artifact. The engine is playable (weakl
 | File | What It Contains |
 |------|-----------------|
 | `masterplan/MASTERPLAN.md` | Full technical specification. 20 stages with deliverables, build order, acceptance criteria. |
-| `masterplan/AGENT_CONDUCT.md` | How AI agents work: behavior rules, 26-category audit checklist, Huginn reporting spec. |
+| `masterplan/AGENT_CONDUCT.md` | How AI agents work: behavior rules, 26-category audit checklist. |
 | `masterplan/4PC_RULES_REFERENCE.md` | Complete 4-player chess rules (board, pieces, scoring, modes). |
 | `masterplan/DECISIONS.md` | Architectural decision records with reasoning. |
 | `masterplan/STATUS.md` | Current stage, progress tracker, what to do next. |
@@ -80,7 +79,6 @@ Each stage produces a testable, runnable artifact. The engine is playable (weakl
 - **Dual-head NNUE** (BRS scalar + MCTS 4-vector) behind an `Evaluator` trait.
 - **Searcher trait** defined early (Stage 7). BRS and MCTS both implement it. Hybrid controller composes them.
 - **Self-play at Stage 12** (not end of project). Can't improve what you can't measure.
-- **Huginn from Stage 0.** You need the tracer while building, not after.
 
 Full reasoning: see `masterplan/DECISIONS.md`.
 
@@ -93,7 +91,6 @@ Full reasoning: see `masterplan/DECISIONS.md`.
 | **BRS** | Best Reply Search. One opponent reply per ply. Alpha-beta compatible. |
 | **MCTS** | Monte Carlo Tree Search. Statistics-based exploration. |
 | **NNUE** | Efficiently Updatable Neural Network. Fast eval with incremental updates. |
-| **Huginn** | Odin's telemetry. Compile-gated ghost observer. Zero cost when off. |
 | **FFA** | Free-For-All. Every player for themselves. |
 | **DKW** | Dead King Walking. Eliminated king makes random moves. |
 | **Terrain** | Eliminated pieces become permanent walls. |

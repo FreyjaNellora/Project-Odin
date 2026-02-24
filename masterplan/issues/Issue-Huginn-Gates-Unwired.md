@@ -2,10 +2,10 @@
 type: issue
 date_opened: 2026-02-20
 last_updated: 2026-02-21
-date_resolved:
+date_resolved: 2026-02-23
 stage: 1
 severity: note
-status: open
+status: resolved
 tags:
   - stage/01
   - stage/02
@@ -52,7 +52,9 @@ Stage 1 implemented `verify_zobrist()` and `verify_piece_lists()` debug methods 
 
 ## Resolution
 
-<!-- Wire gates when Stage 4 (Odin Protocol) establishes the engine runtime and buffer plumbing, or when a global buffer pattern is adopted. -->
+Huginn was retired entirely in Stage 8. The custom compile-gated telemetry system was replaced with the `tracing` crate, which provides working structured logging without the API plumbing problems that prevented Huginn gates from ever being wired. See ADR-015.
+
+Date resolved: 2026-02-23
 
 ## Related
 

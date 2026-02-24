@@ -53,7 +53,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "tag:area/huginn",
+                "query": "",
                 "matchingCase": false,
                 "explainSearch": true,
                 "collapseAll": true,
@@ -176,7 +176,6 @@
     "MASTERPLAN.md",
     "downstream_log_stage_03.md",
     "downstream_log_stage_00.md",
-    "issues/Issue-Huginn-Gates-Unwired.md",
     "audit_log_stage_06.md",
     "stage_06_bootstrap_eval.md",
     "sessions/Session-2026-02-21-BugfixSession.md",

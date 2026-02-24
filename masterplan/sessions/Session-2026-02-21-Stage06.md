@@ -11,7 +11,7 @@ tags:
 
 ## Summary
 
-Implemented the complete Stage 6 deliverable: the `Evaluator` trait (permanent eval boundary) and `BootstrapEvaluator` (temporary handcrafted eval). All 275 tests pass. Clean clippy, clean fmt, Huginn build compiles.
+Implemented the complete Stage 6 deliverable: the `Evaluator` trait (permanent eval boundary) and `BootstrapEvaluator` (temporary handcrafted eval). All 275 tests pass. Clean clippy, clean fmt.
 
 ## What Was Done
 
@@ -60,7 +60,6 @@ Implemented the complete Stage 6 deliverable: the `Evaluator` trait (permanent e
 - `odin-engine/src/eval/mod.rs` -- Evaluator trait, BootstrapEvaluator, eval_for_player
 - `masterplan/audit_log_stage_06.md` -- Pre-audit + post-audit
 - `masterplan/downstream_log_stage_06.md` -- API contracts
-- `masterplan/issues/Issue-Huginn-Gates-Unwired.md` -- Added Stage 6 gates
 - `masterplan/_index/MOC-Active-Issues.md` -- Updated last_updated
 - `masterplan/_index/MOC-Tier-2-Simple-Search.md` -- Updated last_updated
 - `masterplan/_index/MOC-Sessions.md` -- Added this session
@@ -73,7 +72,6 @@ Implemented the complete Stage 6 deliverable: the `Evaluator` trait (permanent e
 - 275 total: 191 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 + 11 stage-06
 - Clippy: clean
 - Fmt: clean
-- Huginn build: compiles
 
 ## Related
 

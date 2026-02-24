@@ -30,6 +30,7 @@ use crate::eval::Evaluator;
 use crate::gamestate::GameState;
 use crate::movegen::{generate_legal, is_in_check, make_move, unmake_move, Move};
 
+use super::board_scanner::{scan_board, select_hybrid_reply, BoardContext};
 use super::{SearchBudget, SearchResult, Searcher};
 
 // ---------------------------------------------------------------------------
@@ -143,14 +144,19 @@ struct BrsContext<'a> {
     best_score: i16,
     /// Last fully completed depth.
     best_depth: u8,
+    /// Pre-search board context (Stage 8 hybrid scoring).
+    board_ctx: BoardContext,
 }
 
 impl<'a> BrsContext<'a> {
     fn new(position: &GameState, evaluator: &'a dyn Evaluator, budget: &'a SearchBudget) -> Self {
+        let root_player = position.current_player();
+        let board_ctx = scan_board(position, root_player);
+
         Self {
             gs: position.clone(),
             evaluator,
-            root_player: position.current_player(),
+            root_player,
             budget,
             nodes: 0,
             start: Instant::now(),
@@ -160,6 +166,7 @@ impl<'a> BrsContext<'a> {
             best_pv: Vec::new(),
             best_score: 0,
             best_depth: 0,
+            board_ctx,
         }
     }
 
@@ -442,13 +449,6 @@ impl<'a> BrsContext<'a> {
                 // Beta cutoff: root player has found a move that is too good;
                 // the opponent (parent MIN node or search bound) will not allow
                 // this position.
-                #[cfg(feature = "huginn")]
-                {
-                    // Gate: alpha_beta_prune (verbose level)
-                    // Payload: depth, alpha, beta, score, move, node_type="max"
-                    // Buffer plumbing deferred — Issue-Huginn-Gates-Unwired.
-                    let _ = (depth, alpha, beta, score, mv);
-                }
                 break;
             }
         }
@@ -466,16 +466,20 @@ impl<'a> BrsContext<'a> {
         alpha: i16,
         beta: i16,
         ply: usize,
-        _opponent: Player,
+        opponent: Player,
         moves: Vec<Move>,
     ) -> i16 {
-        // Select the single strongest reply for this opponent.
-        // "Strongest" = the move that minimises root_player's static evaluation.
-        let best_reply = select_best_opponent_reply(
+        // Stage 8 hybrid reply selection: uses board context + move classifier
+        // + progressive narrowing to pick the opponent reply that is both
+        // harmful and realistic.
+        let best_reply = select_hybrid_reply(
             &mut self.gs,
             self.evaluator,
             self.root_player,
+            opponent,
             &moves,
+            &self.board_ctx,
+            depth,
         );
 
         let Some(mv) = best_reply else {
@@ -483,14 +487,6 @@ impl<'a> BrsContext<'a> {
             // recurse safely if reached.
             return self.alphabeta(depth - 1, alpha, beta, ply + 1);
         };
-
-        #[cfg(feature = "huginn")]
-        {
-            // Gate: brs_reply_selection (verbose level)
-            // Payload: opponent, candidates=moves.len(), selected=mv
-            // Buffer plumbing deferred — Issue-Huginn-Gates-Unwired.
-            let _ = (_opponent, moves.len(), mv);
-        }
 
         let undo = make_move(self.gs.board_mut(), mv);
         self.nodes += 1;
@@ -527,11 +523,6 @@ impl<'a> BrsContext<'a> {
 
             // Stand-pat: if static eval is already >= beta, no need to look further.
             if stand_pat >= beta {
-                #[cfg(feature = "huginn")]
-                {
-                    // Gate: quiescence (verbose level) — stand-pat cutoff
-                    let _ = (stand_pat, alpha, beta, qs_depth);
-                }
                 return beta;
             }
             if stand_pat > alpha {
@@ -596,12 +587,6 @@ impl<'a> BrsContext<'a> {
                 // Opponent takes the worse outcome for root (min of stand_pat vs score).
                 return score.min(stand_pat);
             }
-        }
-
-        #[cfg(feature = "huginn")]
-        {
-            // Gate: quiescence (verbose level) — exit
-            let _ = (stand_pat, alpha, qs_depth);
         }
 
         alpha
@@ -716,11 +701,11 @@ fn has_non_pawn_material(board: &crate::board::Board, player: Player) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::eval::BootstrapEvaluator;
+    use crate::eval::{BootstrapEvaluator, EvalProfile};
     use crate::gamestate::GameState;
 
     fn make_searcher() -> BrsSearcher {
-        BrsSearcher::new(Box::new(BootstrapEvaluator::new()))
+        BrsSearcher::new(Box::new(BootstrapEvaluator::new(EvalProfile::Standard)))
     }
 
     #[test]

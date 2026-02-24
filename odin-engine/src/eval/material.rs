@@ -30,6 +30,45 @@ pub(crate) fn material_scores(board: &Board) -> [i16; PLAYER_COUNT] {
     scores
 }
 
+/// Relative material advantage: how much more material this player has
+/// vs the average of active opponents.
+///
+/// This makes capturing opponent pieces beneficial even when the player's
+/// own material doesn't change. Returns a bonus/penalty in centipawns.
+///
+/// Scaled by `RELATIVE_MATERIAL_WEIGHT` to avoid dominating the eval.
+const RELATIVE_MATERIAL_WEIGHT: i16 = 4; // divisor: advantage / 4
+
+pub(crate) fn relative_material_advantage(
+    board: &Board,
+    player: Player,
+    player_statuses: &[crate::gamestate::PlayerStatus; PLAYER_COUNT],
+) -> i16 {
+    let my_mat = material_score(board, player) as i32;
+    let mut opp_total = 0i32;
+    let mut opp_count = 0i32;
+
+    for &opp in &Player::ALL {
+        if opp == player {
+            continue;
+        }
+        if player_statuses[opp.index()] == crate::gamestate::PlayerStatus::Eliminated {
+            continue;
+        }
+        opp_total += material_score(board, opp) as i32;
+        opp_count += 1;
+    }
+
+    if opp_count == 0 {
+        return 0;
+    }
+
+    let opp_avg = opp_total / opp_count;
+    let advantage = my_mat - opp_avg;
+    // Scale down to avoid dominating other eval terms
+    (advantage / RELATIVE_MATERIAL_WEIGHT as i32).clamp(-500, 500) as i16
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -68,6 +107,48 @@ mod tests {
         for &p in &Player::ALL {
             assert_eq!(material_score(&board, p), 0);
         }
+    }
+
+    #[test]
+    fn test_relative_material_advantage_equal() {
+        let board = Board::starting_position();
+        let statuses = [crate::gamestate::PlayerStatus::Active; 4];
+        let rel = relative_material_advantage(&board, Player::Red, &statuses);
+        assert_eq!(rel, 0, "equal material should give 0 relative advantage");
+    }
+
+    #[test]
+    fn test_relative_material_advantage_positive() {
+        let mut board = Board::starting_position();
+        // Remove Blue's queen — Red now has more material than Blue.
+        let queen_sq = board
+            .piece_list(Player::Blue)
+            .iter()
+            .find(|(pt, _)| *pt == crate::board::PieceType::Queen)
+            .map(|&(_, sq)| sq);
+        if let Some(sq) = queen_sq {
+            board.remove_piece(sq);
+        }
+        let statuses = [crate::gamestate::PlayerStatus::Active; 4];
+        let rel = relative_material_advantage(&board, Player::Red, &statuses);
+        assert!(rel > 0, "Red should have positive relative advantage when Blue lost queen, got {}", rel);
+    }
+
+    #[test]
+    fn test_relative_material_advantage_negative() {
+        let mut board = Board::starting_position();
+        // Remove Red's queen — Red now has less material.
+        let queen_sq = board
+            .piece_list(Player::Red)
+            .iter()
+            .find(|(pt, _)| *pt == crate::board::PieceType::Queen)
+            .map(|&(_, sq)| sq);
+        if let Some(sq) = queen_sq {
+            board.remove_piece(sq);
+        }
+        let statuses = [crate::gamestate::PlayerStatus::Active; 4];
+        let rel = relative_material_advantage(&board, Player::Red, &statuses);
+        assert!(rel < 0, "Red should have negative relative advantage after losing queen, got {}", rel);
     }
 
     #[test]

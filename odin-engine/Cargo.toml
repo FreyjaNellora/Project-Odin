@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2021"
 description = "Project Odin: A four-player chess engine"
 
-[features]
-huginn = []
+[dependencies]
+tracing = "0.1"

@@ -2,6 +2,8 @@
 
 ## Notes for Future Stages
 
+**Note:** Huginn was retired in Stage 8 and replaced with the `tracing` crate (see ADR-015). The API documented below no longer exists.
+
 ### Must-Know
 
 1. **`huginn_observe!` macro is available crate-wide via `#[macro_export]`.** In integration tests, import with `use odin_engine::huginn_observe;`. In lib.rs modules, it is automatically available.
@@ -48,8 +50,7 @@
 | `cargo build` | 0.70s | Dev profile, empty project |
 | `cargo build --features huginn` | 0.97s | Dev profile |
 | `cargo build --release` | 1.30s | Release binary: 129,024 bytes |
-| `cargo test` (no huginn) | 0.48s | 2 tests |
-| `cargo test --features huginn` | 0.55s | 11 tests |
+| `cargo test` | 0.48s | 2 tests |
 
 ### Open Questions
 

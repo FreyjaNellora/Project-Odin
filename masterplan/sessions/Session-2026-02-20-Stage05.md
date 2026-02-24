@@ -48,4 +48,4 @@ Implement Stage 5: Basic UI Shell. Build a Tauri v2 desktop application with SVG
 ## Issues Created/Resolved
 
 - Created: [[Issue-DKW-Invisible-Moves-UI]] — DKW king instant moves not visible in UI rendering cache. Accepted limitation for Stage 5.
-- Existing issues unchanged: [[Issue-Perft-Values-Unverified]], [[Issue-Huginn-Gates-Unwired]], [[Issue-DKW-Halfmove-Clock]].
+- Existing issues unchanged: [[Issue-Perft-Values-Unverified]], [[Issue-DKW-Halfmove-Clock]].

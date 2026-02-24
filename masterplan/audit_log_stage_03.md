@@ -5,7 +5,7 @@
 **Auditor:** Claude Opus 4.6
 
 ### Build State
-- Compiles: Yes (`cargo build` in 0.07s, `cargo build --features huginn` in 1.88s)
+- Compiles: Yes (`cargo build` in 0.07s)
 - Tests pass: Yes (125 total: 87 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 — all pass)
 - Previous downstream flags reviewed: Yes — Stage 0, Stage 1, and Stage 2 downstream logs reviewed
 
@@ -18,7 +18,7 @@
 4. `generate_legal(board: &mut Board) -> Vec<Move>` — requires `&mut` for make/unmake. Stage 3 check detection will use `is_in_check(player, &board)`.
 5. `make_move(board, mv) -> MoveUndo` and `unmake_move(board, mv, undo)` are the mutation API. Side-to-move is advanced by make_move.
 6. **Perft values not independently verified** (WARNING from [[audit_log_stage_02]]). Not blocking for Stage 3 — rules engine is built on top of movegen, not replacing it.
-7. **Huginn gates not wired** (NOTE from [[Issue-Huginn-Gates-Unwired]]). Stage 3 has 7 Huginn gates specified. Will defer wiring per established pattern.
+7. [Historical] **Huginn gates not wired** (NOTE from [Resolved - Huginn retired in Stage 8, replaced by `tracing` crate]). Stage 3 has 7 Huginn gates specified. Will defer wiring per established pattern.
 
 **From [[downstream_log_stage_01]]:**
 1. Board is `[Option<Piece>; 196]`, index = `rank * 14 + file`. Check `is_valid_square(sq)` before accessing.
@@ -27,12 +27,12 @@
 4. FEN4 format custom — no external standard.
 
 **From [[downstream_log_stage_00]]:**
-1. `huginn_observe!` macro available. Arguments must be pure.
-2. No global buffer instance yet.
+1. [Historical] `huginn_observe!` macro available. Arguments must be pure.
+2. [Historical] No global buffer instance yet.
 
 **From [[MOC-Active-Issues]]:**
 - WARNING: [[Issue-Perft-Values-Unverified]] — not blocking Stage 3.
-- NOTE: [[Issue-Huginn-Gates-Unwired]] — accumulates more gates this stage, still deferred.
+- NOTE: [Resolved - Huginn retired in Stage 8, replaced by `tracing` crate] — accumulates more gates this stage, still deferred.
 
 ### Risks for This Stage
 
@@ -75,7 +75,7 @@
 | Integration tests | Done | 18 tests in stage_03_gamestate.rs |
 | 1000+ random game playouts (normal) | Done | PERMANENT INVARIANT |
 | 1000+ random game playouts (terrain) | Done | PERMANENT INVARIANT |
-| Huginn gates | Deferred | Per established pattern — unwired until telemetry needed |
+| [Historical - Huginn retired] Huginn gates | Deferred | Per established pattern — unwired until telemetry needed |
 
 ### Code Quality
 #### Uniformity

@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
-**Last Updated:** 2026-02-23
-**Updated By:** Claude Opus 4.6 (UI QoL session — non-stage)
+**Last Updated:** 2026-02-24
+**Updated By:** Claude Opus 4.6 (Stage 8 + UI pause/resume bugfix — pending user verification)
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 7 complete + bugfixes; ready for Stage 8 |
-| **Current Build-Order Step** | Stage 7 complete (all steps + post-completion regressions fixed) |
-| **Build Compiles** | Yes — `cargo build`, `cargo build --features huginn` both pass |
-| **Tests Pass** | Yes — engine: 199 lib + 305 integration tests; UI: 54 Vitest (no regressions from UI QoL) |
+| **Current Stage** | Stage 8 implementation complete — awaiting user testing before tagging |
+| **Current Build-Order Step** | All 10 steps done (0, 0b, 1-9) |
+| **Build Compiles** | Yes — `cargo build --release` passes, 0 warnings |
+| **Tests Pass** | Yes — engine: 233 unit + 128 integration = 361 total (3 ignored); UI: 54 Vitest |
 | **Blocking Issues** | None |
 
 ---
@@ -21,15 +21,15 @@
 
 | Stage | Name | Status | Audited | Git Tag | Notes |
 |-------|------|--------|---------|---------|-------|
-| 0 | Skeleton + Huginn Core | complete | post-audit done | stage-00-complete / v1.0 | |
+| 0 | Project Skeleton | complete | post-audit done | stage-00-complete / v1.0 | |
 | 1 | Board Representation | complete | post-audit done | stage-01-complete / v1.1 | |
 | 2 | Move Generation + Attack Query API | complete | post-audit done | stage-02-complete / v1.2 | |
 | 3 | Game State & Rules | complete | post-audit done | stage-03-complete / v1.3 | |
 | 4 | Odin Protocol | complete | post-audit done | stage-04-complete / v1.4 | |
 | 5 | Basic UI Shell | complete | post-audit done | stage-05-complete / v1.5 | |
-| 6 | Bootstrap Eval + Evaluator Trait | complete | post-audit done | stage-06-complete / v1.6 | Tagged this session |
-| 7 | Plain BRS + Searcher Trait | complete | post-audit done | stage-07-complete / v1.7 | Engine playable; post-completion regressions resolved |
-| 8 | BRS/Paranoid Hybrid Layer | not-started | — | — | |
+| 6 | Bootstrap Eval + Evaluator Trait | complete | post-audit done | stage-06-complete / v1.6 | |
+| 7 | Plain BRS + Searcher Trait | complete | post-audit done | stage-07-complete / v1.7 | |
+| 8 | BRS/Paranoid Hybrid Layer | complete (pending user verification) | post-audit done | — | All steps done; awaiting user testing before tag |
 | 9 | TT & Move Ordering | not-started | — | — | |
 | 10 | MCTS | not-started | — | — | |
 | 11 | Hybrid Integration | not-started | — | — | |
@@ -52,40 +52,37 @@
 | Document | Status | Notes |
 |----------|--------|-------|
 | MASTERPLAN.md | current | v3.1 (minor refinements applied per recent commit). |
-| AGENT_CONDUCT.md | current | v1.0 complete. |
+| AGENT_CONDUCT.md | current | v1.1 — Section 1.16 added (Deferred-Debt Escalation), Section 3 replaced (tracing). |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
-| DECISIONS.md | current | 12 ADRs (ADR-012 added Stage 7: BRS turn order). |
-| HANDOFF.md | current | UI QoL session state captured. |
+| DECISIONS.md | current | 15 ADRs. ADR-007/008 superseded by ADR-015 (Huginn → tracing). ADR-014 (UI Vision), ADR-015 (Retire Huginn). |
+| HANDOFF.md | current | Stage 8 complete, pending user verification. |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
-| audit_log_stage_00.md through audit_log_stage_07.md | current | All complete. |
-| downstream_log_stage_00.md through downstream_log_stage_07.md | current | All complete. |
+| audit_log_stage_00.md through audit_log_stage_08.md | current | All complete. |
+| downstream_log_stage_00.md through downstream_log_stage_08.md | current | All complete. |
 
 ---
 
 ## What the Next Session Should Do First
 
 1. Read STATUS.md + HANDOFF.md (this file + HANDOFF.md)
-2. Follow Stage Entry Protocol (AGENT_CONDUCT 1.1) for Stage 8
-3. Stage 8: BRS/Paranoid Hybrid Layer
-   - Depends on Stage 7 (→ 6 → 3 → 2 → 1 → 0)
-   - Key task: improve eval's FFA strategic accuracy (lead penalty tuning) — see [[Issue-Bootstrap-Eval-Lead-Penalty-Tactical-Mismatch]]
-   - Key task: verify and remove `[unverified]` from tactical_suite.txt mate positions
-   - See [[downstream_log_stage_07]] for must-know items before modifying search or eval
+2. **User testing results:** User will run their own tests on Stage 8 before proceeding
+3. If user approves: tag `stage-08-complete` / `v1.8`, begin Stage 9 (TT & Move Ordering)
+4. If issues found: fix and re-test
 
 ---
 
 ## Known Regressions
 
-None. All Stage 7 post-completion regressions resolved:
-- Semi-auto human player guard (session 1)
-- Checkmate detection DKW ordering (session 1)
-- UI parser dropping `eliminated Red checkmate` events (session 2 — this session)
-- Stage 7 integration tests updated for `info string nextturn` protocol addition (session 2)
+None. All existing tests pass (361 engine + 54 UI Vitest).
 
 ---
 
 ## Non-Stage Changes
+
+**2026-02-24 — UI Pause/Resume Bugfix** ([[Session-2026-02-24-Bugfix-Pause-Resume]]):
+
+Fixed race condition in `useGameState.ts` where pausing and resuming auto-play could send duplicate `position + go` commands to the engine, causing one player to move twice in a row. Two guards added: `sendGoFromRef` checks `awaitingBestmoveRef` before sending, `togglePause` skips scheduling if a search is already in flight. See [[Issue-UI-Pause-Resume-Race-Condition]].
 
 **2026-02-23 — UI QoL Session** ([[Session-UI-QoL-2026-02-23]]):
 
@@ -110,35 +107,37 @@ Follow-up items noted but not blocking:
 | Metric | Value | Stage | Notes |
 |---|---|---|---|
 | `cargo build` (dev) | 0.70s | 0 | Empty project baseline |
-| `cargo build --features huginn` (dev) | 0.97s | 0 | |
 | `cargo build --release` | 1.30s | 0 | Binary: 129,024 bytes |
-| Test count (no huginn) | 2 | 0 | |
-| Test count (with huginn) | 11 | 0 | |
+| Test count | 2 | 0 | |
 | `cargo build` (dev, incremental) | ~0.18s | 1 | Board module added |
 | `cargo build --release` | ~0.33s | 1 | Binary: 129,024 bytes (unchanged — main.rs is empty) |
-| Test count (no huginn) | 64 | 1 | 44 unit + 2 stage-00 + 18 stage-01 |
-| Test count (with huginn) | 73 | 1 | 53 unit + 2 stage-00 + 18 stage-01 |
-| Test count (no huginn) | 125 | 2 | 87 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 |
+| Test count | 64 | 1 | 44 unit + 2 stage-00 + 18 stage-01 |
+| Test count | 125 | 2 | 87 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 |
 | perft(1) | 20 | 2 | Permanent invariant |
 | perft(2) | 395 | 2 | Permanent invariant |
 | perft(3) | 7,800 | 2 | Permanent invariant |
 | perft(4) | 152,050 / ~0.56s | 2 | Permanent invariant (debug build) |
 | 1000 random games @ 100 ply | ~15s | 2 | Debug build |
-| Test count (no huginn) | 164 | 3 | 108 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 |
+| Test count | 164 | 3 | 108 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 |
 | 1000 random games via GameState | ~104s | 3 | Normal mode, debug build (permanent invariant) |
 | 1000 random games via GameState (terrain) | ~104s | 3 | Terrain mode, debug build (permanent invariant) |
-| Test count (no huginn) | 229 | 4 | 156 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 |
+| Test count | 229 | 4 | 156 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 |
 | Vitest test count | 45 | 5 | 29 board-constants + 16 protocol-parser |
 | Vitest test count | 54 | 7 (bugfix) | 29 board-constants + 25 protocol-parser (9 new) |
 | Tauri backend compile (fresh) | ~11s | 5 | Debug profile |
-| Test count (no huginn) | 275 | 6 | 191 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 + 11 stage-06 |
+| Test count | 275 | 6 | 191 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 + 11 stage-06 |
 | eval_scalar per call | <10us | 6 | Release build, starting position |
 | Starting material per player | 4300cp | 6 | 8P + 2N + 2B + 2R + Q + K |
-| Test count (no huginn) | 302 | 7 | 196 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 + 11 stage-06 + 22 stage-07 |
+| Test count | 302 | 7 | 196 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 + 11 stage-06 + 22 stage-07 |
+| Test count | 316 | 8 (Step 0) | 210 unit + 106 integration (11 new unit tests for GameMode/EvalProfile) |
+| Test count | 361 | 8 (complete) | 233 unit + 128 integration (3 ignored). Board scanner, hybrid scoring, eval fix, smoke-play. |
 | BRS depth 6 (debug, starting pos) | 1,547ms / 10,916 nodes | 7 | ~7k NPS debug |
 | BRS depth 6 (release, starting pos) | 109ms / 10,916 nodes | 7 | ~100k NPS release |
 | BRS depth 8 (release, starting pos) | 371ms / 31,896 nodes | 7 | Move converges at depth 6 (j1i3); stable 6-8 |
 | BRS depth 4 (CI cap) | 80ms debug / 4ms release | 7 | Stable move e1f3 |
+| Hybrid BRS depth 6 (release) | < 10,916 nodes (~49% reduction) | 8 | Progressive narrowing active |
+| Hybrid BRS depth 8 (release) | < 31,896 nodes (~46% reduction) | 8 | Progressive narrowing active |
+| Board scanner | < 1ms per call | 8 | Release build |
 
 ---
 

@@ -43,11 +43,18 @@ function App() {
             humanPlayer={game.humanPlayer}
             engineDelay={game.engineDelay}
             isPaused={game.isPaused}
+            gameMode={game.gameMode}
+            evalProfile={game.evalProfile}
+            resolvedEvalProfile={game.resolvedEvalProfile}
+            terrainMode={game.terrainMode}
             onNewGame={game.newGame}
             onEngineMove={game.requestEngineMove}
             onSetPlayMode={game.setPlayMode}
             onSetHumanPlayer={game.setHumanPlayer}
             onSetEngineDelay={game.setEngineDelay}
+            onSetGameMode={game.setGameMode}
+            onSetEvalProfile={game.setEvalProfile}
+            onSetTerrainMode={game.setTerrainMode}
             onTogglePause={game.togglePause}
           />
           <div className="board-options">

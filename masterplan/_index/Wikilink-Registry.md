@@ -2,7 +2,7 @@
 type: moc
 tags:
   - type/moc
-last_updated: 2026-02-21
+last_updated: 2026-02-24
 ---
 
 # Wikilink Registry
@@ -16,7 +16,7 @@ Single source of truth for all `[[wikilink]]` targets in the vault. Before creat
 | Target | File | Purpose |
 |---|---|---|
 | `[[MASTERPLAN]]` | `MASTERPLAN.md` | Full project specification — stages, architecture, acceptance criteria |
-| `[[AGENT_CONDUCT]]` | `AGENT_CONDUCT.md` | Agent behavior rules, audit checklist, Huginn reporting spec |
+| `[[AGENT_CONDUCT]]` | `AGENT_CONDUCT.md` | Agent behavior rules, audit checklist, code standards |
 | `[[4PC_RULES_REFERENCE]]` | `4PC_RULES_REFERENCE.md` | Complete 4-player chess rules per chess.com |
 | `[[DECISIONS]]` | `DECISIONS.md` | Architectural decision records (ADRs) |
 | `[[STATUS]]` | `STATUS.md` | Current project state — what stage, what's blocked |
@@ -42,7 +42,7 @@ Single source of truth for all `[[wikilink]]` targets in the vault. Before creat
 
 | Target | File | Purpose |
 |---|---|---|
-| `[[stage_00_skeleton]]` | `stages/stage_00_skeleton.md` | Stage 0: Project skeleton, Huginn core, CI |
+| `[[stage_00_skeleton]]` | `stages/stage_00_skeleton.md` | Stage 0: Project skeleton, CI |
 | `[[stage_01_board]]` | `stages/stage_01_board.md` | Stage 1: Board representation, Zobrist hashing |
 | `[[stage_02_movegen]]` | `stages/stage_02_movegen.md` | Stage 2: Move generation, perft, legality |
 | `[[stage_03_gamestate]]` | `stages/stage_03_gamestate.md` | Stage 3: Game state, rules, elimination, scoring |
@@ -51,6 +51,7 @@ Single source of truth for all `[[wikilink]]` targets in the vault. Before creat
 | `[[stage_06_bootstrap_eval]]` | `stages/stage_06_bootstrap_eval.md` | Stage 6: Bootstrap evaluation, Evaluator trait |
 | `[[stage_07_plain_brs]]` | `stages/stage_07_plain_brs.md` | Stage 7: Plain BRS search, Searcher trait |
 | `[[stage_08_brs_hybrid]]` | `stages/stage_08_brs_hybrid.md` | Stage 8: BRS hybrid scoring, board context |
+| `[[stage_08_build_order]]` | `stage_08_build_order.md` | Stage 8: Approved build order (10 steps) + UI spec |
 | `[[stage_09_tt_ordering]]` | `stages/stage_09_tt_ordering.md` | Stage 9: Transposition table, move ordering |
 | `[[stage_10_mcts]]` | `stages/stage_10_mcts.md` | Stage 10: MCTS search |
 | `[[stage_11_hybrid_integration]]` | `stages/stage_11_hybrid_integration.md` | Stage 11: BRS+MCTS hybrid controller |
@@ -132,6 +133,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Component-GameLog]]` | `components/Component-GameLog.md` | Enriched move history with per-move search info and player-colored entries |
 | `[[Component-EngineInternals]]` | `components/Component-EngineInternals.md` | Collapsible panel: search phase, BRS/MCTS stats, per-player values |
 | `[[Component-CommunicationLog]]` | `components/Component-CommunicationLog.md` | Raw protocol log + command input (split from DebugConsole) |
+| `[[Component-BoardScanner]]` | `components/Component-BoardScanner.md` | Board scanner, move classifier, hybrid reply scoring, progressive narrowing |
 
 ### Connections
 
@@ -145,6 +147,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Connection-GameState-to-Eval]]` | `connections/Connection-GameState-to-Eval.md` | How Eval reads GameState for position scoring |
 | `[[Connection-Eval-to-Search]]` | `connections/Connection-Eval-to-Search.md` | How Search calls Eval through the Evaluator trait |
 | `[[Connection-Search-to-Protocol]]` | `connections/Connection-Search-to-Protocol.md` | How Protocol wires BrsSearcher, info_cb, SearchLimits→SearchBudget conversion |
+| `[[Connection-GameMode-to-Eval]]` | `connections/Connection-GameMode-to-Eval.md` | How GameMode resolves to EvalProfile and affects eval behavior |
 
 ### Sessions
 
@@ -161,6 +164,8 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Session-2026-02-21-BugfixSession]]` | `sessions/Session-2026-02-21-BugfixSession.md` | Stage 7 post-completion bugfixes: semi-auto regression + checkmate detection |
 | `[[Session-2026-02-21-Stage07-Bugfix2]]` | `sessions/Session-2026-02-21-Stage07-Bugfix2.md` | Stage 7 bugfix pass 2: UI parser drops eliminated reason-suffix + test fixes |
 | `[[Session-UI-QoL-2026-02-23]]` | `sessions/Session-UI-QoL-2026-02-23.md` | UI QoL: coord labels, game log, engine internals, communication log, board zoom |
+| `[[Session-2026-02-23-Stage08]]` | `sessions/Session-2026-02-23-Stage08.md` | Stage 8: Board scanner, hybrid scoring, eval fix, tactical suite |
+| `[[Session-2026-02-24-Bugfix-Pause-Resume]]` | `sessions/Session-2026-02-24-Bugfix-Pause-Resume.md` | UI bugfix: pause/resume race condition causing duplicate moves |
 
 ### Issues
 
@@ -168,7 +173,7 @@ These sections grow as agents create notes during development. Add entries here 
 |---|---|---|
 | `[[Issue-EP-Representation-4PC]]` | `issues/Issue-EP-Representation-4PC.md` | En passant file→square fix for 4PC (resolved) |
 | `[[Issue-Perft-Values-Unverified]]` | `issues/Issue-Perft-Values-Unverified.md` | Perft values lack external verification (open) |
-| `[[Issue-Huginn-Gates-Unwired]]` | `issues/Issue-Huginn-Gates-Unwired.md` | Stages 1-6 Huginn gates not wired (open) |
+| `[[Issue-Huginn-Gates-Unwired]]` | `issues/Issue-Huginn-Gates-Unwired.md` | Stages 1-6 Huginn gates not wired (resolved - Huginn retired Stage 8) |
 | `[[Issue-DKW-Halfmove-Clock]]` | `issues/Issue-DKW-Halfmove-Clock.md` | DKW instant moves increment halfmove clock (open) |
 | `[[Issue-DKW-Invisible-Moves-UI]]` | `issues/Issue-DKW-Invisible-Moves-UI.md` | DKW king instant moves not visible in UI (open) |
 | `[[Issue-UI-EP-False-Positive]]` | `issues/Issue-UI-EP-False-Positive.md` | En passant false positive for Blue/Green UI display (resolved) |
@@ -179,6 +184,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Issue-SemiAuto-HumanPlayer-Guard]]` | `issues/Issue-SemiAuto-HumanPlayer-Guard.md` | Semi-auto engine took over human's turn when no player selected (resolved) |
 | `[[Issue-Checkmate-Detection-DKW-Ordering]]` | `issues/Issue-Checkmate-Detection-DKW-Ordering.md` | Checkmate not detected due to DKW ordering + protocol early return (resolved) |
 | `[[Issue-Promotion-Wrong-Ranks-No-UI]]` | `issues/Issue-Promotion-Wrong-Ranks-No-UI.md` | UI used wrong promotion ranks + no piece selection dialog (resolved) |
+| `[[Issue-UI-Pause-Resume-Race-Condition]]` | `issues/Issue-UI-Pause-Resume-Race-Condition.md` | Pause/resume sends duplicate go commands causing double-move (resolved) |
 
 ### Patterns
 
