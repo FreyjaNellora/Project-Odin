@@ -1,54 +1,68 @@
 # HANDOFF — Last Session Summary
 
-**Date:** 2026-02-24
-**Stage:** 8 complete (pending user verification) + UI bugfix applied
-**Next:** User runs more games to test, then tag v1.8 and begin Stage 9
+**Date:** 2026-02-25
+**Stage:** Post-Stage 8 (non-stage work) — bugfixes + QoL
+**Next:** User continues testing; when satisfied, tag `stage-08-complete` / `v1.8`, begin Stage 9
 
 ## What Was Done This Session
 
-### UI Bugfix: Pause/Resume Race Condition
+### 1. In-Search Repetition Detection
 
-User found a bug during Stage 8 testing: pausing and resuming auto-play could cause one player to move twice in a row. Diagnosed and fixed in `useGameState.ts`.
+Engine was reaching threefold repetition draws by cycling moves. Fixed in `odin-engine/src/search/brs.rs`:
+- Added `game_history: Vec<u64>` (snapshot of position_history at search start) and `rep_stack: Vec<u64>` (path-local stack) to `BrsContext`
+- Rep check in `alphabeta()` at `ply > 0`: if `game_count + search_count >= 3`, return 0 (draw)
+- Push/pop in `max_node()` and `min_node()` around each `alphabeta` call (not for null move)
+- 361 tests pass. Committed: `f50fc57`
 
-**Root cause:** When the user resumes while a search is in flight, both the resume handler and the bestmove handler's `maybeChainEngineMove` scheduled `sendGoFromRef()`. Neither checked `awaitingBestmoveRef` before sending. The engine received two `position + go` commands, searched for the same player twice, and the duplicate move corrupted the moveList.
+### 2. Search Depth Default: 6 → 7
 
-**Fix (two guards):**
-1. `sendGoFromRef` (line 199): `if (awaitingBestmoveRef.current) return;` — prevents duplicate `go` commands
-2. `togglePause` (line 425): `if (!awaitingBestmoveRef.current)` — skips scheduling timeout if search is in flight; just sets `autoPlayRef = true` and lets the bestmove handler chain naturally
+Changed `max_depth: Some(6)` → `Some(7)` in `protocol/mod.rs` `limits_to_budget` fallback.
 
-See [[Issue-UI-Pause-Resume-Race-Condition]] for full diagnosis.
+### 3. Piece-Prefix Notation in Game Log
+
+Moves now display as `Nj1i3` instead of bare `j1i3`. Added `boardRef` mirror to `useGameState.ts` for synchronous piece lookup in async callbacks. Added `pieceLetterPrefix()` and `formatMoveForDisplay()` helpers.
+
+### 4. Game Log Player Label Bug — Fixed
+
+**Root cause:** `currentPlayerRef.current` and `boardRef.current` were read inside React functional updaters passed to `setMoveHistory`. React 18 batching defers updater execution until the next render flush, by which point the refs already hold the *next* player's values.
+
+**Fix:** Snapshot both refs as local variables immediately before the `setMoveHistory` call in both the `bestmove` and `readyok` handlers. The `[UI]` commit (`b98c087`) bundles all three UI changes.
+
+## Key Insight from Testing
+
+The "Red king exposure" observation in earlier testing was entirely caused by the label bug — moves attributed to "Red" in the log were actually Green's moves. Engine play looks reasonable with correct labels. King safety eval may still warrant tuning later, but needs fresh data.
 
 ## What's Next
 
-**User testing continues.** The user wants to run more games before proceeding to Stage 9. Do NOT start Stage 9 until user confirms.
-
-After user approval:
-1. Tag `stage-08-complete` / `v1.8`
-2. Begin Stage 9: TT & Move Ordering (per MASTERPLAN)
+1. User runs more full games to verify correct player labeling and overall engine quality
+2. When satisfied: tag `stage-08-complete` / `v1.8`
+3. Begin Stage 9: Transposition Table & Move Ordering
 
 ## Known Issues
 
 - W5 (stale GameState fields during search): acceptable for bootstrap eval, revisit for NNUE
 - W4 (lead penalty tactical mismatch): mitigated by Aggressive profile for FFA
 - Board scanner data frozen during search — delta updater deferred to v2
-- `tracing` crate added as dependency but no `tracing::debug!` calls placed yet
+- `tracing` crate added as dependency but no calls placed yet
+- Board zoom frame boundary shift (cosmetic, polish phase)
 
 ## Files Modified This Session
 
+### Engine
+- `odin-engine/src/search/brs.rs` — repetition detection
+- `odin-engine/src/protocol/mod.rs` — depth default 7
+
 ### UI
-- `odin-ui/src/hooks/useGameState.ts` — two guard additions (lines 199, 425)
+- `odin-ui/src/hooks/useGameState.ts` — boardRef + piece notation + player label fix
 
 ### Documentation
-- `masterplan/issues/Issue-UI-Pause-Resume-Race-Condition.md` — created
-- `masterplan/sessions/Session-2026-02-24-Bugfix-Pause-Resume.md` — created
-- `masterplan/STATUS.md` — updated
-- `masterplan/HANDOFF.md` — updated (this file)
-- `masterplan/_index/Wikilink-Registry.md` — updated
+- `masterplan/sessions/Session-2026-02-25-UI-Bugfixes.md` — created
 - `masterplan/_index/MOC-Sessions.md` — updated
+- `masterplan/HANDOFF.md` — updated (this file)
+- `masterplan/STATUS.md` — updated
 
 ## Test Counts
 
-- Unit tests: 233
-- Integration tests: 128
-- Total: 361, 3 ignored, 0 failures
-- UI Vitest: 54 (unchanged)
+- Engine: 361 (233 unit + 128 integration, 3 ignored)
+- UI Vitest: 54
+- Total: 0 failures

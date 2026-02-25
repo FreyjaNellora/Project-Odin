@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
-**Last Updated:** 2026-02-24
-**Updated By:** Claude Opus 4.6 (Stage 8 + UI pause/resume bugfix — pending user verification)
+**Last Updated:** 2026-02-25
+**Updated By:** Claude Sonnet 4.6 (Post-Stage 8 bugfixes: repetition detection, piece notation, player label fix)
 
 ---
 
@@ -79,6 +79,10 @@ None. All existing tests pass (361 engine + 54 UI Vitest).
 ---
 
 ## Non-Stage Changes
+
+**2026-02-25 — In-Search Repetition + UI Bugfixes** ([[Session-2026-02-25-UI-Bugfixes]]):
+
+In-search repetition detection added to BRS (`game_history` snapshot + `rep_stack` path-local, push/pop in max_node/min_node). Depth default raised to 7. Piece-prefix notation added to game log. Critical bug fixed: game log player labels were shifted by one due to React 18 batching — `currentPlayerRef.current` was read inside a deferred functional updater, seeing the *next* player's value. Fixed by snapshotting both `currentPlayerRef.current` and `boardRef.current` as locals before calling `setMoveHistory`. Commits: `f50fc57`, `b98c087`.
 
 **2026-02-24 — UI Pause/Resume Bugfix** ([[Session-2026-02-24-Bugfix-Pause-Resume]]):
 

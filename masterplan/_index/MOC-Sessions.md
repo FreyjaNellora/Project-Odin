@@ -12,6 +12,7 @@ Chronological index of build sessions. Each session note captures what was attem
 ## Sessions
 
 <!-- Add newest sessions at the top -->
+- **2026-02-25** [[Session-2026-02-25-UI-Bugfixes]] -- In-search repetition detection (BRS rep_stack), depth 7 default, piece-prefix notation in game log, game log player label bug fixed (React 18 batching — currentPlayerRef read lazily inside updater).
 - **2026-02-24** [[Session-2026-02-24-Bugfix-Pause-Resume]] -- UI bugfix: pause/resume race condition sent duplicate `go` commands, causing one player to move twice. Two guards added to `sendGoFromRef` and `togglePause`. 361 engine + 54 Vitest.
 - **2026-02-23** [[Session-2026-02-23-Stage08]] -- Stage 8: BRS/Paranoid Hybrid Layer. Board scanner, move classifier, hybrid reply scoring, progressive narrowing (~49% node reduction), eval fix (relative material advantage), tactical suite (23 tests), smoke-play validation. 361 tests.
 - **2026-02-23** [[Session-UI-QoL-2026-02-23]] -- UI QoL additions (non-stage): coordinate labels, enriched game log, engine internals panel, communication log, board zoom, layout reorganization. 54 Vitest (no regressions).

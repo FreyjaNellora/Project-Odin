@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "MASTERPLAN.md",
+                "file": "_templates/session.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "MASTERPLAN"
+              "title": "session"
             }
           }
         ]
@@ -170,10 +170,10 @@
   },
   "active": "55118a6a5b4a7dfb",
   "lastOpenFiles": [
+    "MASTERPLAN.md",
     "components/Component-Protocol-Parser.md",
     "DECISIONS.md.tmp.6472.1771734002746",
     "sessions/Session-2026-02-21-Stage07-Bugfix2.md",
-    "MASTERPLAN.md",
     "downstream_log_stage_03.md",
     "downstream_log_stage_00.md",
     "audit_log_stage_06.md",

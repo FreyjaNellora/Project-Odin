@@ -2,7 +2,7 @@
 type: moc
 tags:
   - type/moc
-last_updated: 2026-02-22
+last_updated: 2026-02-25
 ---
 
 # Active Issues
@@ -15,6 +15,7 @@ _None._
 
 ## Warning
 
+- [[Issue-GameLog-Player-Label-React-Batching]] -- Game log labeled every move with the *next* player (React 18 batching — deferred updater reads wrong ref). Fixed `b98c087`; pending user verification.
 - [[Issue-Perft-Values-Unverified]] -- Stage 2 perft values self-consistent but no external reference exists to cross-check
 - [[Issue-Vec-Clone-Cost-Pre-MCTS]] -- Board.piece_lists (Vec) and GameState.position_history (Vec) cause heap allocation on every clone; must retrofit to fixed-size/Arc before Stage 10 (MCTS)
 
