@@ -27,6 +27,7 @@ _None._
 
 ## Recently Resolved
 
+- [[Issue-PostElim-BRS-Crash]] -- Engine panicked after any player elimination: BRS alphabeta/quiescence called generate_legal on a kingless board. Four-layer fix (alphabeta skip, quiescence skip, board scanner Active filter, king square sentinel). User verified 2026-02-25.
 - [[Issue-Huginn-Gates-Unwired]] -- Huginn telemetry system retired in Stage 8; replaced with `tracing` crate (ADR-015). Gates no longer needed. (2026-02-23)
 - [[Issue-Promotion-Wrong-Ranks-No-UI]] -- UI used wrong promotion ranks (board edges instead of midline), no piece selection dialog, and wrong suffix (`q` instead of `w` for PromotedQueen). Fixed: correct ranks, PromotionDialog component, `w` suffix. (2026-02-22)
 - [[Issue-SemiAuto-HumanPlayer-Guard]] -- Semi-auto engine took over human's turn when no player selected. Fixed: null guard in shouldEnginePlay, removed disabled from player selector. (2026-02-21)

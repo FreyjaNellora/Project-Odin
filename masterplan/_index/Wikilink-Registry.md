@@ -166,6 +166,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Session-UI-QoL-2026-02-23]]` | `sessions/Session-UI-QoL-2026-02-23.md` | UI QoL: coord labels, game log, engine internals, communication log, board zoom |
 | `[[Session-2026-02-23-Stage08]]` | `sessions/Session-2026-02-23-Stage08.md` | Stage 8: Board scanner, hybrid scoring, eval fix, tactical suite |
 | `[[Session-2026-02-24-Bugfix-Pause-Resume]]` | `sessions/Session-2026-02-24-Bugfix-Pause-Resume.md` | UI bugfix: pause/resume race condition causing duplicate moves |
+| `[[Session-2026-02-25-PostElim-Crash-Fix]]` | `sessions/Session-2026-02-25-PostElim-Crash-Fix.md` | Post-elimination crash fix: BRS alphabeta/quiescence skip, board scanner Active filter, king square sentinel, eval strengthening |
 | `[[Session-2026-02-25-UI-Bugfixes]]` | `sessions/Session-2026-02-25-UI-Bugfixes.md` | Stage 8 debugging: repetition detection, piece notation, player label React batching fix |
 
 ### Issues
@@ -187,6 +188,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Issue-Promotion-Wrong-Ranks-No-UI]]` | `issues/Issue-Promotion-Wrong-Ranks-No-UI.md` | UI used wrong promotion ranks + no piece selection dialog (resolved) |
 | `[[Issue-UI-Pause-Resume-Race-Condition]]` | `issues/Issue-UI-Pause-Resume-Race-Condition.md` | Pause/resume sends duplicate go commands causing double-move (resolved) |
 | `[[Issue-GameLog-Player-Label-React-Batching]]` | `issues/Issue-GameLog-Player-Label-React-Batching.md` | Game log player labels shifted by one — React 18 deferred updater reads wrong ref (pending-verification) |
+| `[[Issue-PostElim-BRS-Crash]]` | `issues/Issue-PostElim-BRS-Crash.md` | Post-elimination BRS panic: generate_legal on kingless board. Four-layer fix applied and user-verified (resolved 2026-02-25) |
 
 ### Patterns
 

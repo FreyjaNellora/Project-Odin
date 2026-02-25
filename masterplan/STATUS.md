@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
 **Last Updated:** 2026-02-25
-**Updated By:** Claude Sonnet 4.6 (Post-Stage 8 bugfixes: repetition detection, piece notation, player label fix)
+**Updated By:** Claude Sonnet 4.6 (Post-Stage 8: post-elimination crash fix + eval strengthening)
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 8 implementation complete — awaiting user testing before tagging |
+| **Current Stage** | Stage 8 complete — user verified, ready to tag `stage-08-complete` / `v1.8` |
 | **Current Build-Order Step** | All 10 steps done (0, 0b, 1-9) |
 | **Build Compiles** | Yes — `cargo build --release` passes, 0 warnings |
-| **Tests Pass** | Yes — engine: 233 unit + 128 integration = 361 total (3 ignored); UI: 54 Vitest |
+| **Tests Pass** | Yes — engine: 233 unit + 128 integration = 361 total (3 ignored); UI: 54 Vitest. Binary verified v0.4.1-fix. |
 | **Blocking Issues** | None |
 
 ---
@@ -29,7 +29,7 @@
 | 5 | Basic UI Shell | complete | post-audit done | stage-05-complete / v1.5 | |
 | 6 | Bootstrap Eval + Evaluator Trait | complete | post-audit done | stage-06-complete / v1.6 | |
 | 7 | Plain BRS + Searcher Trait | complete | post-audit done | stage-07-complete / v1.7 | |
-| 8 | BRS/Paranoid Hybrid Layer | complete (pending user verification) | post-audit done | — | All steps done; awaiting user testing before tag |
+| 8 | BRS/Paranoid Hybrid Layer | complete | post-audit done | — | User verified. Ready to tag. Post-elim crash fixed (v0.4.1-fix). |
 | 9 | TT & Move Ordering | not-started | — | — | |
 | 10 | MCTS | not-started | — | — | |
 | 11 | Hybrid Integration | not-started | — | — | |
@@ -65,10 +65,9 @@
 
 ## What the Next Session Should Do First
 
-1. Read STATUS.md + HANDOFF.md (this file + HANDOFF.md)
-2. **User testing results:** User will run their own tests on Stage 8 before proceeding
-3. If user approves: tag `stage-08-complete` / `v1.8`, begin Stage 9 (TT & Move Ordering)
-4. If issues found: fix and re-test
+1. Read STATUS.md + HANDOFF.md
+2. **Tag Stage 8:** `git tag stage-08-complete && git tag v1.8` (user has verified)
+3. Begin Stage 9: read `masterplan/stages/stage_09_tt_ordering.md`, then upstream audit logs (stages 0–8), then `cargo build && cargo test` to confirm clean foundation
 
 ---
 
@@ -79,6 +78,10 @@ None. All existing tests pass (361 engine + 54 UI Vitest).
 ---
 
 ## Non-Stage Changes
+
+**2026-02-25 — Post-Elimination Crash Fix + Eval Strengthening** ([[Session-2026-02-25-PostElim-Crash-Fix]]):
+
+Engine panicked when BRS search tree reached an eliminated player's virtual turn (`generate_legal` on kingless board). Four-layer fix: alphabeta skip, quiescence skip, board scanner Active-only filter, king square 255 sentinel (`remove_king` now calls `clear_king_square`). Added `has_king()` and `clear_king_square()` to `Board`. Eval strengthened: `PAWN_SHIELD_BONUS` 35, MVV-LVA capture ordering, `THREAT_PENALTY_PER_OPPONENT` 50. Binary verified via `ENGINE_VERSION = "v0.4.1-fix"` canary. User confirmed fix. Commits: `dcb1eb9`, `5eaa072`, `445638d`.
 
 **2026-02-25 — In-Search Repetition + UI Bugfixes** ([[Session-2026-02-25-UI-Bugfixes]]):
 

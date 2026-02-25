@@ -1,63 +1,71 @@
 # HANDOFF — Last Session Summary
 
-**Date:** 2026-02-25
-**Stage:** Post-Stage 8 (non-stage work) — bugfixes + QoL
-**Next:** User continues testing; when satisfied, tag `stage-08-complete` / `v1.8`, begin Stage 9
+**Date:** 2026-02-25 (second session of the day)
+**Stage:** Post-Stage 8 (non-stage work) — crash fix + eval strengthening
+**Next:** Tag `stage-08-complete` / `v1.8`, begin Stage 9
 
 ## What Was Done This Session
 
-### 1. In-Search Repetition Detection
+### 1. Eval Strengthening
 
-Engine was reaching threefold repetition draws by cycling moves. Fixed in `odin-engine/src/search/brs.rs`:
-- Added `game_history: Vec<u64>` (snapshot of position_history at search start) and `rep_stack: Vec<u64>` (path-local stack) to `BrsContext`
-- Rep check in `alphabeta()` at `ply > 0`: if `game_count + search_count >= 3`, return 0 (draw)
-- Push/pop in `max_node()` and `min_node()` around each `alphabeta` call (not for null move)
-- 361 tests pass. Committed: `f50fc57`
+Applied Terminal Claude's Fix 4 specification ahead of playtesting:
 
-### 2. Search Depth Default: 6 → 7
+- `PAWN_SHIELD_BONUS`: 15 → 35 (`king_safety.rs`)
+- `OPEN_KING_FILE_PENALTY: i16 = 25` + `open_file_penalty()` function added
+- `THREAT_PENALTY_PER_OPPONENT`: 30 → 50 (`multi_player.rs`)
+- MVV-LVA capture ordering in `order_moves()` (`brs.rs`): `score = victim_value * 10 - attacker_value`
+- Committed: `dcb1eb9`
 
-Changed `max_depth: Some(6)` → `Some(7)` in `protocol/mod.rs` `limits_to_budget` fallback.
+### 2. Post-Elimination Crash — Found and Fixed
 
-### 3. Piece-Prefix Notation in Game Log
+Discovered during playtesting: Red was checkmated at move 7; game disconnected instead of continuing with Blue/Yellow/Green.
 
-Moves now display as `Nj1i3` instead of bare `j1i3`. Added `boardRef` mirror to `useGameState.ts` for synchronous piece lookup in async callbacks. Added `pieceLetterPrefix()` and `formatMoveForDisplay()` helpers.
+**Root cause:** `make_move` cycles `side_to_move` via `.next()` regardless of `PlayerStatus`. BRS search tree reached eliminated player's virtual turn → `generate_legal` on kingless board → panic.
 
-### 4. Game Log Player Label Bug — Fixed
+Four-layer fix (commits `5eaa072` + `445638d`):
 
-**Root cause:** `currentPlayerRef.current` and `boardRef.current` were read inside React functional updaters passed to `setMoveHistory`. React 18 batching defers updater execution until the next render flush, by which point the refs already hold the *next* player's values.
+1. **alphabeta skip** (`brs.rs`): `if player_status != Active { skip via set_side_to_move + recurse at same depth + restore }`. ADR-012 safe.
+2. **quiescence skip** (`brs.rs`): Same skip in `quiescence()` — hits the same crash path via depth=0 quiescence extension.
+3. **board scanner Active filter** (`board_scanner.rs`): `opponents_of()` filters to Active only; `per_opponent`/`most_dangerous` arrays padded with `root_player` sentinel for unused slots.
+4. **King square sentinel 255** (`board_struct.rs` + `rules.rs`): Added `has_king()` and `clear_king_square()`; `remove_king()` now writes 255 so stale reads return a clearly invalid value.
 
-**Fix:** Snapshot both refs as local variables immediately before the `setMoveHistory` call in both the `bestmove` and `readyok` handlers. The `[UI]` commit (`b98c087`) bundles all three UI changes.
-
-## Key Insight from Testing
-
-The "Red king exposure" observation in earlier testing was entirely caused by the label bug — moves attributed to "Red" in the log were actually Green's moves. Engine play looks reasonable with correct labels. King safety eval may still warrant tuning later, but needs fresh data.
+Binary verified via `ENGINE_VERSION = "v0.4.1-fix"` canary.
+User verified: "you fixed the issue!" — game continues correctly after elimination.
 
 ## What's Next
 
-1. User runs more full games to verify correct player labeling and overall engine quality
-2. When satisfied: tag `stage-08-complete` / `v1.8`
-3. Begin Stage 9: Transposition Table & Move Ordering
+1. **Tag Stage 8**: `git tag stage-08-complete v1.8` — user is satisfied with Stage 8
+2. **Begin Stage 9**: Transposition Table & Move Ordering
+   - Read `masterplan/stages/stage_09_tt_ordering.md`
+   - Read upstream audit logs (stages 0–8 dependency chain)
+   - Run `cargo build && cargo test` to confirm clean foundation
 
 ## Known Issues
 
 - W5 (stale GameState fields during search): acceptable for bootstrap eval, revisit for NNUE
-- W4 (lead penalty tactical mismatch): mitigated by Aggressive profile for FFA
-- Board scanner data frozen during search — delta updater deferred to v2
+- W4 (lead penalty tactical mismatch): mitigated by Aggressive profile for FFA; re-evaluate post-Stage 9
+- Board scanner data frozen at search start — delta updater deferred to v2
 - `tracing` crate added as dependency but no calls placed yet
+- `Issue-GameLog-Player-Label-React-Batching`: fixed in `b98c087`, still listed as pending-verification (user to confirm)
 - Board zoom frame boundary shift (cosmetic, polish phase)
 
 ## Files Modified This Session
 
 ### Engine
-- `odin-engine/src/search/brs.rs` — repetition detection
-- `odin-engine/src/protocol/mod.rs` — depth default 7
-
-### UI
-- `odin-ui/src/hooks/useGameState.ts` — boardRef + piece notation + player label fix
+- `odin-engine/src/search/brs.rs` — alphabeta skip + quiescence skip + MVV-LVA
+- `odin-engine/src/search/board_scanner.rs` — Active-only filter + sentinel padding
+- `odin-engine/src/board/board_struct.rs` — `has_king()`, `clear_king_square()`
+- `odin-engine/src/gamestate/rules.rs` — `remove_king()` clears sentinel
+- `odin-engine/src/protocol/emitter.rs` — `ENGINE_VERSION = "v0.4.1-fix"`
+- `odin-engine/src/eval/king_safety.rs` — `PAWN_SHIELD_BONUS`, `OPEN_KING_FILE_PENALTY`
+- `odin-engine/src/eval/multi_player.rs` — `THREAT_PENALTY_PER_OPPONENT`
 
 ### Documentation
-- `masterplan/sessions/Session-2026-02-25-UI-Bugfixes.md` — created
+- `masterplan/sessions/Session-2026-02-25-PostElim-Crash-Fix.md` — created
+- `masterplan/issues/Issue-PostElim-BRS-Crash.md` — created (resolved)
 - `masterplan/_index/MOC-Sessions.md` — updated
+- `masterplan/_index/MOC-Active-Issues.md` — updated
+- `masterplan/_index/Wikilink-Registry.md` — updated
 - `masterplan/HANDOFF.md` — updated (this file)
 - `masterplan/STATUS.md` — updated
 
