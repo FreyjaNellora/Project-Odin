@@ -194,9 +194,23 @@ impl Board {
     }
 
     /// Get the king square for a player.
+    /// Returns 255 (sentinel) if the king has been removed (player eliminated).
     #[inline]
     pub fn king_square(&self, player: Player) -> Square {
         self.king_squares[player.index()]
+    }
+
+    /// Returns true if the player's king is still on the board.
+    #[inline]
+    pub fn has_king(&self, player: Player) -> bool {
+        self.king_squares[player.index()] != 255
+    }
+
+    /// Clear the king square to sentinel 255 after the king is removed.
+    /// Called by remove_king during player elimination.
+    #[inline]
+    pub fn clear_king_square(&mut self, player: Player) {
+        self.king_squares[player.index()] = 255;
     }
 
     /// Current Zobrist hash.

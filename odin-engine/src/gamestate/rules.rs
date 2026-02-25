@@ -117,12 +117,15 @@ pub fn convert_to_dead(board: &mut Board, player: Player) {
 }
 
 /// Remove a player's king from the board (used after DKW king is captured or stuck).
+/// Also clears the king_squares sentinel to 255 so stale reads return a clearly
+/// invalid value rather than a stale square index.
 pub fn remove_king(board: &mut Board, player: Player) {
     let king_sq = board.king_square(player);
     // Only remove if there's actually a piece there
     if board.piece_at(king_sq).is_some() {
         board.remove_piece(king_sq);
     }
+    board.clear_king_square(player);
 }
 
 /// Check if the game should end.

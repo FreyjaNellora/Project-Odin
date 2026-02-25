@@ -27,7 +27,7 @@ use std::time::Instant;
 
 use crate::board::{PieceType, Player};
 use crate::eval::{Evaluator, PIECE_EVAL_VALUES};
-use crate::gamestate::GameState;
+use crate::gamestate::{GameState, PlayerStatus};
 use crate::movegen::{generate_legal, is_in_check, make_move, unmake_move, Move};
 
 use super::board_scanner::{scan_board, select_hybrid_reply, BoardContext};
@@ -364,6 +364,21 @@ impl<'a> BrsContext<'a> {
         }
 
         let current = self.gs.board().side_to_move();
+
+        // Skip eliminated (and DKW) players: make_move cycles turns via .next()
+        // without checking PlayerStatus. An eliminated player's king has been removed
+        // from the board — generating moves for them corrupts board state.
+        // We skip by advancing side_to_move one step, recursing at the same depth,
+        // then restoring. This is safe: no set_side_to_move is inserted between a
+        // make_move and its matching unmake_move (ADR-012 constraint).
+        if self.gs.player_status(current) != PlayerStatus::Active {
+            let next = current.next();
+            self.gs.board_mut().set_side_to_move(next);
+            let score = self.alphabeta(depth, alpha, beta, ply);
+            self.gs.board_mut().set_side_to_move(current);
+            return score;
+        }
+
         let moves = generate_legal(self.gs.board_mut());
 
         // No legal moves: checkmate or stalemate.

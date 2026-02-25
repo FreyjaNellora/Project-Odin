@@ -87,9 +87,12 @@ pub fn scan_board(gs: &GameState, root_player: Player) -> BoardContext {
     let root_danger_level = compute_king_danger(board, root_player, root_king_sq, &opponents);
 
     // 4. Per-opponent profiling
+    // When fewer than 3 opponents are active (due to eliminations), unused slots
+    // use root_player as a sentinel. The loop below skips any slot whose player
+    // equals root_player (root is never a real opponent).
     let mut per_opponent = [
         OpponentProfile {
-            player: opponents[0],
+            player: opponents.get(0).copied().unwrap_or(root_player),
             aggression_toward_root: 0.0,
             own_vulnerability: 0.0,
             best_target: root_player,
@@ -97,7 +100,7 @@ pub fn scan_board(gs: &GameState, root_player: Player) -> BoardContext {
             supporting_attack_on_root: false,
         },
         OpponentProfile {
-            player: opponents[1],
+            player: opponents.get(1).copied().unwrap_or(root_player),
             aggression_toward_root: 0.0,
             own_vulnerability: 0.0,
             best_target: root_player,
@@ -105,7 +108,7 @@ pub fn scan_board(gs: &GameState, root_player: Player) -> BoardContext {
             supporting_attack_on_root: false,
         },
         OpponentProfile {
-            player: opponents[2],
+            player: opponents.get(2).copied().unwrap_or(root_player),
             aggression_toward_root: 0.0,
             own_vulnerability: 0.0,
             best_target: root_player,
@@ -116,6 +119,10 @@ pub fn scan_board(gs: &GameState, root_player: Player) -> BoardContext {
 
     for profile in &mut per_opponent {
         let opp = profile.player;
+        // Skip sentinel slots (unused when < 3 opponents are active).
+        if opp == root_player {
+            continue;
+        }
         if gs.player_status(opp) == PlayerStatus::Eliminated {
             continue;
         }
@@ -163,6 +170,7 @@ pub fn scan_board(gs: &GameState, root_player: Player) -> BoardContext {
     }
 
     // 6. Most dangerous ordering (by aggression toward root descending)
+    // opponents may have fewer than 3 entries after eliminations; pad with root_player.
     let mut danger_order = opponents;
     danger_order.sort_by(|a, b| {
         let a_agg = per_opponent
@@ -177,7 +185,12 @@ pub fn scan_board(gs: &GameState, root_player: Player) -> BoardContext {
             .partial_cmp(&a_agg)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
-    let most_dangerous = [danger_order[0], danger_order[1], danger_order[2]];
+    let mut most_dangerous = [root_player; 3];
+    for (i, &opp) in danger_order.iter().enumerate() {
+        if i < 3 {
+            most_dangerous[i] = opp;
+        }
+    }
 
     // 7. High-value targets: opponent pieces worth >= 300cp that are attacked
     let (high_value_targets, high_value_target_count) =
@@ -203,13 +216,13 @@ pub fn scan_board(gs: &GameState, root_player: Player) -> BoardContext {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-/// Get the three opponents of `root_player`, in turn order, skipping eliminated.
-/// Always returns exactly 3 (may include eliminated for array shape).
-fn opponents_of(root: Player, _gs: &GameState) -> Vec<Player> {
+/// Get the active opponents of `root_player`, in turn order, skipping eliminated/DKW.
+/// Returns 1–3 opponents (fewer when players have been eliminated).
+fn opponents_of(root: Player, gs: &GameState) -> Vec<Player> {
     Player::ALL
         .iter()
         .copied()
-        .filter(|&p| p != root)
+        .filter(|&p| p != root && gs.player_status(p) == PlayerStatus::Active)
         .collect()
 }
 
