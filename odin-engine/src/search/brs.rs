@@ -557,6 +557,16 @@ impl<'a> BrsContext<'a> {
         let stand_pat = self.evaluator.eval_scalar(&self.gs, self.root_player);
         let current = self.gs.board().side_to_move();
 
+        // Skip eliminated players — same reasoning as in alphabeta.
+        // generate_legal on a kingless board corrupts state; advance past them.
+        if self.gs.player_status(current) != PlayerStatus::Active {
+            let next = current.next();
+            self.gs.board_mut().set_side_to_move(next);
+            let score = self.quiescence(alpha, beta, qs_depth);
+            self.gs.board_mut().set_side_to_move(current);
+            return score;
+        }
+
         if current == self.root_player {
             // --- MAX quiescence node ---
 
