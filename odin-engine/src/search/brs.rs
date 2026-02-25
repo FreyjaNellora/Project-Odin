@@ -26,7 +26,7 @@
 use std::time::Instant;
 
 use crate::board::{PieceType, Player};
-use crate::eval::Evaluator;
+use crate::eval::{Evaluator, PIECE_EVAL_VALUES};
 use crate::gamestate::GameState;
 use crate::movegen::{generate_legal, is_in_check, make_move, unmake_move, Move};
 
@@ -673,35 +673,58 @@ fn select_best_opponent_reply(
     best_move
 }
 
-/// Order moves for MAX node search: PV move first, then captures, then quiet.
+/// Order moves for MAX node search: PV first, captures by MVV-LVA, promotions, then quiet.
+///
+/// MVV-LVA (Most Valuable Victim – Least Valuable Attacker):
+///   score = victim_value * 10 - attacker_value
+/// Higher score = tried earlier. Capturing a queen with a pawn scores higher than
+/// capturing a pawn with a queen, even though the pawn capture is a material gain.
 fn order_moves(moves: &[Move], pv_move: Option<Move>) -> Vec<Move> {
     let mut ordered = Vec::with_capacity(moves.len());
 
-    // PV move gets highest priority.
+    // 1. PV move gets highest priority.
     if let Some(pv) = pv_move {
-        if let Some(&m) = moves.iter().find(|&&m| m == pv) {
-            ordered.push(m);
+        if moves.iter().any(|&m| m == pv) {
+            ordered.push(pv);
         }
     }
 
-    // Captures before quiet moves.
+    // 2. Captures sorted by MVV-LVA.
+    let mut captures: Vec<(Move, i16)> = Vec::new();
     for &mv in moves {
         if Some(mv) == pv_move {
             continue;
         }
         if mv.is_capture() {
+            let victim_val = mv
+                .captured()
+                .map(|pt| PIECE_EVAL_VALUES[pt.index()])
+                .unwrap_or(0);
+            let attacker_val = PIECE_EVAL_VALUES[mv.piece_type().index()];
+            captures.push((mv, victim_val * 10 - attacker_val));
+        }
+    }
+    captures.sort_by(|a, b| b.1.cmp(&a.1));
+    for (mv, _) in captures {
+        ordered.push(mv);
+    }
+
+    // 3. Non-capture promotions.
+    for &mv in moves {
+        if Some(mv) == pv_move || mv.is_capture() {
+            continue;
+        }
+        if mv.is_promotion() {
             ordered.push(mv);
         }
     }
 
-    // Quiet moves last.
+    // 4. Quiet moves last.
     for &mv in moves {
-        if Some(mv) == pv_move {
+        if Some(mv) == pv_move || mv.is_capture() || mv.is_promotion() {
             continue;
         }
-        if !mv.is_capture() {
-            ordered.push(mv);
-        }
+        ordered.push(mv);
     }
 
     ordered

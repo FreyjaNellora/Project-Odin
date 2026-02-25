@@ -18,7 +18,8 @@ pub(crate) const FFA_POINT_WEIGHT_DEFAULT: i16 = 50;
 
 
 /// Penalty per distinct opponent threatening the king.
-const THREAT_PENALTY_PER_OPPONENT: i16 = 30;
+/// Raised from 30 to 50 in Stage 8 debugging: 3 opponents threatening = 150cp (a minor piece).
+const THREAT_PENALTY_PER_OPPONENT: i16 = 50;
 
 /// Lead penalty: if this player has the highest combined strength
 /// (material + ffa_weight * ffa_score) among active players,
