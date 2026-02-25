@@ -317,9 +317,9 @@ impl OdinEngine {
                 max_time_ms: Some(ms),
             };
         }
-        // No limits specified: default to depth 6.
+        // No limits specified: default to depth 7.
         SearchBudget {
-            max_depth: Some(6),
+            max_depth: Some(7),
             max_nodes: None,
             max_time_ms: None,
         }

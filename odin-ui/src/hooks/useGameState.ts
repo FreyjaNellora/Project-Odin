@@ -124,6 +124,8 @@ export function useGameState(
   const pendingNextTurnRef = useRef<Player | null>(null);
   // Latest info ref for snapshot capture at bestmove time
   const latestInfoRef = useRef<InfoData | null>(null);
+  // Mirror of board state for synchronous access in async callbacks (piece notation lookup).
+  const boardRef = useRef<(Piece | null)[]>(startingPosition());
 
   // Setters that sync state + ref
   const setPlayMode = useCallback((mode: PlayMode) => {
@@ -306,6 +308,7 @@ export function useGameState(
         next[capturedSq] = null;
       }
 
+      boardRef.current = next;
       return next;
     });
 
@@ -446,7 +449,9 @@ export function useGameState(
   /** Start a new game. Reads game settings from state and sends commands in strict order. */
   const newGame = useCallback(
     () => {
-      setBoard(startingPosition());
+      const freshBoard = startingPosition();
+      setBoard(freshBoard);
+      boardRef.current = freshBoard;
       setMoveList([]);
       setMoveHistory([]);
       moveListRef.current = [];
@@ -529,10 +534,14 @@ export function useGameState(
             const newMoves = [...moveListRef.current, move];
             moveListRef.current = newMoves;
             setMoveList(newMoves);
-            // User moves have no search info
+            // Snapshot player + board NOW, before applyMoveToBoard and advancePlayer
+            // update the refs. React 18 batching defers the updater, so reading refs
+            // inside the updater would see the post-update values (wrong player, wrong board).
+            const movingPlayer = currentPlayerRef.current;
+            const movingBoard = boardRef.current.slice();
             setMoveHistory((prev) => [
               ...prev,
-              { move, player: currentPlayerRef.current, info: null },
+              { move: formatMoveForDisplay(move, movingBoard), player: movingPlayer, info: null },
             ]);
             applyMoveToBoard(move);
             const nextPlayer = advancePlayer();
@@ -556,6 +565,7 @@ export function useGameState(
                 next[i] = null;
               }
             }
+            boardRef.current = next;
             return next;
           });
           break;
@@ -577,13 +587,18 @@ export function useGameState(
             const newMoves = [...moveListRef.current, engineMove];
             moveListRef.current = newMoves;
             setMoveList(newMoves);
-            // Capture the latest info snapshot with this move
+            // Capture the latest info snapshot with this move.
+            // Also snapshot player + board NOW, before applyMoveToBoard and the
+            // nextPlayer assignment update the refs. React 18 batching defers the
+            // updater, so reading refs inside it would see the post-update values.
             const infoSnapshot = latestInfoRef.current
               ? { ...latestInfoRef.current }
               : null;
+            const movingPlayer = currentPlayerRef.current;
+            const movingBoard = boardRef.current.slice();
             setMoveHistory((prev) => [
               ...prev,
-              { move: engineMove, player: currentPlayerRef.current, info: infoSnapshot },
+              { move: formatMoveForDisplay(engineMove, movingBoard), player: movingPlayer, info: infoSnapshot },
             ]);
             applyMoveToBoard(engineMove);
 
@@ -656,6 +671,30 @@ function parseMoveString(moveStr: string): { from: string; to: string; promo?: s
   const match = moveStr.match(/^([a-n]\d{1,2})([a-n]\d{1,2})([qrbnw])?$/);
   if (!match) return null;
   return { from: match[1], to: match[2], promo: match[3] };
+}
+
+/** Return the standard piece-letter prefix for display (empty string for pawns). */
+function pieceLetterPrefix(piece: Piece | null): string {
+  if (!piece) return '';
+  switch (piece.pieceType) {
+    case 'King':          return 'K';
+    case 'Queen':
+    case 'PromotedQueen': return 'Q';
+    case 'Rook':          return 'R';
+    case 'Bishop':        return 'B';
+    case 'Knight':        return 'N';
+    default:              return '';   // Pawn: no prefix (standard SAN style)
+  }
+}
+
+/** Format a raw coordinate move string (e.g. "e1f3") with a piece prefix for display.
+ *  Looks up the piece on the board at the from-square before the move is applied. */
+function formatMoveForDisplay(moveStr: string, board: (Piece | null)[]): string {
+  const parsed = parseMoveString(moveStr);
+  if (!parsed) return moveStr;
+  const from = parseSquare(parsed.from);
+  if (from === -1) return moveStr;
+  return pieceLetterPrefix(board[from]) + moveStr;
 }
 
 /** Map a promotion character to a PieceType. */
