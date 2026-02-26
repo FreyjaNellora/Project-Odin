@@ -11,8 +11,8 @@
 use odin_engine::eval::{BootstrapEvaluator, EvalProfile};
 use odin_engine::gamestate::GameState;
 use odin_engine::movegen::generate_legal;
-use odin_engine::search::{SearchBudget, Searcher};
 use odin_engine::search::brs::BrsSearcher;
+use odin_engine::search::{SearchBudget, Searcher};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -82,8 +82,16 @@ fn test_tt_search_scores_are_stable() {
     // Both results must be legal moves.
     let mut check = gs.clone();
     let legal = check.legal_moves();
-    assert!(legal.contains(&r1.best_move), "r1 not legal: {:?}", r1.best_move);
-    assert!(legal.contains(&r2.best_move), "r2 not legal: {:?}", r2.best_move);
+    assert!(
+        legal.contains(&r1.best_move),
+        "r1 not legal: {:?}",
+        r1.best_move
+    );
+    assert!(
+        legal.contains(&r2.best_move),
+        "r2 not legal: {:?}",
+        r2.best_move
+    );
 
     // Scores must match: TT carryover must not distort the minimax value.
     assert_eq!(
@@ -116,7 +124,9 @@ fn test_mate_score_not_distorted_by_tt() {
     assert!(
         score_drift == 0,
         "Mate score distortion detected: score changed from {} to {} (drift {})",
-        r1.score, r2.score, score_drift
+        r1.score,
+        r2.score,
+        score_drift
     );
 }
 
@@ -135,7 +145,12 @@ fn test_perft_depth_1_unchanged() {
     let gs = GameState::new_standard_ffa();
     let mut check = gs.clone();
     let moves = generate_legal(check.board_mut());
-    assert_eq!(moves.len(), 20, "perft(1): expected 20, got {}", moves.len());
+    assert_eq!(
+        moves.len(),
+        20,
+        "perft(1): expected 20, got {}",
+        moves.len()
+    );
 }
 
 #[test]
@@ -192,7 +207,8 @@ fn test_tt_hint_move_enables_faster_second_search() {
     assert!(
         warm_d6.nodes <= cold_d6.nodes + 200,
         "warm TT search used more nodes ({}) than cold ({})",
-        warm_d6.nodes, cold_d6.nodes
+        warm_d6.nodes,
+        cold_d6.nodes
     );
 }
 
@@ -216,14 +232,16 @@ fn test_killer_moves_improve_node_count_on_repeat() {
     assert!(
         r2.nodes <= r1.nodes + 200,
         "Repeat search used more nodes: r1={}, r2={}",
-        r1.nodes, r2.nodes
+        r1.nodes,
+        r2.nodes
     );
     // Both must agree on score within aspiration window.
     let score_diff = (r1.score as i32 - r2.score as i32).abs();
     assert!(
         score_diff <= 100,
         "Repeat search score diverged: {} vs {}",
-        r1.score, r2.score
+        r1.score,
+        r2.score
     );
 }
 
@@ -274,7 +292,10 @@ fn test_node_count_grows_monotonically_with_depth_fresh_searchers() {
         assert!(
             r.nodes >= prev_nodes,
             "Node count decreased from depth {} to {}: {} -> {}",
-            depth - 1, depth, prev_nodes, r.nodes
+            depth - 1,
+            depth,
+            prev_nodes,
+            r.nodes
         );
         prev_nodes = r.nodes;
     }
@@ -334,7 +355,11 @@ fn test_full_pipeline_depth_6_legal_result() {
     let gs = GameState::new_standard_ffa();
     let mut searcher = make_searcher();
     let result = searcher.search(&gs, budget_depth(6));
-    assert!(result.depth >= 6, "depth 6 must complete: got depth {}", result.depth);
+    assert!(
+        result.depth >= 6,
+        "depth 6 must complete: got depth {}",
+        result.depth
+    );
     let mut check = gs.clone();
     let legal = check.legal_moves();
     assert!(
