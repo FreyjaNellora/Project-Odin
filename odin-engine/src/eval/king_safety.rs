@@ -11,8 +11,8 @@ use crate::board::{file_of, is_valid_square, rank_of, Board, PieceStatus, PieceT
 use crate::gamestate::PlayerStatus;
 use crate::movegen::is_square_attacked_by;
 
-/// Bonus per friendly pawn in the pawn shield (max 3 pawns, 105cp total).
-const PAWN_SHIELD_BONUS: i16 = 35;
+/// Bonus per friendly pawn in the pawn shield (max 3 pawns, 150cp total).
+const PAWN_SHIELD_BONUS: i16 = 50;
 
 /// Base penalty when any opponent piece attacks the king zone.
 const ATTACKER_BASE_PENALTY: i16 = 25;
@@ -24,7 +24,7 @@ const ATTACKER_EXTRA_PENALTY: i16 = 20;
 const MAX_SHIELD_SQUARES: i16 = 3;
 
 /// Penalty per open file adjacent to the king (no friendly pawn within 3 ranks forward).
-const OPEN_KING_FILE_PENALTY: i16 = 25;
+const OPEN_KING_FILE_PENALTY: i16 = 40;
 
 /// King zone: the 8 squares adjacent to the king plus the king square itself.
 const ADJACENT_DELTAS: [(i8, i8); 8] = [
@@ -292,8 +292,8 @@ mod tests {
         for &player in &Player::ALL {
             let score = king_safety_score(&board, player, &statuses);
             assert_eq!(
-                score, 105,
-                "Starting king safety for {player:?} should be exactly 105cp (3 shield pawns × 35), got {score}"
+                score, 150,
+                "Starting king safety for {player:?} should be exactly 150cp (3 shield pawns × 50), got {score}"
             );
         }
     }

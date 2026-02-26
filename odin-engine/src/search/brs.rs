@@ -25,10 +25,10 @@
 
 use std::time::Instant;
 
-use crate::board::{PieceType, Player};
+use crate::board::{Board, PieceType, Player};
 use crate::eval::{Evaluator, PIECE_EVAL_VALUES};
 use crate::gamestate::{GameState, PlayerStatus};
-use crate::movegen::{generate_legal, is_in_check, make_move, unmake_move, Move};
+use crate::movegen::{generate_legal, is_in_check, is_square_attacked_by, make_move, unmake_move, Move};
 
 use super::board_scanner::{scan_board, select_hybrid_reply, BoardContext};
 use super::tt::{TranspositionTable, TT_DEFAULT_ENTRIES, TT_EXACT, TT_LOWER, TT_UPPER};
@@ -531,14 +531,14 @@ impl<'a> BrsContext<'a> {
             self.countermoves[idx]
         });
 
-        let player_idx = self.root_player.index();
         let ordered = order_moves(
+            self.gs.board(),
             &moves,
             hint_move,
             &self.killers[ply],
             countermove,
             &self.history,
-            player_idx,
+            self.root_player,
         );
         let mut best = NEG_INF;
 
@@ -824,11 +824,15 @@ fn select_best_opponent_reply(
 /// Simplified model: check only the immediate exchange (attacker value vs captured
 /// value). A full recursive SEE with all 4-player recapture sequences is deferred
 /// to Stage 19. This covers the most important case: detecting clearly winning
-/// captures (pawn takes queen) and clearly losing ones (queen takes pawn defended).
+/// captures (pawn takes queen) and clearly losing ones (queen takes defended pawn).
 ///
-/// Returns true if: `captured_value - attacker_value >= threshold`.
-/// This is correct for the first exchange and conservative for subsequent moves.
-fn see(mv: Move, threshold: i16) -> bool {
+/// Improvement over the Stage 9 baseline: checks whether the captured piece is
+/// defended by any opponent before applying the attacker-value comparison. An
+/// undefended piece is a free capture regardless of piece values — bishop×pawn
+/// is a WINNING capture if the pawn is undefended, not a losing one.
+///
+/// Returns true if the capture gains at least `threshold` centipawns.
+fn see(board: &Board, mv: Move, player: Player, threshold: i16) -> bool {
     if !mv.is_capture() {
         return threshold <= 0;
     }
@@ -836,6 +840,20 @@ fn see(mv: Move, threshold: i16) -> bool {
         .captured()
         .map(|pt| PIECE_EVAL_VALUES[pt.index()])
         .unwrap_or(0);
+
+    // Check whether any opponent of the capturer can recapture on the to-square.
+    // If nobody can recapture, the capture is free (gains captured_val outright).
+    let to_sq = mv.to_sq();
+    let is_recapturable = Player::ALL
+        .iter()
+        .any(|&p| p != player && is_square_attacked_by(to_sq, p, board));
+
+    if !is_recapturable {
+        // Undefended piece: free capture.
+        return captured_val >= threshold;
+    }
+
+    // Defended: simplified single-exchange SEE (attacker vs captured).
     let attacker_val = PIECE_EVAL_VALUES[mv.piece_type().index()];
     captured_val - attacker_val >= threshold
 }
@@ -855,13 +873,15 @@ fn see(mv: Move, threshold: i16) -> bool {
 /// against the legal-move list before use.
 #[allow(clippy::too_many_arguments)]
 fn order_moves(
+    board: &Board,
     moves: &[Move],
     hint_move: Option<Move>,
     killers: &[Option<Move>; 2],
     countermove: Option<Move>,
     history: &[[[i32; TOTAL_SQUARES]; PIECE_TYPE_COUNT]; PLAYER_COUNT],
-    player_idx: usize,
+    player: Player,
 ) -> Vec<Move> {
+    let player_idx = player.index();
     let mut ordered = Vec::with_capacity(moves.len());
     // Track which moves have been placed to avoid duplicates.
     // Use a small bitmask if move count is bounded, or a simple contains check.
@@ -899,7 +919,7 @@ fn order_moves(
                 .unwrap_or(0);
             let attacker_val = PIECE_EVAL_VALUES[mv.piece_type().index()];
             let mvv_lva = victim_val * 10 - attacker_val;
-            if see(mv, 0) {
+            if see(board, mv, player, 0) {
                 win_caps.push((i, mvv_lva));
             } else {
                 lose_caps.push((i, mvv_lva));

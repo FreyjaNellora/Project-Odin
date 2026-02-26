@@ -205,8 +205,8 @@ const QUEEN_GRID: [[i16; 14]; 14] = [
 const KING_GRID: [[i16; 14]; 14] = [
     // rank 0 (back rank): strong bonus for home position, especially castled corners
     [0, 0, 0, 20, 30, 15, 10, 10, 15, 30, 20, 0, 0, 0],
-    // rank 1: mild bonus, king one step forward is still OK
-    [0, 0, 0, 10, 10,  5,  0,  0,  5, 10, 10, 0, 0, 0],
+    // rank 1: clear penalty — king one step forward is dangerous in 4PC
+    [0, 0, 0, -5, -5,-10,-15,-15,-10, -5, -5, 0, 0, 0],
     // rank 2: starting to get exposed
     [0, 0, 0, -5,-10,-15,-20,-20,-15,-10, -5, 0, 0, 0],
     // rank 3
