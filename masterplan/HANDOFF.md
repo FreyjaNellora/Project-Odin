@@ -1,76 +1,106 @@
 # HANDOFF — Last Session Summary
 
-**Date:** 2026-02-25 (second session of the day)
-**Stage:** Post-Stage 8 (non-stage work) — crash fix + eval strengthening
-**Next:** Tag `stage-08-complete` / `v1.8`, begin Stage 9
+**Date:** 2026-02-25 (third session of the day)
+**Stage:** Stage 9 — TT & Move Ordering (COMPLETE)
+**Next:** Tag `stage-09-complete` / `v1.9`, begin Stage 10 (MCTS) — but first resolve `Issue-Vec-Clone-Cost-Pre-MCTS`
 
 ## What Was Done This Session
 
-### 1. Eval Strengthening
+### Stage 9 Implementation — Full Build Order
 
-Applied Terminal Claude's Fix 4 specification ahead of playtesting:
+Stage 9 added a Transposition Table and full move ordering pipeline to the BRS search.
 
-- `PAWN_SHIELD_BONUS`: 15 → 35 (`king_safety.rs`)
-- `OPEN_KING_FILE_PENALTY: i16 = 25` + `open_file_penalty()` function added
-- `THREAT_PENALTY_PER_OPPONENT`: 30 → 50 (`multi_player.rs`)
-- MVV-LVA capture ordering in `order_moves()` (`brs.rs`): `score = victim_value * 10 - attacker_value`
-- Committed: `dcb1eb9`
+**Pre-work (entry protocol):**
+- Tags `stage-08-complete` / `v1.8` confirmed already applied (from previous session)
+- `cargo build && cargo test`: 362 tests passing, 0 warnings — confirmed clean
+- Pre-audit filled in `audit_log_stage_09.md`
+- `Issue-Perft-Values-Unverified` staleness updated (last_updated → 2026-02-25)
+- STATUS.md corrected: 361→362 tests (233→234 unit, typo from meta-commit)
 
-### 2. Post-Elimination Crash — Found and Fixed
+**Step 1: TT data structure** (`search/tt.rs` — new file)
+- `TTEntry` (12 bytes): key u32, best_move u16, score i16, depth u8, flags u8
+- `TranspositionTable`: Vec<TTEntry>, power-of-2 mask, 6-bit generation counter
+- API: `probe()`, `store()`, `compress_move()`, `decompress_move()`, `increment_generation()`
+- Mate score ply adjustment: `score_to_tt` / `score_from_tt` (MATE_THRESHOLD = 19,900)
+- Depth-preferred replacement with generation fallback
+- 12 unit tests — all pass
+- `pub mod tt;` added to `search/mod.rs`
 
-Discovered during playtesting: Red was checkmated at move 7; game disconnected instead of continuing with Blue/Yellow/Green.
+**Step 2: TT integration into BRS** (`brs.rs`)
+- `BrsSearcher.tt: TranspositionTable` (persists across searches; TT_DEFAULT_ENTRIES = 1<<20 ~12 MB)
+- `BrsContext.tt: &'a mut TranspositionTable`
+- `alphabeta()`: hash hoisted; TT probe AFTER rep-check, BEFORE qsearch dispatch; TT store at bottom (skipped when stopped); `orig_alpha` saved for flag computation; terminal nodes stored TT_EXACT
+- `max_node()`: accepts `tt_move: Option<Move>` hint; uses `tt_move.or(pv_move)`
+- Commit: `9f3ab88`
 
-**Root cause:** `make_move` cycles `side_to_move` via `.next()` regardless of `PlayerStatus`. BRS search tree reached eliminated player's virtual turn → `generate_legal` on kingless board → panic.
+**Steps 3-8: Killer/History/SEE/Counter-move + Full Pipeline** (`brs.rs`)
+- `TOTAL_SQUARES = 196`, `PIECE_TYPE_COUNT = 7`, `PLAYER_COUNT = 4` constants
+- BrsContext additions: `killers [[Option<Move>; 2]; 64]`, `history [[[i32; 196]; 7]; 4]`, `countermoves Vec<Option<Move>>` (flat 196×196), `last_opp_move [Option<Move>; 64]`
+- Beta cutoff in max_node: killers updated, history += depth², counter-move recorded
+- min_node: `last_opp_move[ply+1] = Some(mv)` before recursing
+- `see(mv, threshold) -> bool`: simplified single-exchange; full recursive SEE deferred to Stage 19
+- `order_moves()` rewritten: TT hint → win_caps (SEE≥0, MVV-LVA desc) → promos → killers → counter-move → hist-sorted quiets → lose_caps (SEE<0)
+- Commit: `5d9ccbd`
 
-Four-layer fix (commits `5eaa072` + `445638d`):
+**Integration tests** (`tests/stage_09_tt_ordering.rs` — new file, 13 tests)
+- TT reduces nodes at depth 6 (acceptance criterion)
+- Score stability on repeat searches
+- Mate score not distorted by TT
+- Perft(1) = 20 unchanged
+- Monotone node growth with fresh searchers
+- TT hint enables faster warm search
+- Killers improve repeat search node counts
+- No history overflow at depth 7
+- TT does not bypass repetition detection
+- PV starts with best_move
+- Commit: `a7dae37`
 
-1. **alphabeta skip** (`brs.rs`): `if player_status != Active { skip via set_side_to_move + recurse at same depth + restore }`. ADR-012 safe.
-2. **quiescence skip** (`brs.rs`): Same skip in `quiescence()` — hits the same crash path via depth=0 quiescence extension.
-3. **board scanner Active filter** (`board_scanner.rs`): `opponents_of()` filters to Active only; `per_opponent`/`most_dangerous` arrays padded with `root_player` sentinel for unused slots.
-4. **King square sentinel 255** (`board_struct.rs` + `rules.rs`): Added `has_king()` and `clear_king_square()`; `remove_king()` now writes 255 so stale reads return a clearly invalid value.
+### Post-Audit
+- Post-audit section filled in `audit_log_stage_09.md`
+- `downstream_log_stage_09.md` written (previously a shell)
 
-Binary verified via `ENGINE_VERSION = "v0.4.1-fix"` canary.
-User verified: "you fixed the issue!" — game continues correctly after elimination.
+## Performance Results
+
+| Depth | Nodes (Stage 9) | Nodes (Stage 7) | Reduction |
+|-------|-----------------|-----------------|-----------|
+| 6     | 4,595           | 10,916          | **58%**   |
+| 8     | 13,009          | 31,896          | **59%**   |
+
+Acceptance criterion of >50% node reduction at depth 6: **MET with margin**.
 
 ## What's Next
 
-1. **Tag Stage 8**: `git tag stage-08-complete v1.8` — user is satisfied with Stage 8
-2. **Begin Stage 9**: Transposition Table & Move Ordering
-   - Read `masterplan/stages/stage_09_tt_ordering.md`
-   - Read upstream audit logs (stages 0–8 dependency chain)
-   - Run `cargo build && cargo test` to confirm clean foundation
+1. **Tag Stage 9**: `git tag stage-09-complete && git tag v1.9`
+2. **Resolve `Issue-Vec-Clone-Cost-Pre-MCTS`** (WARNING): MCTS cannot clone GameState per simulation. This was scheduled for "before Stage 10" and is now due. Read the issue file to understand the scope.
+3. **Begin Stage 10 (MCTS)**: Read `masterplan/stages/stage_10_mcts.md`, upstream audit/downstream logs (stages 7-9), `cargo build && cargo test`.
 
 ## Known Issues
 
+- `Issue-Vec-Clone-Cost-Pre-MCTS` (WARNING): OPEN — **resolve before Stage 10**
+- W6 (simplified SEE): `see()` is single-exchange only; full recursive 4PC SEE deferred to Stage 19
 - W5 (stale GameState fields during search): acceptable for bootstrap eval, revisit for NNUE
-- W4 (lead penalty tactical mismatch): mitigated by Aggressive profile for FFA; re-evaluate post-Stage 9
-- Board scanner data frozen at search start — delta updater deferred to v2
-- `tracing` crate added as dependency but no calls placed yet
-- `Issue-GameLog-Player-Label-React-Batching`: fixed in `b98c087`, still listed as pending-verification (user to confirm)
-- Board zoom frame boundary shift (cosmetic, polish phase)
+- W4 (lead penalty tactical mismatch): mitigated by Aggressive profile for FFA
+- `Issue-Bootstrap-Eval-Lead-Penalty-Tactical-Mismatch` (NOTE): still open, not blocking
+- `Issue-DKW-Halfmove-Clock` (NOTE): still open, not blocking
+- `Issue-GameLog-Player-Label-React-Batching` (WARNING, fixed pending verification): not re-tested this session
 
 ## Files Modified This Session
 
 ### Engine
-- `odin-engine/src/search/brs.rs` — alphabeta skip + quiescence skip + MVV-LVA
-- `odin-engine/src/search/board_scanner.rs` — Active-only filter + sentinel padding
-- `odin-engine/src/board/board_struct.rs` — `has_king()`, `clear_king_square()`
-- `odin-engine/src/gamestate/rules.rs` — `remove_king()` clears sentinel
-- `odin-engine/src/protocol/emitter.rs` — `ENGINE_VERSION = "v0.4.1-fix"`
-- `odin-engine/src/eval/king_safety.rs` — `PAWN_SHIELD_BONUS`, `OPEN_KING_FILE_PENALTY`
-- `odin-engine/src/eval/multi_player.rs` — `THREAT_PENALTY_PER_OPPONENT`
+- `odin-engine/src/search/tt.rs` — NEW (TT data structure)
+- `odin-engine/src/search/brs.rs` — TT integration + ordering pipeline
+- `odin-engine/src/search/mod.rs` — `pub mod tt;` added
+- `odin-engine/tests/stage_09_tt_ordering.rs` — NEW (13 integration tests)
 
 ### Documentation
-- `masterplan/sessions/Session-2026-02-25-PostElim-Crash-Fix.md` — created
-- `masterplan/issues/Issue-PostElim-BRS-Crash.md` — created (resolved)
-- `masterplan/_index/MOC-Sessions.md` — updated
-- `masterplan/_index/MOC-Active-Issues.md` — updated
-- `masterplan/_index/Wikilink-Registry.md` — updated
+- `masterplan/audit_log_stage_09.md` — pre + post audit filled
+- `masterplan/downstream_log_stage_09.md` — filled (was a shell)
+- `masterplan/STATUS.md` — Stage 9 complete, test counts updated, performance baselines added
 - `masterplan/HANDOFF.md` — updated (this file)
-- `masterplan/STATUS.md` — updated
+- `masterplan/issues/Issue-Perft-Values-Unverified.md` — staleness updated
 
 ## Test Counts
 
-- Engine: 361 (233 unit + 128 integration, 3 ignored)
+- Engine: 387 (246 unit + 141 integration, 3 ignored)
 - UI Vitest: 54
 - Total: 0 failures

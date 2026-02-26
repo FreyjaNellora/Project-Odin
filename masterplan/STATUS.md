@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
 **Last Updated:** 2026-02-25
-**Updated By:** Claude Sonnet 4.6 (Post-Stage 8: post-elimination crash fix + eval strengthening)
+**Updated By:** Claude Sonnet 4.6 (Stage 9 complete: TT & Move Ordering)
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 8 complete — user verified, ready to tag `stage-08-complete` / `v1.8` |
-| **Current Build-Order Step** | All 10 steps done (0, 0b, 1-9) |
+| **Current Stage** | Stage 9 complete — ready to tag `stage-09-complete` / `v1.9` |
+| **Current Build-Order Step** | Stage 9 — complete (post-audit done) |
 | **Build Compiles** | Yes — `cargo build --release` passes, 0 warnings |
-| **Tests Pass** | Yes — engine: 233 unit + 128 integration = 361 total (3 ignored); UI: 54 Vitest. Binary verified v0.4.1-fix. |
+| **Tests Pass** | Yes — engine: 246 unit + 141 integration = 387 total (3 ignored); UI: 54 Vitest. Binary verified v0.4.1-fix. |
 | **Blocking Issues** | None |
 
 ---
@@ -29,8 +29,8 @@
 | 5 | Basic UI Shell | complete | post-audit done | stage-05-complete / v1.5 | |
 | 6 | Bootstrap Eval + Evaluator Trait | complete | post-audit done | stage-06-complete / v1.6 | |
 | 7 | Plain BRS + Searcher Trait | complete | post-audit done | stage-07-complete / v1.7 | |
-| 8 | BRS/Paranoid Hybrid Layer | complete | post-audit done | — | User verified. Ready to tag. Post-elim crash fixed (v0.4.1-fix). |
-| 9 | TT & Move Ordering | not-started | — | — | |
+| 8 | BRS/Paranoid Hybrid Layer | complete | post-audit done | stage-08-complete / v1.8 | User verified. Post-elim crash fixed (v0.4.1-fix). |
+| 9 | TT & Move Ordering | complete | post-audit done | stage-09-complete / v1.9 | 58% node reduction at depth 6; 387 tests. |
 | 10 | MCTS | not-started | — | — | |
 | 11 | Hybrid Integration | not-started | — | — | |
 | 12 | Self-Play & Regression Testing | not-started | — | — | |
@@ -55,25 +55,26 @@
 | AGENT_CONDUCT.md | current | v1.1 — Section 1.16 added (Deferred-Debt Escalation), Section 3 replaced (tracing). |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
 | DECISIONS.md | current | 15 ADRs. ADR-007/008 superseded by ADR-015 (Huginn → tracing). ADR-014 (UI Vision), ADR-015 (Retire Huginn). |
-| HANDOFF.md | current | Stage 8 complete, pending user verification. |
+| HANDOFF.md | current | Stage 9 complete, ready to start Stage 10 (MCTS). |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
-| audit_log_stage_00.md through audit_log_stage_08.md | current | All complete. |
-| downstream_log_stage_00.md through downstream_log_stage_08.md | current | All complete. |
+| audit_log_stage_00.md through audit_log_stage_09.md | current | All complete. |
+| downstream_log_stage_00.md through downstream_log_stage_09.md | current | All complete. |
 
 ---
 
 ## What the Next Session Should Do First
 
 1. Read STATUS.md + HANDOFF.md
-2. **Tag Stage 8:** `git tag stage-08-complete && git tag v1.8` (user has verified)
-3. Begin Stage 9: read `masterplan/stages/stage_09_tt_ordering.md`, then upstream audit logs (stages 0–8), then `cargo build && cargo test` to confirm clean foundation
+2. **Tag Stage 9:** `git tag stage-09-complete && git tag v1.9`
+3. Begin Stage 10 (MCTS): read `masterplan/stages/stage_10_mcts.md` (or equivalent), upstream audit logs, `cargo build && cargo test` to confirm clean foundation
+4. **Before Stage 10:** Resolve `Issue-Vec-Clone-Cost-Pre-MCTS` (WARNING, scheduled this session). MCTS cannot clone GameState per simulation.
 
 ---
 
 ## Known Regressions
 
-None. All existing tests pass (361 engine + 54 UI Vitest).
+None. All existing tests pass (387 engine + 54 UI Vitest).
 
 ---
 
@@ -137,7 +138,8 @@ Follow-up items noted but not blocking:
 | Starting material per player | 4300cp | 6 | 8P + 2N + 2B + 2R + Q + K |
 | Test count | 302 | 7 | 196 unit + 2 stage-00 + 18 stage-01 + 18 stage-02 + 18 stage-03 + 17 stage-04 + 11 stage-06 + 22 stage-07 |
 | Test count | 316 | 8 (Step 0) | 210 unit + 106 integration (11 new unit tests for GameMode/EvalProfile) |
-| Test count | 361 | 8 (complete) | 233 unit + 128 integration (3 ignored). Board scanner, hybrid scoring, eval fix, smoke-play. |
+| Test count | 362 | 8 (complete) | 234 unit + 128 integration (3 ignored). Board scanner, hybrid scoring, eval fix, smoke-play. Post-elim crash fix added 1 unit test (has_king/clear_king_square). |
+| Test count | 387 | 9 (complete) | 246 unit + 141 integration (3 ignored). TT (12 unit), Stage 9 tests (13 integration). |
 | BRS depth 6 (debug, starting pos) | 1,547ms / 10,916 nodes | 7 | ~7k NPS debug |
 | BRS depth 6 (release, starting pos) | 109ms / 10,916 nodes | 7 | ~100k NPS release |
 | BRS depth 8 (release, starting pos) | 371ms / 31,896 nodes | 7 | Move converges at depth 6 (j1i3); stable 6-8 |
@@ -145,6 +147,10 @@ Follow-up items noted but not blocking:
 | Hybrid BRS depth 6 (release) | < 10,916 nodes (~49% reduction) | 8 | Progressive narrowing active |
 | Hybrid BRS depth 8 (release) | < 31,896 nodes (~46% reduction) | 8 | Progressive narrowing active |
 | Board scanner | < 1ms per call | 8 | Release build |
+| TT+Ordering depth 6 (release, Standard) | 50ms / 4,595 nodes | 9 | **58% node reduction** vs Stage 7 baseline |
+| TT+Ordering depth 8 (release, Standard) | 120ms / 13,009 nodes | 9 | **59% node reduction** vs Stage 7 baseline |
+| TT+Ordering depth 6 (release, Aggressive) | 34ms / 4,064 nodes | 9 | |
+| TT+Ordering depth 8 (release, Aggressive) | 185ms / 12,205 nodes | 9 | |
 
 ---
 

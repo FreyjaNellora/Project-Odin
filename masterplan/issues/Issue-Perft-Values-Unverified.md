@@ -1,7 +1,7 @@
 ---
 type: issue
 date_opened: 2026-02-20
-last_updated: 2026-02-20
+last_updated: 2026-02-25
 date_resolved:
 stage: 2
 severity: warning
@@ -42,6 +42,10 @@ Values are treated as permanent invariants from this implementation. If an exter
 1. Another 4PC engine (none known to exist publicly)
 2. Manual move counting at depth 1-2 (20 and 395 can be hand-verified)
 3. chess.com API if they expose legal move counts
+
+## Status Updates
+
+**2026-02-25 (Stage 9 pre-audit):** Still open. No external reference found. Stage 9 TT must not corrupt perft — the perft integration tests remain as the regression guard. Stage 9 TT probe/store operates on Zobrist hashes independent of perft node generation; no new risk introduced. Reviewed per AGENT_CONDUCT 1.9 staleness rule.
 
 ## Resolution
 
