@@ -31,6 +31,7 @@ use crate::gamestate::{GameState, PlayerStatus};
 use crate::movegen::{generate_legal, is_in_check, make_move, unmake_move, Move};
 
 use super::board_scanner::{scan_board, select_hybrid_reply, BoardContext};
+use super::tt::{TranspositionTable, TT_DEFAULT_ENTRIES, TT_EXACT, TT_LOWER, TT_UPPER};
 use super::{SearchBudget, SearchResult, Searcher};
 
 // ---------------------------------------------------------------------------
@@ -79,6 +80,9 @@ const TIME_CHECK_INTERVAL: u64 = 1_024;
 pub struct BrsSearcher {
     evaluator: Box<dyn Evaluator>,
     info_cb: Option<Box<dyn FnMut(String)>>,
+    /// Transposition table — persists across iterative deepening depths and
+    /// between moves. Not reset between `search()` calls.
+    tt: TranspositionTable,
 }
 
 impl BrsSearcher {
@@ -87,6 +91,7 @@ impl BrsSearcher {
         Self {
             evaluator,
             info_cb: None,
+            tt: TranspositionTable::new(TT_DEFAULT_ENTRIES),
         }
     }
 
@@ -94,20 +99,19 @@ impl BrsSearcher {
     ///
     /// The callback receives a formatted `info` string after each completed
     /// iterative deepening depth. The protocol can use this to emit progress.
-    pub fn with_info_callback(
-        evaluator: Box<dyn Evaluator>,
-        cb: Box<dyn FnMut(String)>,
-    ) -> Self {
+    pub fn with_info_callback(evaluator: Box<dyn Evaluator>, cb: Box<dyn FnMut(String)>) -> Self {
         Self {
             evaluator,
             info_cb: Some(cb),
+            tt: TranspositionTable::new(TT_DEFAULT_ENTRIES),
         }
     }
 }
 
 impl Searcher for BrsSearcher {
     fn search(&mut self, position: &GameState, budget: SearchBudget) -> SearchResult {
-        let mut ctx = BrsContext::new(position, self.evaluator.as_ref(), &budget);
+        self.tt.increment_generation();
+        let mut ctx = BrsContext::new(position, self.evaluator.as_ref(), &budget, &mut self.tt);
         ctx.iterative_deepening(&mut self.info_cb)
     }
 }
@@ -151,10 +155,18 @@ struct BrsContext<'a> {
     /// Path-local stack of Zobrist hashes pushed as we descend the tree.
     /// Combined with game_history to count repetitions without modifying GameState.
     rep_stack: Vec<u64>,
+    /// Transposition table reference. Shared with BrsSearcher; persists across
+    /// iterative deepening depths.
+    tt: &'a mut TranspositionTable,
 }
 
 impl<'a> BrsContext<'a> {
-    fn new(position: &GameState, evaluator: &'a dyn Evaluator, budget: &'a SearchBudget) -> Self {
+    fn new(
+        position: &GameState,
+        evaluator: &'a dyn Evaluator,
+        budget: &'a SearchBudget,
+        tt: &'a mut TranspositionTable,
+    ) -> Self {
         let root_player = position.current_player();
         let board_ctx = scan_board(position, root_player);
 
@@ -174,6 +186,7 @@ impl<'a> BrsContext<'a> {
             board_ctx,
             game_history: position.position_history().to_vec(),
             rep_stack: Vec::with_capacity(64),
+            tt,
         }
     }
 
@@ -268,8 +281,7 @@ impl<'a> BrsContext<'a> {
             } else {
                 0
             };
-            let pv_str: Vec<String> =
-                self.best_pv.iter().map(|m| m.to_algebraic()).collect();
+            let pv_str: Vec<String> = self.best_pv.iter().map(|m| m.to_algebraic()).collect();
             // Per-player evaluation at the root position for UI display.
             let v = [
                 self.evaluator.eval_scalar(&self.gs, Player::Red) as i32,
@@ -308,11 +320,7 @@ impl<'a> BrsContext<'a> {
             }
         }
 
-        let best_move = self
-            .best_pv
-            .first()
-            .copied()
-            .unwrap_or(root_moves[0]);
+        let best_move = self.best_pv.first().copied().unwrap_or(root_moves[0]);
 
         SearchResult {
             best_move,
@@ -345,17 +353,33 @@ impl<'a> BrsContext<'a> {
             return 0;
         }
 
+        // Compute Zobrist hash once — used for both repetition detection and TT.
+        let hash = self.gs.board().zobrist();
+
         // In-search repetition detection.
         // rep_stack contains hashes pushed by ancestor nodes on the current path.
         // The parent pushes the current hash *before* calling alphabeta, so
         // game_count + search_count >= 3 correctly identifies the 3rd occurrence.
         if ply > 0 {
-            let hash = self.gs.board().zobrist();
             let game_count = self.game_history.iter().filter(|&&h| h == hash).count();
             let search_count = self.rep_stack.iter().filter(|&&h| h == hash).count();
             if game_count + search_count >= 3 {
                 return 0; // Draw by repetition.
             }
+        }
+
+        // TT probe (depth > 0 only; quiescence search does not use TT).
+        // Must come AFTER repetition check so draw scores are never bypassed.
+        let orig_alpha = alpha;
+        let mut alpha = alpha;
+        let mut beta = beta;
+        let mut compressed_tt_move: Option<u16> = None;
+        if depth > 0 {
+            let probe = self.tt.probe(hash, depth, &mut alpha, &mut beta, ply as u8);
+            if let Some(score) = probe.score {
+                return score;
+            }
+            compressed_tt_move = probe.best_move;
         }
 
         // Leaf node: quiescence search.
@@ -383,7 +407,7 @@ impl<'a> BrsContext<'a> {
 
         // No legal moves: checkmate or stalemate.
         if moves.is_empty() {
-            return if is_in_check(current, self.gs.board()) {
+            let score = if is_in_check(current, self.gs.board()) {
                 // Checkmate. Penalise by ply to prefer shorter mates.
                 if current == self.root_player {
                     -(MATE_SCORE - ply as i16) // root is mated
@@ -395,13 +419,42 @@ impl<'a> BrsContext<'a> {
                 // (GameState awards 20 pts in FFA, but search uses 0 for simplicity).
                 0
             };
+            // Terminal nodes are always exact scores.
+            self.tt.store(hash, None, score, depth, TT_EXACT, ply as u8);
+            return score;
         }
 
-        if current == self.root_player {
-            self.max_node(depth, alpha, beta, ply, moves)
+        // Decompress the TT best-move hint against this position's legal moves.
+        // Used by max_node to try the TT move first in move ordering.
+        let tt_move = compressed_tt_move
+            .and_then(|c| TranspositionTable::decompress_move(c, &moves));
+
+        let score = if current == self.root_player {
+            self.max_node(depth, alpha, beta, ply, moves, tt_move)
         } else {
             self.min_node(depth, alpha, beta, ply, current, moves)
+        };
+
+        // TT store. Skip if search was aborted (score may be partial).
+        if !self.should_stop() {
+            let flag = if score <= orig_alpha {
+                TT_UPPER // all moves failed to improve alpha (upper bound)
+            } else if score >= beta {
+                TT_LOWER // search failed high — beta cutoff (lower bound)
+            } else {
+                TT_EXACT // score is within the [orig_alpha, beta) window
+            };
+            // Best move: tracked by PV table at MAX nodes; None at MIN nodes.
+            let best_move_compressed = if current == self.root_player {
+                self.pv_table[ply][0].map(TranspositionTable::compress_move)
+            } else {
+                None
+            };
+            self.tt
+                .store(hash, best_move_compressed, score, depth, flag, ply as u8);
         }
+
+        score
     }
 
     // -----------------------------------------------------------------------
@@ -415,6 +468,7 @@ impl<'a> BrsContext<'a> {
         beta: i16,
         ply: usize,
         moves: Vec<Move>,
+        tt_move: Option<Move>,
     ) -> i16 {
         // Null move pruning: skip root player's turn and check if the position
         // is still >= beta even with opponents getting priority.
@@ -424,9 +478,10 @@ impl<'a> BrsContext<'a> {
         {
             let saved = self.gs.board().side_to_move();
             // Skip root player: advance side_to_move to first opponent.
-            self.gs.board_mut().set_side_to_move(self.root_player.next());
-            let null_score =
-                self.alphabeta(depth - 1 - NULL_MOVE_REDUCTION, alpha, beta, ply + 1);
+            self.gs
+                .board_mut()
+                .set_side_to_move(self.root_player.next());
+            let null_score = self.alphabeta(depth - 1 - NULL_MOVE_REDUCTION, alpha, beta, ply + 1);
             self.gs.board_mut().set_side_to_move(saved);
 
             if !self.should_stop() && null_score >= beta {
@@ -434,14 +489,15 @@ impl<'a> BrsContext<'a> {
             }
         }
 
-        // PV move from the previous depth, for move ordering.
+        // Priority move: TT hint takes precedence over PV; fall back to PV if none.
         let pv_move = if ply < self.best_pv.len() {
             Some(self.best_pv[ply])
         } else {
             None
         };
+        let hint_move = tt_move.or(pv_move);
 
-        let ordered = order_moves(&moves, pv_move);
+        let ordered = order_moves(&moves, hint_move);
         let mut best = NEG_INF;
 
         for (move_idx, &mv) in ordered.iter().enumerate() {
@@ -610,8 +666,7 @@ impl<'a> BrsContext<'a> {
             }
 
             let all_moves = generate_legal(self.gs.board_mut());
-            let captures: Vec<Move> =
-                all_moves.into_iter().filter(|m| m.is_capture()).collect();
+            let captures: Vec<Move> = all_moves.into_iter().filter(|m| m.is_capture()).collect();
 
             if captures.is_empty() {
                 return stand_pat;
