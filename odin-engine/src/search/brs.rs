@@ -41,6 +41,16 @@ use super::{SearchBudget, SearchResult, Searcher};
 /// Hard cap on search depth.
 const MAX_DEPTH: usize = 64;
 
+/// Total squares on the 14×14 board (196). Used to size history/counter-move tables.
+const TOTAL_SQUARES: usize = 196;
+
+/// Number of piece types (Pawn, Knight, Bishop, Rook, Queen, King, PromotedQueen).
+/// Matches the range of `PieceType::index()`.
+const PIECE_TYPE_COUNT: usize = 7;
+
+/// Number of players. Used to size the history table.
+const PLAYER_COUNT: usize = 4;
+
 /// Aspiration window initial half-width in centipawns.
 const ASPIRATION_WINDOW: i16 = 50;
 
@@ -158,6 +168,20 @@ struct BrsContext<'a> {
     /// Transposition table reference. Shared with BrsSearcher; persists across
     /// iterative deepening depths.
     tt: &'a mut TranspositionTable,
+    /// Killer moves: up to 2 quiet moves per ply that caused a beta cutoff.
+    /// Reset per search call. Used to try "refutation" moves early at the same ply.
+    killers: [[Option<Move>; 2]; MAX_DEPTH],
+    /// History heuristic: accumulated score for (player, piece_type, to_sq) moves
+    /// that caused beta cutoffs. Higher = try this move earlier in quiet ordering.
+    /// Indexed as `history[player_idx][piece_type_idx][to_sq]`. Reset per search.
+    history: [[[i32; TOTAL_SQUARES]; PIECE_TYPE_COUNT]; PLAYER_COUNT],
+    /// Counter-move table: indexed by [from_sq * TOTAL_SQUARES + to_sq] of the
+    /// most recent opponent move. Stores the quiet move that most recently caused
+    /// a beta cutoff in response to that opponent move. Reset per search.
+    countermoves: Vec<Option<Move>>,
+    /// Most recent opponent move at each ply, set by min_node before recursing.
+    /// Used by max_node to look up the counter-move for the current position.
+    last_opp_move: [Option<Move>; MAX_DEPTH],
 }
 
 impl<'a> BrsContext<'a> {
@@ -187,6 +211,10 @@ impl<'a> BrsContext<'a> {
             game_history: position.position_history().to_vec(),
             rep_stack: Vec::with_capacity(64),
             tt,
+            killers: [[None; 2]; MAX_DEPTH],
+            history: [[[0; TOTAL_SQUARES]; PIECE_TYPE_COUNT]; PLAYER_COUNT],
+            countermoves: vec![None; TOTAL_SQUARES * TOTAL_SQUARES],
+            last_opp_move: [None; MAX_DEPTH],
         }
     }
 
@@ -497,7 +525,21 @@ impl<'a> BrsContext<'a> {
         };
         let hint_move = tt_move.or(pv_move);
 
-        let ordered = order_moves(&moves, hint_move);
+        // Counter-move: the quiet refutation of the opponent's last move at this ply.
+        let countermove = self.last_opp_move[ply].and_then(|opp_mv| {
+            let idx = opp_mv.from_sq() as usize * TOTAL_SQUARES + opp_mv.to_sq() as usize;
+            self.countermoves[idx]
+        });
+
+        let player_idx = self.root_player.index();
+        let ordered = order_moves(
+            &moves,
+            hint_move,
+            &self.killers[ply],
+            countermove,
+            &self.history,
+            player_idx,
+        );
         let mut best = NEG_INF;
 
         for (move_idx, &mv) in ordered.iter().enumerate() {
@@ -541,7 +583,24 @@ impl<'a> BrsContext<'a> {
             if alpha >= beta {
                 // Beta cutoff: root player has found a move that is too good;
                 // the opponent (parent MIN node or search bound) will not allow
-                // this position.
+                // this position. Update move ordering heuristics for quiet moves.
+                if !mv.is_capture() && !mv.is_promotion() {
+                    // Killer: shift existing killer down, insert new one at slot 0.
+                    self.killers[ply][1] = self.killers[ply][0];
+                    self.killers[ply][0] = Some(mv);
+                    // History: reward depth^2 to prefer moves that cut off at deeper plies.
+                    let p = self.root_player.index();
+                    let pt = mv.piece_type().index();
+                    let to = mv.to_sq() as usize;
+                    self.history[p][pt][to] =
+                        self.history[p][pt][to].saturating_add((depth as i32) * (depth as i32));
+                    // Counter-move: record this response to the opponent's last move.
+                    if let Some(opp_mv) = self.last_opp_move[ply] {
+                        let idx = opp_mv.from_sq() as usize * TOTAL_SQUARES
+                            + opp_mv.to_sq() as usize;
+                        self.countermoves[idx] = Some(mv);
+                    }
+                }
                 break;
             }
         }
@@ -584,6 +643,10 @@ impl<'a> BrsContext<'a> {
         let undo = make_move(self.gs.board_mut(), mv);
         self.nodes += 1;
         self.rep_stack.push(self.gs.board().zobrist());
+        // Record opponent's move so the child MAX node can look up its counter-move.
+        if ply + 1 < MAX_DEPTH {
+            self.last_opp_move[ply + 1] = Some(mv);
+        }
         let score = self.alphabeta(depth - 1, alpha, beta, ply + 1);
         self.rep_stack.pop();
         unmake_move(self.gs.board_mut(), mv, undo);
@@ -753,26 +816,80 @@ fn select_best_opponent_reply(
     best_move
 }
 
-/// Order moves for MAX node search: PV first, captures by MVV-LVA, promotions, then quiet.
+/// Static Exchange Evaluation (SEE) — simplified for 4-player chess.
 ///
-/// MVV-LVA (Most Valuable Victim – Least Valuable Attacker):
-///   score = victim_value * 10 - attacker_value
-/// Higher score = tried earlier. Capturing a queen with a pawn scores higher than
-/// capturing a pawn with a queen, even though the pawn capture is a material gain.
-fn order_moves(moves: &[Move], pv_move: Option<Move>) -> Vec<Move> {
-    let mut ordered = Vec::with_capacity(moves.len());
+/// Returns true if the material exchange initiated by `mv` is expected to win
+/// at least `threshold` centipawns for the moving side.
+///
+/// Simplified model: check only the immediate exchange (attacker value vs captured
+/// value). A full recursive SEE with all 4-player recapture sequences is deferred
+/// to Stage 19. This covers the most important case: detecting clearly winning
+/// captures (pawn takes queen) and clearly losing ones (queen takes pawn defended).
+///
+/// Returns true if: `captured_value - attacker_value >= threshold`.
+/// This is correct for the first exchange and conservative for subsequent moves.
+fn see(mv: Move, threshold: i16) -> bool {
+    if !mv.is_capture() {
+        return threshold <= 0;
+    }
+    let captured_val = mv
+        .captured()
+        .map(|pt| PIECE_EVAL_VALUES[pt.index()])
+        .unwrap_or(0);
+    let attacker_val = PIECE_EVAL_VALUES[mv.piece_type().index()];
+    captured_val - attacker_val >= threshold
+}
 
-    // 1. PV move gets highest priority.
-    if let Some(pv) = pv_move {
-        if moves.iter().any(|&m| m == pv) {
-            ordered.push(pv);
+/// Order moves for MAX node search using the full Stage 9 pipeline.
+///
+/// Priority order (highest first):
+///   1. TT/PV hint move — best move from previous search or TT probe
+///   2. Winning captures (SEE >= 0), sorted descending by MVV-LVA score
+///   3. Non-capture promotions
+///   4. Killer moves (up to 2) — quiet moves that caused cutoffs at this ply
+///   5. Counter-move — quiet move that refuted the opponent's last move
+///   6. Remaining quiet moves, sorted descending by history heuristic score
+///   7. Losing captures (SEE < 0), sorted descending by MVV-LVA score
+///
+/// All moves passed must be legal; the hint/killers/counter-move are validated
+/// against the legal-move list before use.
+#[allow(clippy::too_many_arguments)]
+fn order_moves(
+    moves: &[Move],
+    hint_move: Option<Move>,
+    killers: &[Option<Move>; 2],
+    countermove: Option<Move>,
+    history: &[[[i32; TOTAL_SQUARES]; PIECE_TYPE_COUNT]; PLAYER_COUNT],
+    player_idx: usize,
+) -> Vec<Move> {
+    let mut ordered = Vec::with_capacity(moves.len());
+    // Track which moves have been placed to avoid duplicates.
+    // Use a small bitmask if move count is bounded, or a simple contains check.
+    let mut placed = vec![false; moves.len()];
+
+    // Helper: find the index of `mv` in `moves` and mark it placed.
+    let find_and_mark = |mv: Move, placed: &mut Vec<bool>| -> Option<usize> {
+        moves.iter().position(|&m| m == mv).map(|i| {
+            placed[i] = true;
+            i
+        })
+    };
+
+    // --- 1. TT/PV hint move ---
+    if let Some(hint) = hint_move {
+        if let Some(i) = find_and_mark(hint, &mut placed) {
+            ordered.push(moves[i]);
         }
     }
 
-    // 2. Captures sorted by MVV-LVA.
-    let mut captures: Vec<(Move, i16)> = Vec::new();
-    for &mv in moves {
-        if Some(mv) == pv_move {
+    // --- Classify remaining moves (captures vs quiet) ---
+    let mut win_caps: Vec<(usize, i16)> = Vec::new(); // (index, mvv-lva score)
+    let mut lose_caps: Vec<(usize, i16)> = Vec::new();
+    let mut promotions: Vec<usize> = Vec::new();
+    let mut quiets: Vec<(usize, i32)> = Vec::new(); // (index, history score)
+
+    for (i, &mv) in moves.iter().enumerate() {
+        if placed[i] {
             continue;
         }
         if mv.is_capture() {
@@ -781,30 +898,70 @@ fn order_moves(moves: &[Move], pv_move: Option<Move>) -> Vec<Move> {
                 .map(|pt| PIECE_EVAL_VALUES[pt.index()])
                 .unwrap_or(0);
             let attacker_val = PIECE_EVAL_VALUES[mv.piece_type().index()];
-            captures.push((mv, victim_val * 10 - attacker_val));
-        }
-    }
-    captures.sort_by(|a, b| b.1.cmp(&a.1));
-    for (mv, _) in captures {
-        ordered.push(mv);
-    }
-
-    // 3. Non-capture promotions.
-    for &mv in moves {
-        if Some(mv) == pv_move || mv.is_capture() {
-            continue;
-        }
-        if mv.is_promotion() {
-            ordered.push(mv);
+            let mvv_lva = victim_val * 10 - attacker_val;
+            if see(mv, 0) {
+                win_caps.push((i, mvv_lva));
+            } else {
+                lose_caps.push((i, mvv_lva));
+            }
+        } else if mv.is_promotion() {
+            promotions.push(i);
+        } else {
+            let pt = mv.piece_type().index();
+            let to = mv.to_sq() as usize;
+            let hist = history[player_idx][pt][to];
+            quiets.push((i, hist));
         }
     }
 
-    // 4. Quiet moves last.
-    for &mv in moves {
-        if Some(mv) == pv_move || mv.is_capture() || mv.is_promotion() {
-            continue;
+    // --- 2. Winning captures (SEE >= 0), MVV-LVA descending ---
+    win_caps.sort_unstable_by(|a, b| b.1.cmp(&a.1));
+    for (i, _) in &win_caps {
+        placed[*i] = true;
+        ordered.push(moves[*i]);
+    }
+
+    // --- 3. Non-capture promotions ---
+    for i in &promotions {
+        placed[*i] = true;
+        ordered.push(moves[*i]);
+    }
+
+    // --- 4 & 5. Killers and counter-move (before sorted quiets) ---
+    // Try each killer; skip if already placed (was a capture/TT move).
+    for &killer_opt in killers {
+        if let Some(killer) = killer_opt {
+            if let Some(i) = moves.iter().position(|&m| m == killer) {
+                if !placed[i] {
+                    placed[i] = true;
+                    // Remove from quiets list to avoid duplicate.
+                    quiets.retain(|(qi, _)| *qi != i);
+                    ordered.push(moves[i]);
+                }
+            }
         }
-        ordered.push(mv);
+    }
+    // Counter-move (skip if already placed).
+    if let Some(cm) = countermove {
+        if let Some(i) = moves.iter().position(|&m| m == cm) {
+            if !placed[i] {
+                placed[i] = true;
+                quiets.retain(|(qi, _)| *qi != i);
+                ordered.push(moves[i]);
+            }
+        }
+    }
+
+    // --- 6. Remaining quiet moves, history descending ---
+    quiets.sort_unstable_by(|a, b| b.1.cmp(&a.1));
+    for (i, _) in &quiets {
+        ordered.push(moves[*i]);
+    }
+
+    // --- 7. Losing captures (SEE < 0), MVV-LVA descending ---
+    lose_caps.sort_unstable_by(|a, b| b.1.cmp(&a.1));
+    for (i, _) in &lose_caps {
+        ordered.push(moves[*i]);
     }
 
     ordered
