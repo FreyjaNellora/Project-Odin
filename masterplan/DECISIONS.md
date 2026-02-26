@@ -374,6 +374,46 @@ Huginn was retired in Stage 8. The `tracing` crate replaced it. See ADR-015.
 
 ---
 
+### ADR-016: Gumbel MCTS over UCB1
+
+**Date:** 2026-02-26
+**Status:** Active
+**Affects:** Stage 10 ([[stage_10_mcts]]), Stage 11 ([[stage_11_hybrid_integration]]), Stage 13 ([[stage_13_time_management]])
+
+**Decision:** Replace UCB1 selection at the MCTS root with Gumbel-Top-k sampling + Sequential Halving. Non-root nodes use an improved policy formula with prior and progressive history terms. The prior policy before NNUE is derived from move ordering scores: `pi(a) = softmax(ordering_score(a) / T)` where `T` is a temperature parameter (default 50).
+
+**Alternatives considered:**
+- **Standard UCB1:** Optimizes cumulative regret (overall exploration quality), but the engine only plays one move — what matters is the quality of the final choice (simple regret). UCB1 needs 16+ simulations to reliably converge; Gumbel MCTS works with as few as 2.
+- **PUCT (AlphaZero-style):** Designed for single-player MCTS with a learned policy network. Degenerates without a good policy prior. Gumbel is more robust with weak priors.
+- **Thompson Sampling:** Bayesian approach that works well but lacks the theoretical guarantees of Gumbel's policy improvement.
+
+**Why this was chosen:** In the BRS→MCTS hybrid, MCTS gets a limited simulation budget (Phase 2 residual time). Gumbel-Top-k at the root provides provable policy improvement even with 2 simulations — critical when the budget is tight. Sequential Halving at the root progressively eliminates weaker moves, concentrating simulations on the best candidates. The Gumbel noise (sampled from Gumbel(0,1) distribution) provides principled exploration at the root without the over-exploration that UCB1 exhibits at low simulation counts.
+
+**Key mechanism:** At root: sample `g(a) ~ Gumbel(0,1)` for each action, compute `g(a) + log(pi(a))` to select Top-k candidates, then use Sequential Halving to eliminate candidates by comparing `sigma(g(a) + log(pi(a)) - Q(a))` (where `sigma` = logistic function). At non-root: standard tree policy with prior + progressive history.
+
+**Pre-NNUE prior:** `ordering_score(a)` combines TT hint bonus (10000), MVV-LVA capture scores, killer bonuses, countermove bonuses, and history heuristic values — all already computed by BRS's move ordering pipeline. Softmax with temperature T=50 converts these to a probability distribution. This is a weak prior, but Gumbel noise provides exploration and Sequential Halving corrects via Q-values.
+
+---
+
+### ADR-017: Progressive History — BRS History Table Shared with MCTS
+
+**Date:** 2026-02-26
+**Status:** Active
+**Affects:** Stage 10 ([[stage_10_mcts]]), Stage 11 ([[stage_11_hybrid_integration]])
+
+**Decision:** MCTS non-root selection incorporates BRS history heuristic scores via the Progressive History formula: `PH(a) = H(a) / (N(a) + 1)` where `H(a)` is the history score from BRS's history table and `N(a)` is the MCTS visit count of the action. This gives MCTS a warm start using knowledge BRS already computed during Phase 1.
+
+**Alternatives considered:**
+- **No warm start (cold MCTS):** MCTS starts from scratch every search. With limited Phase 2 budget, many simulations are wasted on moves BRS already identified as poor.
+- **Persistent MCTS tree between moves:** Complex lifecycle management, stale data risk when the board changes. Deferred to Stage 13 measurement.
+- **Direct injection of BRS scores as MCTS priors:** Conflates tactical scores with strategic exploration. History heuristic is a softer signal — it reflects which moves produced cutoffs, not absolute scores.
+
+**Why this was chosen:** The `1/(N(a)+1)` decay is elegant — progressive history dominates when MCTS visits are low (warm start) and fades as MCTS accumulates its own data (MCTS takes over). BRS already computes history tables during Phase 1; sharing them costs nothing. The hybrid controller extracts the history table after BRS completes and passes it to MctsSearcher before Phase 2 begins.
+
+**Key constraint:** History table is NOT persistent across moves. Extracted from BRS after Phase 1, consumed by MCTS in Phase 2, discarded. Full inter-move persistence deferred to Stage 13 measurement to determine if stale history helps or hurts.
+
+---
+
 ## How to Add a New Decision
 
 Copy this template:

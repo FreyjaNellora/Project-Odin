@@ -1,12 +1,39 @@
 # HANDOFF — Last Session Summary
 
-**Date:** 2026-02-25 (third session of the day)
-**Stage:** Stage 9 — TT & Move Ordering (COMPLETE)
-**Next:** Tag `stage-09-complete` / `v1.9`, begin Stage 10 (MCTS) — but first resolve `Issue-Vec-Clone-Cost-Pre-MCTS`
+**Date:** 2026-02-26
+**Stage:** Post-Stage-9 — Eval + SEE Hotfixes (gameplay quality)
+**Next:** Resolve `Issue-Vec-Clone-Cost-Pre-MCTS`, then begin Stage 10 (MCTS)
 
 ## What Was Done This Session
 
-### Stage 9 Implementation — Full Build Order
+### Gameplay Quality Hotfixes (commit `a37b237`)
+
+User observed two gameplay problems in the running app: Blue's king walking forward freely, and Blue pushing an undefended pawn that Yellow's bishop captured for free.
+
+**Root causes found and fixed:**
+
+**Bug 1 — King walk (Ka7b6): `pst.rs` KING_GRID rank 1 was mildly positive**
+- KING_GRID rank 1 values were `[0,0,0,10,10,5,0,0,5,10,10,0,0,0]` — a king one step forward from the back rank was getting +5 to +10cp from PST.
+- In 4PC, pawns may advance and strip king shield. After pawn pushes, the combined king safety + PST difference between a7 and b6 was essentially zero — engine saw no penalty for walking.
+- Fix: changed rank 1 to `[0,0,0,-5,-5,-10,-15,-15,-10,-5,-5,0,0,0]`. King one step forward is now clearly penalized (up to -15cp at center files). All PST values remain within ±50cp bounds.
+
+**Bug 2 — Hanging pawn / SEE misclassification: bishop×undefended pawn → lose_caps bucket**
+- `see(bishop×pawn, 0)` computed `100 - 500 = -400 < 0` → classified as losing capture regardless of whether the pawn was defended.
+- Losing captures go last in `order_moves()` pipeline. Progressive narrowing at depth 7+ (limit=3) then cuts the move before it's ever explored.
+- Fix: `see()` now first checks if any opponent attacks `to_sq` via `is_square_attacked_by`. If the captured piece is undefended (no recapture possible), it's always a winning capture — `captured_val >= threshold` is returned directly without attacker-value subtraction.
+- `see()` signature changed from `see(mv, threshold)` to `see(board, mv, player, threshold)`.
+- `order_moves()` signature updated: `board: &Board` added, `player_idx: usize` replaced by `player: Player` (index derived inside).
+
+**King safety constant increases:**
+- `PAWN_SHIELD_BONUS`: 35 → 50cp (max 150cp for full 3-pawn shield vs 105cp before)
+- `OPEN_KING_FILE_PENALTY`: 25 → 40cp
+- Test assertion updated: `== 105` → `== 150`
+
+**Tests:** All 387 engine tests pass. No regressions.
+
+---
+
+### Stage 9 Implementation — Full Build Order (Previous Session 2026-02-25)
 
 Stage 9 added a Transposition Table and full move ordering pipeline to the BRS search.
 
@@ -70,9 +97,9 @@ Acceptance criterion of >50% node reduction at depth 6: **MET with margin**.
 
 ## What's Next
 
-1. **Tag Stage 9**: `git tag stage-09-complete && git tag v1.9`
-2. **Resolve `Issue-Vec-Clone-Cost-Pre-MCTS`** (WARNING): MCTS cannot clone GameState per simulation. This was scheduled for "before Stage 10" and is now due. Read the issue file to understand the scope.
-3. **Begin Stage 10 (MCTS)**: Read `masterplan/stages/stage_10_mcts.md`, upstream audit/downstream logs (stages 7-9), `cargo build && cargo test`.
+1. **Resolve `Issue-Vec-Clone-Cost-Pre-MCTS`** (WARNING): MCTS cannot clone GameState per simulation. Recommended order: Refinement 2 first (`position_history: Vec<u64>` → `Arc<Vec<u64>>`, minimal), then Refinement 1 (`piece_lists` → fixed-size array, heavier). Full details in issue file.
+2. **Begin Stage 10 (MCTS)**: Read `masterplan/stages/stage_10_mcts.md`, upstream audit/downstream logs (stages 7-9), `cargo build && cargo test`.
+3. **Stage 9 tags** (`stage-09-complete` / `v1.9`) — already applied from previous session. No re-tag needed.
 
 ## Known Issues
 
@@ -84,7 +111,23 @@ Acceptance criterion of >50% node reduction at depth 6: **MET with margin**.
 - `Issue-DKW-Halfmove-Clock` (NOTE): still open, not blocking
 - `Issue-GameLog-Player-Label-React-Batching` (WARNING, fixed pending verification): not re-tested this session
 
-## Files Modified This Session
+## Files Modified This Session (2026-02-26)
+
+### Engine
+- `odin-engine/src/eval/pst.rs` — KING_GRID rank 1 made negative (king safety, prior commit); KNIGHT_GRID gradient flattened; BISHOP_GRID rank 0-1 strengthened; ROOK_GRID center preference; QUEEN_GRID minor boost
+- `odin-engine/src/eval/king_safety.rs` — `PAWN_SHIELD_BONUS` 35→50, `OPEN_KING_FILE_PENALTY` 25→40; test updated
+- `odin-engine/src/search/brs.rs` — `see()` defense check via `is_square_attacked_by`; `order_moves()` takes `board` + `player`; clippy fixes (is_multiple_of, manual_inspect)
+- `odin-engine/src/search/board_scanner.rs` — clippy fixes (get_first, range_loop, collapsible_if, match_equality, manual_range_contains, map_or, needless_range_loop)
+- `odin-engine/src/search/tt.rs` — `is_empty()` added (clippy len_without_is_empty)
+- `odin-engine/src/protocol/emitter.rs`, `odin-engine/src/protocol/mod.rs` — clippy formatting
+- `odin-engine/tests/stage_06_eval.rs`, `tests/stage_07_brs.rs`, `tests/stage_08_brs_hybrid.rs` — clippy formatting
+
+### Documentation
+- `masterplan/HANDOFF.md` — updated (this file)
+- `masterplan/STATUS.md` — non-stage change added
+- `masterplan/sessions/Session-2026-02-26-PST-Tuning.md` — NEW
+
+## Files Modified Previous Session (2026-02-25)
 
 ### Engine
 - `odin-engine/src/search/tt.rs` — NEW (TT data structure)

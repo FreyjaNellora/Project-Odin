@@ -822,44 +822,54 @@ struct TTEntry {
 
 ---
 
-### STAGE 10: MCTS Strategic Search
+### STAGE 10: MCTS Strategic Search (Gumbel MCTS)
 
 **Tier:** 3 — Strengthen Search
 **Dependencies:** Stage 6 ([[stage_06_bootstrap_eval]])
+**ADRs:** [[ADR-016]] (Gumbel MCTS over UCB1), [[ADR-017]] (Progressive History)
 
-**The problem:** BRS finds tactical moves but can't see long-term strategy. MCTS explores broadly using statistics -- it explores positions that BRS can't reach, evaluates multi-player dynamics through simulation, and handles uncertainty in opponent behavior. It needs to work with 4-player value vectors (each player has their own score).
+**The problem:** BRS finds tactical moves but can't see long-term strategy. MCTS explores broadly using statistics -- it explores positions that BRS can't reach, evaluates multi-player dynamics through simulation, and handles uncertainty in opponent behavior. It needs to work with 4-player value vectors (each player has their own score). Standard UCB1 optimizes cumulative regret but needs 16+ simulations to converge; Gumbel MCTS optimizes simple regret (quality of the chosen move) and works with as few as 2 simulations — critical for Phase 2 residual budgets.
 
 **What you're building:**
 
-1. **MCTS tree.** Nodes with visit count, 4-player value sum, children, prior probabilities.
+1. **MCTS tree.** Nodes with visit count, 4-player value sum, children, prior probabilities, and Gumbel noise values at root.
 
-2. **UCB1/PUCT selection.** At each node, pick the child that maximizes the current player's UCB1 score. PUCT when neural priors are available (uniform priors for now).
+2. **Gumbel-Top-k root selection.** At root: sample `g(a) ~ Gumbel(0,1)` for each legal move, compute `g(a) + log(pi(a))` to rank moves, keep Top-k candidates (default k=16). Then use **Sequential Halving** to progressively eliminate candidates: allocate simulations in rounds, after each round drop the bottom half by comparing `sigma(g(a) + log(pi(a)) - Q(a))` (sigma = logistic function).
 
-3. **4-player backpropagation (MaxN).** Each simulation produces a 4-element value vector. Backpropagate all 4 values up the tree. Each player maximizes their own component.
+3. **Non-root tree policy.** At non-root nodes: select child maximizing `Q(node)[player] / N(node) + C_PRIOR * pi(a) / (1 + N(node)) + PH(a)` where `PH(a) = PROGRESSIVE_HISTORY_WEIGHT * H(a) / (N(a) + 1)` is the progressive history term. `H(a)` comes from BRS's history table (injected via `set_history_table()`). When no history is available (standalone mode), `PH(a) = 0`.
 
-4. **Progressive widening.** `max_children = floor(W * N^B)`. Critical because 4 players x ~30 moves = too many children to expand naively.
+4. **Prior policy (pre-NNUE).** `pi(a) = softmax(ordering_score(a) / PRIOR_TEMPERATURE)` where `ordering_score(a)` uses the same scoring pipeline as BRS move ordering: TT hint (10000), MVV-LVA capture scores, killer bonuses, countermove bonuses, history heuristic values. Temperature default: 50. When NNUE is available (Stage 16), `pi(a)` comes from the NNUE policy head instead.
 
-5. **Leaf evaluation.** Uses the `Evaluator` trait from Stage 6. Evaluate from each player's perspective via `eval_4vec`, normalize to [0,1] with sigmoid.
+5. **4-player backpropagation (MaxN).** Each simulation produces a 4-element value vector. Backpropagate all 4 values up the tree. Each player maximizes their own component.
 
-6. **Simulation loop.** Select -> expand -> evaluate -> backpropagate. Budget by count or time. Return most-visited root child.
+6. **Progressive widening.** `max_children = floor(W * N^B)`. Critical because 4 players x ~30 moves = too many children to expand naively.
 
-7. **MCTS implementation of `Searcher`.** `MctsSearcher` implements the `Searcher` trait defined in Stage 7.
+7. **Leaf evaluation.** Uses the `Evaluator` trait from Stage 6. Evaluate from each player's perspective via `eval_4vec`, normalize to [0,1] with sigmoid.
+
+8. **Simulation loop.** Select -> expand -> evaluate -> backpropagate. Budget by count or time. At root: Sequential Halving controls simulation allocation. Return the root candidate with the highest completed value after halving.
+
+9. **MCTS implementation of `Searcher`.** `MctsSearcher` implements the `Searcher` trait defined in Stage 7. Additional methods: `set_prior_policy(&mut self, priors: &[f32])` and `set_history_table(&mut self, history: &HistoryTable)` called by the hybrid controller before `search()`.
 
 **Build order:**
-1. MCTS node struct
-2. Selection (UCB1)
-3. Expansion + leaf evaluation
-4. Backpropagation (4-player MaxN)
-5. Progressive widening
-6. Simulation budget control
-7. PV extraction (most-visited path)
-8. Temperature for self-play exploration
-9. Implement `MctsSearcher` against `Searcher` trait
+1. MCTS node struct (with `prior: f32` and `gumbel: f32` fields)
+2. Prior policy computation (softmax over ordering scores)
+3. Gumbel noise sampling at root
+4. Sequential Halving framework (rounds, elimination)
+5. Non-root tree policy (Q + prior + progressive history)
+6. Expansion + leaf evaluation
+7. Backpropagation (4-player MaxN)
+8. Progressive widening
+9. Simulation budget control
+10. PV extraction (most-visited path)
+11. Temperature for self-play exploration
+12. `set_prior_policy()` and `set_history_table()` methods
+13. Implement `MctsSearcher` against `Searcher` trait
 
 **What you DON'T need:**
-- Neural network priors (Stage 16). Use uniform priors.
+- Neural network priors (Stage 16). Use softmax over ordering scores.
 - Root parallelism or virtual loss. Single-threaded is fine.
 - Integration with BRS (Stage 11). MCTS works standalone first.
+- Persistent tree between moves (Stage 13 measurement).
 
 **MCTS node:**
 ```rust
@@ -868,7 +878,8 @@ struct MctsNode {
     player_to_move: Player,
     visit_count: u32,
     value_sum: [f64; 4],
-    prior: f32,
+    prior: f32,          // pi(a) from policy (ordering scores pre-NNUE, NNUE post-Stage 16)
+    gumbel: f32,         // Gumbel(0,1) noise — only meaningful at root nodes
     children: Vec<MctsNode>,
     is_expanded: bool,
     is_terminal: bool,
@@ -877,17 +888,20 @@ struct MctsNode {
 
 **Tracing points (this stage):**
 - Simulation: selection path, leaf evaluation (4-vec), visit count before/after
-- Selection (Verbose+): children UCB1 scores, child selected, player perspective
+- Gumbel root: Top-k candidates with `g(a) + log(pi(a))` scores, Sequential Halving rounds, eliminations
+- Selection (Verbose+): children scores (Q + prior + PH), child selected, player perspective
 - Expansion: position, move, prior assigned, progressive widening check
-- Root summary: full visit distribution, selected move, temperature
+- Root summary: full visit distribution, selected move, temperature, halving rounds completed
 
 **Acceptance criteria:**
-- MCTS finds reasonable moves in simple positions
-- Visit counts concentrate on good moves over time
-- 4-player value backpropagation is correct
-- Progressive widening limits tree breadth
-- 1000+ simulations in reasonable time
-- `MctsSearcher` implements `Searcher` trait correctly
+- AC1: Gumbel MCTS finds reasonable moves with only 2 simulations (the UCB1 failure case)
+- AC2: With 100+ simulations, results match or beat UCB1 quality
+- AC3: 4-player value backpropagation is correct
+- AC4: Progressive widening limits tree breadth
+- AC5: 1000+ simulations in reasonable time
+- AC6: `MctsSearcher` implements `Searcher` trait correctly
+- AC7: Progressive history warm-start measurably reduces wasted simulations vs cold start (when history table provided)
+- AC8: Sequential Halving correctly eliminates weaker candidates across rounds
 
 ---
 
@@ -895,32 +909,41 @@ struct MctsNode {
 
 **Tier:** 3 — Strengthen Search
 **Dependencies:** Stage 8 ([[stage_08_brs_hybrid]]), Stage 9 ([[stage_09_tt_ordering]]), Stage 10 ([[stage_10_mcts]])
+**ADRs:** [[ADR-016]] (Gumbel MCTS), [[ADR-017]] (Progressive History)
 
-**The problem:** BRS and MCTS exist independently. You need a controller that runs BRS first to filter moves tactically, then feeds the survivors to MCTS for strategic evaluation. The time budget must be split between the two phases.
+**The problem:** BRS and MCTS exist independently. You need a controller that runs BRS first to filter moves tactically, then feeds the survivors to MCTS for strategic evaluation. The time budget must be split between the two phases. The controller must also extract BRS's history table and compute prior policy to warm-start MCTS via Progressive History and Gumbel selection.
 
 **What you're building:**
 
-1. **Search controller.** Orchestrates both phases: generate legal moves -> BRS tactical filter -> surviving moves -> MCTS strategic search -> best move. Composes two `Searcher` implementations through the trait.
+1. **Search controller.** Orchestrates both phases: generate legal moves -> BRS tactical filter -> surviving moves -> extract history + compute priors -> MCTS strategic search -> best move. Composes two `Searcher` implementations through the trait.
 
 2. **Surviving move threshold.** Any move within TACTICAL_MARGIN (default 150cp) of the best BRS score survives. Always keep at least 2 moves so MCTS has a choice.
 
-3. **Adaptive time allocation.** Tactical positions (many captures/checks): 30% BRS, 70% MCTS. Quiet positions: 10% BRS, 90% MCTS. Also adapts on BRS result spread -- if all moves within 50cp, BRS can't distinguish, give more to MCTS.
+3. **History table handoff.** After BRS completes Phase 1, the controller extracts the history heuristic table (`[[[i32; 196]; 7]; 4]`) from BrsSearcher and passes it to MctsSearcher via `set_history_table()`. MCTS uses this for Progressive History warm-start at non-root nodes.
 
-4. **Unified info output.** `phase brs` during BRS, `phase mcts` during MCTS. Both emit depth, score, nodes, PV.
+4. **Prior policy computation.** The controller computes `pi(a) = softmax(ordering_score(a) / PRIOR_TEMPERATURE)` for all surviving moves using BRS's move ordering infrastructure, then passes the priors to MctsSearcher via `set_prior_policy()`. MCTS uses these for Gumbel-Top-k root selection.
 
-5. **Edge cases.** One legal move = instant return. Zero surviving moves = return best BRS move. One survivor = skip MCTS.
+5. **Adaptive time allocation.** Tactical positions (many captures/checks): 30% BRS, 70% MCTS. Quiet positions: 10% BRS, 90% MCTS. Also adapts on BRS result spread -- if all moves within 50cp, BRS can't distinguish, give more to MCTS.
+
+6. **Unified info output.** `phase brs` during BRS, `phase mcts` during MCTS. Both emit depth, score, nodes, PV.
+
+7. **Edge cases.** One legal move = instant return. Zero surviving moves = return best BRS move. One survivor = skip MCTS.
 
 **Build order:**
 1. Search controller skeleton (BRS -> threshold -> MCTS)
 2. Surviving move threshold logic
-3. Time allocation (fixed split first)
-4. Adaptive time allocation (tactical vs. quiet detection)
-5. Unified info output
-6. Edge case handling
+3. History table extraction from BrsSearcher (expose `pub fn history_table(&self)`)
+4. Prior policy computation (softmax over ordering scores for surviving moves)
+5. `set_prior_policy()` and `set_history_table()` calls before MCTS search
+6. Time allocation (fixed split first)
+7. Adaptive time allocation (tactical vs. quiet detection)
+8. Unified info output
+9. Edge case handling
 
 **What you DON'T need:**
 - NNUE (Stage 16). Both phases use bootstrap eval via `Evaluator` trait.
 - Pondering (Stage 13). Just allocate the given time budget.
+- Persistent history across moves (measure in Stage 13).
 
 **Controller flow:**
 ```
@@ -928,12 +951,20 @@ fn search(position, time_budget) -> Move:
     all_moves = generate_legal_moves(position)
     if len == 0: no move. if len == 1: return it.
 
+    // Phase 1: BRS tactical filter
     brs_results = brs_filter(position, all_moves, time_budget * 0.15)
     surviving = filter_survivors(brs_results, TACTICAL_MARGIN)
     emit_info("phase brs", brs_results)
 
     if surviving.len() == 1: return it.
 
+    // Handoff: extract BRS knowledge for MCTS warm-start
+    history = brs_searcher.history_table()
+    priors = compute_prior_policy(surviving, ordering_scores, PRIOR_TEMPERATURE)
+    mcts_searcher.set_history_table(history)
+    mcts_searcher.set_prior_policy(priors)
+
+    // Phase 2: MCTS strategic search (Gumbel root + Progressive History)
     best = mcts_search(position, surviving, remaining_time)
     emit_info("phase mcts", mcts_results)
     return best
@@ -941,16 +972,20 @@ fn search(position, time_budget) -> Move:
 
 **Tracing points (this stage):**
 - Phase transition: surviving moves with BRS scores, time spent/remaining, threshold, eliminated count
+- History handoff: history table size, nonzero entries, top-scored moves
+- Prior policy: prior distribution over surviving moves (entropy, max/min ratio)
 - Surviving move comparison: BRS ranking vs. MCTS ranking (disagreements are informative)
 - Time allocation: tactical/quiet detection, planned split, actual time consumed
 - Search controller: full lifecycle from `go` to `bestmove`
 
 **Acceptance criteria:**
-- Hybrid finds better moves than BRS alone or MCTS alone (measured by test positions or self-play)
-- BRS phase correctly filters losing moves
-- MCTS phase respects the surviving move set
-- Time allocation adapts to position type
-- Engine never crashes or returns illegal moves under time pressure
+- AC1: Hybrid finds better moves than BRS alone or MCTS alone (measured by test positions or self-play)
+- AC2: BRS phase correctly filters losing moves
+- AC3: MCTS phase respects the surviving move set
+- AC4: Time allocation adapts to position type
+- AC5: Engine never crashes or returns illegal moves under time pressure
+- AC6: History table successfully transfers from BRS to MCTS (nonzero entries, measurable via tracing)
+- AC7: MCTS with Progressive History warm-start outperforms cold-start MCTS (measurable via A/B self-play)
 
 ---
 
@@ -1006,7 +1041,7 @@ fn search(position, time_budget) -> Move:
 
 1. **Time allocation.** `base = remaining / expected_moves + increment`. Adjustments: tactical positions get more time, quiet positions less, critical scores (near elimination) get double, forced moves are instant. Safety: never use >25% of remaining, minimum 100ms.
 
-2. **Search parameter tuning.** Use self-play (Stage 12) to tune: TACTICAL_MARGIN, BRS_TIME_FRACTION, MCTS_EXPLORATION_C, progressive widening exponent, null move reduction, LMR base.
+2. **Search parameter tuning.** Use self-play (Stage 12) to tune: TACTICAL_MARGIN, BRS_TIME_FRACTION, MCTS_EXPLORATION_C, progressive widening exponent, null move reduction, LMR base, GUMBEL_K (default 16, controls how many root candidates Gumbel-Top-k retains), PROGRESSIVE_HISTORY_WEIGHT (default 1.0, scales history influence in MCTS non-root selection), PRIOR_TEMPERATURE (default 50, controls softmax sharpness for prior policy from ordering scores).
 
 3. **Pondering (optional).** Think on opponent's time.
 

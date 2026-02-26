@@ -141,6 +141,8 @@ Still open. Stage 9 integration tests use `EvalProfile::Aggressive` to avoid it.
 
 4. **Upgrade SEE before Stage 11?** The hybrid controller in Stage 11 uses BRS as its primary searcher. Misclassified captures (simplified SEE) cause suboptimal ordering in multi-recapture positions. Evaluate after Stage 11 design is finalized.
 
+5. **History table extraction for Progressive History (ADR-017).** Stage 11's hybrid controller needs to extract BRS's history table (`history: [[[i32; TOTAL_SQUARES]; PIECE_TYPE_COUNT]; PLAYER_COUNT]`) after Phase 1 completes and pass it to MctsSearcher for Progressive History warm-start. BrsSearcher needs a `pub fn history_table(&self) -> &HistoryTable` accessor. Currently the history table is a private field in BrsContext, reset per search. Stage 11 must extract it AFTER the search completes but BEFORE BrsContext is dropped. Design consideration: should the accessor return a reference to the live table, or clone the relevant subset (e.g., only root player's history)?
+
 ### Reasoning
 
 The TT implementation uses depth-preferred replacement with generation fallback — the standard approach in production chess engines. The generation mechanism (6-bit counter in flags bits 2-7) ensures old entries from previous games don't dominate the table. The `score_to_tt`/`score_from_tt` ply adjustment for mate scores is essential: without it, a mate-in-3 found at depth 6 (ply 3) would be retrieved at depth 7 (ply 4) as a "mate-in-2", causing score drift across iterative deepening depths.

@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
-**Last Updated:** 2026-02-25
-**Updated By:** Claude Sonnet 4.6 (Stage 9 complete: TT & Move Ordering)
+**Last Updated:** 2026-02-26
+**Updated By:** Claude Sonnet 4.6 (post-Stage-9 PST tuning: knight gradient + bishop development)
 
 ---
 
@@ -12,7 +12,7 @@
 | **Current Stage** | Stage 9 complete — ready to tag `stage-09-complete` / `v1.9` |
 | **Current Build-Order Step** | Stage 9 — complete (post-audit done) |
 | **Build Compiles** | Yes — `cargo build --release` passes, 0 warnings |
-| **Tests Pass** | Yes — engine: 246 unit + 141 integration = 387 total (3 ignored); UI: 54 Vitest. Binary verified v0.4.1-fix. |
+| **Tests Pass** | Yes — engine: 248 unit + 141 integration = 389 total (3 ignored); UI: 54 Vitest. |
 | **Blocking Issues** | None |
 
 ---
@@ -66,9 +66,8 @@
 ## What the Next Session Should Do First
 
 1. Read STATUS.md + HANDOFF.md
-2. **Tag Stage 9:** `git tag stage-09-complete && git tag v1.9`
-3. Begin Stage 10 (MCTS): read `masterplan/stages/stage_10_mcts.md` (or equivalent), upstream audit logs, `cargo build && cargo test` to confirm clean foundation
-4. **Before Stage 10:** Resolve `Issue-Vec-Clone-Cost-Pre-MCTS` (WARNING, scheduled this session). MCTS cannot clone GameState per simulation.
+2. **Resolve `Issue-Vec-Clone-Cost-Pre-MCTS`** (WARNING): Refinement 2 first (`position_history` → `Arc<Vec<u64>>`), then Refinement 1 (`piece_lists` → fixed-size array). MCTS cannot clone GameState per simulation.
+3. Begin Stage 10 (MCTS): read stage spec, upstream logs, `cargo build && cargo test` clean foundation check.
 
 ---
 
@@ -79,6 +78,18 @@ None. All existing tests pass (387 engine + 54 UI Vitest).
 ---
 
 ## Non-Stage Changes
+
+**2026-02-26 — PST Tuning: Knight Gradient + Bishop Development** ([[Session-2026-02-26-PST-Tuning]]):
+
+User observed "knight chess" — all four players opening with 3-4 knight moves each, bishops rarely developing. Root cause: knight gradient was spring-loaded (+23cp first hop) dominating all alternatives. Fix: flattened KNIGHT_GRID (first hop -8→+5 = **+10cp**, was -15→+8 = **+23cp**), redesigned BISHOP_GRID (rank0 -15cp back-rank penalty, rank1 center +15cp, ranks 4-8 +32cp), ROOK_GRID center preference, QUEEN_GRID minor boost. New 2-move math: g-pawn + bishop fianchetto = +45cp vs two knights = +20cp. Clippy: 12 pre-existing warnings cleared (board_scanner, brs, tt, protocol files).
+Tests: 248 unit + 141 integration = 389 total, all passing.
+
+**2026-02-26 — King Safety + SEE Hotfixes** ([[Session-2026-02-26-KingSafety-SEE-Hotfixes]]):
+
+User observed Blue walking its king freely and pushing an undefended pawn taken for free by Yellow's bishop. Two eval/search bugs fixed:
+1. `pst.rs` KING_GRID rank 1 was mildly positive (+5 to +10cp) — changed to negative (0 to -15cp). King one step forward is now clearly penalized.
+2. `see()` didn't check piece defense before comparing piece values — bishop×undefended_pawn got classified as losing capture (100-500=-400), sent to the back of move ordering, and pruned by progressive narrowing. Fixed: `is_square_attacked_by` check on `to_sq` before exchange calculation. Also raised `PAWN_SHIELD_BONUS` 35→50cp, `OPEN_KING_FILE_PENALTY` 25→40cp.
+Commit: `a37b237`. All 387 tests pass.
 
 **2026-02-25 — Post-Elimination Crash Fix + Eval Strengthening** ([[Session-2026-02-25-PostElim-Crash-Fix]]):
 
