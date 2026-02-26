@@ -122,77 +122,127 @@ const PAWN_GRID: [[i16; 14]; 14] = [
     [0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0],
 ];
 
-// Knight PST: strong center bonus, penalize edges.
+// Knight PST: flattened gradient to prevent knight spam dominating the opening.
+// The key constraint: first development hop (rank 0 → rank 2) must not exceed
+// ~+10cp, so it is competitive with pawn pushes but not dominant over every
+// other option. Peak at ranks 3-4 (outpost zone) but modest (+12cp center max).
+// Symmetric — ranks 8-13 mirror ranks 5-0 for all players.
+//
+// Per-move gain analysis:
+//   Ne1→f3 (rank0 file4 → rank2 file5): -5 → +5 = +10cp  ← competitive, not dominant
+//   Nf3→h4 (rank2 file5 → rank3 file7): +5 → +12 = +7cp  ← natural taper
 #[rustfmt::skip]
 const KNIGHT_GRID: [[i16; 14]; 14] = [
-    [0, 0, 0,-20,-15,-10,-10,-10,-10,-15,-20, 0, 0, 0],
-    [0, 0, 0,-15, -5,  0,  5,  5,  0, -5,-15, 0, 0, 0],
-    [0, 0, 0,-10,  0, 10, 15, 15, 10,  0,-10, 0, 0, 0],
-    [0, 0, 0, -5,  5, 15, 20, 20, 15,  5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  5, 18, 25, 25, 18,  5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  5, 20, 28, 28, 20,  5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  5, 20, 30, 30, 20,  5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  5, 20, 30, 30, 20,  5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  5, 20, 28, 28, 20,  5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  5, 18, 25, 25, 18,  5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  5, 15, 20, 20, 15,  5, -5, 0, 0, 0],
-    [0, 0, 0,-10,  0, 10, 15, 15, 10,  0,-10, 0, 0, 0],
-    [0, 0, 0,-15, -5,  0,  5,  5,  0, -5,-15, 0, 0, 0],
-    [0, 0, 0,-20,-15,-10,-10,-10,-10,-15,-20, 0, 0, 0],
+    // rank 0: small back-rank penalty — develop but don't over-penalize
+    [0, 0, 0, -8, -5, -3, -3, -3, -3, -5, -8, 0, 0, 0],
+    // rank 1: transitional
+    [0, 0, 0, -5, -2,  2,  3,  3,  2, -2, -5, 0, 0, 0],
+    // rank 2: active — gaining coverage, supports central pawns
+    [0, 0, 0, -5,  2,  5,  8,  8,  5,  2, -5, 0, 0, 0],
+    // rank 3: PEAK — ideal outpost, controls center, escorts pawns
+    [0, 0, 0, -3,  3,  8, 12, 12,  8,  3, -3, 0, 0, 0],
+    // rank 4: PEAK — forward outpost, strong diagonal pressure
+    [0, 0, 0, -3,  3,  8, 12, 12,  8,  3, -3, 0, 0, 0],
+    // rank 5: taper — diminishing returns going deeper
+    [0, 0, 0, -3,  3,  6, 10, 10,  6,  3, -3, 0, 0, 0],
+    // rank 6: further taper — harder to support deep knights
+    [0, 0, 0, -3,  3,  5,  8,  8,  5,  3, -3, 0, 0, 0],
+    // rank 7: board center — still useful but not peak
+    [0, 0, 0, -3,  3,  5,  8,  8,  5,  3, -3, 0, 0, 0],
+    // ranks 8-13 mirror ranks 5-0 (symmetric)
+    [0, 0, 0, -3,  3,  5,  8,  8,  5,  3, -3, 0, 0, 0],
+    [0, 0, 0, -3,  3,  6, 10, 10,  6,  3, -3, 0, 0, 0],
+    [0, 0, 0, -3,  3,  8, 12, 12,  8,  3, -3, 0, 0, 0],
+    [0, 0, 0, -5,  2,  5,  8,  8,  5,  2, -5, 0, 0, 0],
+    [0, 0, 0, -5, -2,  2,  3,  3,  2, -2, -5, 0, 0, 0],
+    [0, 0, 0, -8, -5, -3, -3, -3, -3, -5, -8, 0, 0, 0],
 ];
 
-// Bishop PST: moderate center bonus, avoid edges.
+// Bishop PST: strongly reward long central diagonals. On a 14×14 board an active
+// bishop commands 10+ squares — this is dramatically undervalued at +15cp.
+// Back-rank bishops are nearly useless (blocked by pawns): heavy penalty there.
+// Ranks 2-3 are the key development squares: bishops gain range AND escape routes.
+// Ranks 4-8 are peak: bishop controls the full diagonal across the board center.
 #[rustfmt::skip]
 const BISHOP_GRID: [[i16; 14]; 14] = [
-    [0, 0, 0,-10, -5, -5, -5, -5, -5, -5,-10, 0, 0, 0],
-    [0, 0, 0, -5,  5,  0,  0,  0,  0,  5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  0,  8, 10, 10,  8,  0, -5, 0, 0, 0],
-    [0, 0, 0, -5,  5, 10, 12, 12, 10,  5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  5, 10, 15, 15, 10,  5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  5, 12, 15, 15, 12,  5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  5, 12, 15, 15, 12,  5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  5, 12, 15, 15, 12,  5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  5, 10, 15, 15, 10,  5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  5, 10, 12, 12, 10,  5, -5, 0, 0, 0],
-    [0, 0, 0, -5,  0,  8, 10, 10,  8,  0, -5, 0, 0, 0],
-    [0, 0, 0, -5,  5,  0,  0,  0,  0,  5, -5, 0, 0, 0],
-    [0, 0, 0,-10, -5, -5, -5, -5, -5, -5,-10, 0, 0, 0],
-    [0, 0, 0,-10,-10, -5, -5, -5, -5,-10,-10, 0, 0, 0],
+    // rank 0: bishops on back rank are nearly useless — strong penalty to develop urgently
+    [0, 0, 0,-10,-12,-15,-15,-15,-15,-12,-10, 0, 0, 0],
+    // rank 1: fianchetto squares — reward first development step onto the diagonal
+    [0, 0, 0, -3,  5, 12, 15, 15, 12,  5, -3, 0, 0, 0],
+    // rank 2: DEVELOPMENT — long diagonals open, bishop has freedom + escape paths
+    [0, 0, 0, -5,  5, 22, 28, 28, 22,  5, -5, 0, 0, 0],
+    // rank 3: strong outpost — controls diagonal across entire board
+    [0, 0, 0, -5,  8, 22, 28, 28, 22,  8, -5, 0, 0, 0],
+    // rank 4: peak diagonal range — bishop is a long-range sniper
+    [0, 0, 0,  0, 10, 22, 32, 32, 22, 10,  0, 0, 0, 0],
+    // ranks 5-8: board center, maximum diagonal coverage
+    [0, 0, 0,  0, 10, 22, 32, 32, 22, 10,  0, 0, 0, 0],
+    [0, 0, 0,  0, 10, 22, 32, 32, 22, 10,  0, 0, 0, 0],
+    [0, 0, 0,  0, 10, 22, 32, 32, 22, 10,  0, 0, 0, 0],
+    [0, 0, 0,  0, 10, 22, 32, 32, 22, 10,  0, 0, 0, 0],
+    // rank 9: taper — still good diagonal range
+    [0, 0, 0, -5,  8, 20, 25, 25, 20,  8, -5, 0, 0, 0],
+    // rank 10: further taper
+    [0, 0, 0, -5,  5, 15, 20, 20, 15,  5, -5, 0, 0, 0],
+    // rank 11: approaching enemy territory, risky without support
+    [0, 0, 0, -8, -5,  8, 12, 12,  8, -5, -8, 0, 0, 0],
+    // rank 12: near enemy back rank — congested, harder to maneuver
+    [0, 0, 0,-10, -8,  0,  5,  5,  0, -8,-10, 0, 0, 0],
+    // rank 13: enemy back rank — trapped behind pawns
+    [0, 0, 0,-10,-10, -5,  0,  0, -5,-10,-10, 0, 0, 0],
 ];
 
-// Rook PST: small center-file bonus. Rooks are mobile; position matters less.
+// Rook PST: reward center files (open lanes) and forward ranks (activation).
+// No penalty for staying home — king needs back-rank defenders early.
+// Rising bonuses create natural midgame incentive to activate rooks.
+// Rooks work best together covering long distances; center files maximize their range.
 #[rustfmt::skip]
 const ROOK_GRID: [[i16; 14]; 14] = [
-    [0, 0, 0,  0,  0,  0,  5,  5,  0,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  0,  5,  5,  0,  0,  0, 0, 0, 0],
+    // rank 0: home rank — neutral. Center files worth slightly more (open-file prep).
+    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
+    // rank 1: still home territory, small center file preference
+    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
+    // rank 2: beginning to activate
+    [0, 0, 0,  0,  3,  5,  8,  8,  5,  3,  0, 0, 0, 0],
+    // rank 3: active rook — controls open file into enemy half
+    [0, 0, 0,  0,  3,  8, 12, 12,  8,  3,  0, 0, 0, 0],
+    // rank 4
+    [0, 0, 0,  0,  3,  8, 12, 12,  8,  3,  0, 0, 0, 0],
+    // rank 5
+    [0, 0, 0,  0,  3,  8, 12, 12,  8,  3,  0, 0, 0, 0],
+    // rank 6: midgame peak — rook on 7th equivalent
+    [0, 0, 0,  5,  5, 10, 15, 15, 10,  5,  5, 0, 0, 0],
+    // rank 7: board center — maximum range both directions
+    [0, 0, 0,  5,  5, 10, 18, 18, 10,  5,  5, 0, 0, 0],
+    // rank 8: peak (symmetric with rank 6)
+    [0, 0, 0,  5,  5, 10, 15, 15, 10,  5,  5, 0, 0, 0],
+    // ranks 9-11 taper back (mirror of 5-3)
+    [0, 0, 0,  0,  3,  8, 12, 12,  8,  3,  0, 0, 0, 0],
+    [0, 0, 0,  0,  3,  8, 12, 12,  8,  3,  0, 0, 0, 0],
+    [0, 0, 0,  0,  3,  5,  8,  8,  5,  3,  0, 0, 0, 0],
+    // rank 12-13: deep enemy territory — still useful on open files
     [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
     [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
-    [0, 0, 0,  5,  5,  5,  8,  8,  5,  5,  5, 0, 0, 0],
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  0,  5,  5,  0,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  0,  5,  5,  0,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  0,  5,  5,  0,  0,  0, 0, 0, 0],
 ];
 
-// Queen PST: very small center bonus. Queens are so mobile that position matters least.
+// Queen PST: small center bonus, slight back-rank penalty (don't rush queen early).
+// Queens are so mobile that PST matters less than for other pieces, but centralised
+// queens coordinate better with all piece types and cover more of the 14×14 board.
 #[rustfmt::skip]
 const QUEEN_GRID: [[i16; 14]; 14] = [
+    // rank 0: don't move queen out immediately — gets chased by opponents
     [0, 0, 0, -5, -5, -5,  0,  0, -5, -5, -5, 0, 0, 0],
     [0, 0, 0, -5,  0,  0,  0,  0,  0,  0, -5, 0, 0, 0],
-    [0, 0, 0, -5,  0,  3,  3,  3,  3,  0, -5, 0, 0, 0],
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
-    [0, 0, 0, -5,  0,  3,  3,  3,  3,  0, -5, 0, 0, 0],
+    [0, 0, 0, -5,  0,  3,  5,  5,  3,  0, -5, 0, 0, 0],
+    // rank 3-9: moderate center bonus — queen active, controls many lines
+    [0, 0, 0,  0,  0,  5,  8,  8,  5,  0,  0, 0, 0, 0],
+    [0, 0, 0,  0,  0,  5,  8,  8,  5,  0,  0, 0, 0, 0],
+    [0, 0, 0,  0,  0,  5,  8,  8,  5,  0,  0, 0, 0, 0],
+    [0, 0, 0,  0,  0,  5,  8,  8,  5,  0,  0, 0, 0, 0],
+    [0, 0, 0,  0,  0,  5,  8,  8,  5,  0,  0, 0, 0, 0],
+    [0, 0, 0,  0,  0,  5,  8,  8,  5,  0,  0, 0, 0, 0],
+    [0, 0, 0,  0,  0,  5,  8,  8,  5,  0,  0, 0, 0, 0],
+    [0, 0, 0, -5,  0,  3,  5,  5,  3,  0, -5, 0, 0, 0],
     [0, 0, 0, -5,  0,  0,  0,  0,  0,  0, -5, 0, 0, 0],
     [0, 0, 0, -5, -5, -5,  0,  0, -5, -5, -5, 0, 0, 0],
     [0, 0, 0, -5, -5, -5,  0,  0, -5, -5, -5, 0, 0, 0],
