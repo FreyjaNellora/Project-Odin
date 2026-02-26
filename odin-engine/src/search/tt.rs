@@ -144,6 +144,12 @@ impl TranspositionTable {
         self.mask + 1
     }
 
+    /// Returns true if the table has no entries (mask == 0 means 1 slot, not zero).
+    /// A TT is never truly empty once constructed, but this satisfies the `len`/`is_empty` pair.
+    pub fn is_empty(&self) -> bool {
+        false
+    }
+
     /// Increment the generation counter. Call once at the start of each search.
     pub fn increment_generation(&mut self) {
         self.generation = self.generation.wrapping_add(1) & 0x3F; // 6-bit (0-63)
@@ -248,7 +254,7 @@ impl TranspositionTable {
 
         // If writing a TT_UPPER (all-node, no improvement), prefer to preserve an
         // existing best move from this position over overwriting with None.
-        let stored_move = best_move.unwrap_or_else(|| {
+        let stored_move = best_move.unwrap_or({
             if existing.key == verify_key {
                 existing.best_move
             } else {

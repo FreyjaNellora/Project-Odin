@@ -5,7 +5,7 @@
 
 /// Engine identification.
 pub const ENGINE_NAME: &str = "Odin";
-pub const ENGINE_VERSION: &str = "v0.4.1-fix";
+pub const ENGINE_VERSION: &str = "v0.4.3-hanging";
 
 /// Format the `id` response lines + `odinok`.
 pub fn format_id() -> Vec<String> {

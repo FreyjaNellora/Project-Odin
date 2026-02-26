@@ -149,6 +149,7 @@ fn eval_for_player(position: &GameState, player: Player, weights: &EvalWeights) 
     let pos = pst::positional_score(board, player);
     let king = king_safety::king_safety_score(board, player, &statuses);
     let threat = multi_player::threat_penalty(board, player, &statuses);
+    let hanging = multi_player::hanging_piece_penalty(board, player, &statuses);
     let lead = multi_player::lead_penalty(
         player,
         &material::material_scores(board),
@@ -165,6 +166,7 @@ fn eval_for_player(position: &GameState, player: Player, weights: &EvalWeights) 
     mat.saturating_add(pos)
         .saturating_add(king)
         .saturating_sub(threat)
+        .saturating_sub(hanging)
         .saturating_add(lead)
         .saturating_add(ffa)
         .saturating_add(rel_mat)

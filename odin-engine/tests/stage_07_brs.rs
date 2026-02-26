@@ -578,7 +578,10 @@ fn test_protocol_go_depth_6_emits_six_info_lines() {
         .iter()
         .filter(|l| l.starts_with("info ") && !l.starts_with("info string"))
         .count();
-    assert_eq!(info_count, 6, "expected 6 info lines for depth 6, got {info_count}");
+    assert_eq!(
+        info_count, 6,
+        "expected 6 info lines for depth 6, got {info_count}"
+    );
 
     // Must complete within 5 seconds (AC4).
     assert!(
@@ -649,7 +652,10 @@ fn test_protocol_depth_limit_one() {
         "depth-1 should produce 1 search info line, got {}",
         search_lines.len()
     );
-    assert!(search_lines[0].contains("depth 1"), "info line should say depth 1");
+    assert!(
+        search_lines[0].contains("depth 1"),
+        "info line should say depth 1"
+    );
     assert!(output.last().unwrap().starts_with("bestmove "));
 }
 
@@ -669,7 +675,10 @@ fn depth_progression_analysis() {
     let gs = starting_gs();
 
     println!("\n=== Depth Progression: Starting Position (Red to move) ===");
-    println!("{:<6} {:<12} {:<8} {:<12} {:<12} {}", "depth", "best_move", "score", "nodes", "elapsed_ms", "stability");
+    println!(
+        "{:<6} {:<12} {:<8} {:<12} {:<12} {}",
+        "depth", "best_move", "score", "nodes", "elapsed_ms", "stability"
+    );
     println!("{}", "-".repeat(72));
 
     let mut prev_move = String::new();
@@ -693,8 +702,10 @@ fn depth_progression_analysis() {
             "MOVE-CHANGED"
         };
 
-        println!("{:<6} {:<12} {:<8} {:<12} {:<12} {}",
-            depth, mv, result.score, result.nodes, elapsed_ms, stability);
+        println!(
+            "{:<6} {:<12} {:<8} {:<12} {:<12} {}",
+            depth, mv, result.score, result.nodes, elapsed_ms, stability
+        );
 
         prev_move = mv;
         prev_score = result.score;
@@ -730,14 +741,19 @@ fn print_tactical_fen4_strings() {
         let mut b = Board::empty();
         b.set_side_to_move(Player::Red);
         b.set_castling_rights(0);
-        b.place_piece(sq(4,1),  Piece::new(PieceType::King,  Player::Red));
-        b.place_piece(sq(7,6),  Piece::new(PieceType::Queen, Player::Red));   // h7
-        b.place_piece(sq(7,9),  Piece::new(PieceType::Rook,  Player::Blue));  // h10 — hanging
-        b.place_piece(sq(3,10), Piece::new(PieceType::King,  Player::Blue));  // d11
-        b.place_piece(sq(10,12),Piece::new(PieceType::King,  Player::Yellow));
-        b.place_piece(sq(13,6), Piece::new(PieceType::King,  Player::Green));
-        out.push(("cap1_free_rook", b.to_fen4(), "h7h10", "capture",
-            "Red queen h7 captures hanging Blue rook h10 (same file)"));
+        b.place_piece(sq(4, 1), Piece::new(PieceType::King, Player::Red));
+        b.place_piece(sq(7, 6), Piece::new(PieceType::Queen, Player::Red)); // h7
+        b.place_piece(sq(7, 9), Piece::new(PieceType::Rook, Player::Blue)); // h10 — hanging
+        b.place_piece(sq(3, 10), Piece::new(PieceType::King, Player::Blue)); // d11
+        b.place_piece(sq(10, 12), Piece::new(PieceType::King, Player::Yellow));
+        b.place_piece(sq(13, 6), Piece::new(PieceType::King, Player::Green));
+        out.push((
+            "cap1_free_rook",
+            b.to_fen4(),
+            "h7h10",
+            "capture",
+            "Red queen h7 captures hanging Blue rook h10 (same file)",
+        ));
     }
 
     // C2: Red bishop f5 captures hanging Yellow knight h7 (diagonal).
@@ -745,14 +761,19 @@ fn print_tactical_fen4_strings() {
         let mut b = Board::empty();
         b.set_side_to_move(Player::Red);
         b.set_castling_rights(0);
-        b.place_piece(sq(4,1),  Piece::new(PieceType::King,   Player::Red));
-        b.place_piece(sq(5,4),  Piece::new(PieceType::Bishop, Player::Red));   // f5
-        b.place_piece(sq(7,6),  Piece::new(PieceType::Knight, Player::Yellow));// h7 — hanging
-        b.place_piece(sq(1,10), Piece::new(PieceType::King,   Player::Blue));
-        b.place_piece(sq(10,12),Piece::new(PieceType::King,   Player::Yellow));
-        b.place_piece(sq(13,6), Piece::new(PieceType::King,   Player::Green));
-        out.push(("cap2_free_knight", b.to_fen4(), "f5h7", "capture",
-            "Red bishop f5 captures hanging Yellow knight h7 (diagonal)"));
+        b.place_piece(sq(4, 1), Piece::new(PieceType::King, Player::Red));
+        b.place_piece(sq(5, 4), Piece::new(PieceType::Bishop, Player::Red)); // f5
+        b.place_piece(sq(7, 6), Piece::new(PieceType::Knight, Player::Yellow)); // h7 — hanging
+        b.place_piece(sq(1, 10), Piece::new(PieceType::King, Player::Blue));
+        b.place_piece(sq(10, 12), Piece::new(PieceType::King, Player::Yellow));
+        b.place_piece(sq(13, 6), Piece::new(PieceType::King, Player::Green));
+        out.push((
+            "cap2_free_knight",
+            b.to_fen4(),
+            "f5h7",
+            "capture",
+            "Red bishop f5 captures hanging Yellow knight h7 (diagonal)",
+        ));
     }
 
     // C3: Red queen d7 captures hanging Green queen j7 (same rank).
@@ -760,14 +781,19 @@ fn print_tactical_fen4_strings() {
         let mut b = Board::empty();
         b.set_side_to_move(Player::Red);
         b.set_castling_rights(0);
-        b.place_piece(sq(4,1),  Piece::new(PieceType::King,  Player::Red));
-        b.place_piece(sq(3,6),  Piece::new(PieceType::Queen, Player::Red));   // d7
-        b.place_piece(sq(9,6),  Piece::new(PieceType::Queen, Player::Green)); // j7 — hanging
-        b.place_piece(sq(1,10), Piece::new(PieceType::King,  Player::Blue));
-        b.place_piece(sq(10,12),Piece::new(PieceType::King,  Player::Yellow));
-        b.place_piece(sq(13,6), Piece::new(PieceType::King,  Player::Green));
-        out.push(("cap3_free_queen_rank", b.to_fen4(), "d7j7", "capture",
-            "Red queen d7 captures hanging Green queen j7 (same rank)"));
+        b.place_piece(sq(4, 1), Piece::new(PieceType::King, Player::Red));
+        b.place_piece(sq(3, 6), Piece::new(PieceType::Queen, Player::Red)); // d7
+        b.place_piece(sq(9, 6), Piece::new(PieceType::Queen, Player::Green)); // j7 — hanging
+        b.place_piece(sq(1, 10), Piece::new(PieceType::King, Player::Blue));
+        b.place_piece(sq(10, 12), Piece::new(PieceType::King, Player::Yellow));
+        b.place_piece(sq(13, 6), Piece::new(PieceType::King, Player::Green));
+        out.push((
+            "cap3_free_queen_rank",
+            b.to_fen4(),
+            "d7j7",
+            "capture",
+            "Red queen d7 captures hanging Green queen j7 (same rank)",
+        ));
     }
 
     // -----------------------------------------------------------------------
@@ -780,14 +806,19 @@ fn print_tactical_fen4_strings() {
         let mut b = Board::empty();
         b.set_side_to_move(Player::Red);
         b.set_castling_rights(0);
-        b.place_piece(sq(4,1),  Piece::new(PieceType::King,   Player::Red));
-        b.place_piece(sq(5,2),  Piece::new(PieceType::Knight, Player::Red));   // f3
-        b.place_piece(sq(3,6),  Piece::new(PieceType::King,   Player::Blue));  // d7
-        b.place_piece(sq(6,5),  Piece::new(PieceType::Rook,   Player::Yellow));// g6 — forked
-        b.place_piece(sq(10,12),Piece::new(PieceType::King,   Player::Yellow));
-        b.place_piece(sq(13,6), Piece::new(PieceType::King,   Player::Green));
-        out.push(("fork1_knight_fork", b.to_fen4(), "f3e5", "fork",
-            "Red knight f3→e5 forks Blue king d7 and Yellow rook g6"));
+        b.place_piece(sq(4, 1), Piece::new(PieceType::King, Player::Red));
+        b.place_piece(sq(5, 2), Piece::new(PieceType::Knight, Player::Red)); // f3
+        b.place_piece(sq(3, 6), Piece::new(PieceType::King, Player::Blue)); // d7
+        b.place_piece(sq(6, 5), Piece::new(PieceType::Rook, Player::Yellow)); // g6 — forked
+        b.place_piece(sq(10, 12), Piece::new(PieceType::King, Player::Yellow));
+        b.place_piece(sq(13, 6), Piece::new(PieceType::King, Player::Green));
+        out.push((
+            "fork1_knight_fork",
+            b.to_fen4(),
+            "f3e5",
+            "fork",
+            "Red knight f3→e5 forks Blue king d7 and Yellow rook g6",
+        ));
     }
 
     // F2: Red queen e4→h7 forks Blue king h10 (file) and Yellow rook k10 (diagonal +3,+3).
@@ -795,14 +826,19 @@ fn print_tactical_fen4_strings() {
         let mut b = Board::empty();
         b.set_side_to_move(Player::Red);
         b.set_castling_rights(0);
-        b.place_piece(sq(4,1),  Piece::new(PieceType::King,  Player::Red));
-        b.place_piece(sq(4,3),  Piece::new(PieceType::Queen, Player::Red));   // e4
-        b.place_piece(sq(7,9),  Piece::new(PieceType::King,  Player::Blue));  // h10
-        b.place_piece(sq(10,9), Piece::new(PieceType::Rook,  Player::Yellow));// k10 — forked
-        b.place_piece(sq(10,12),Piece::new(PieceType::King,  Player::Yellow));
-        b.place_piece(sq(13,6), Piece::new(PieceType::King,  Player::Green));
-        out.push(("fork2_queen_fork", b.to_fen4(), "e4h7", "fork",
-            "Red queen e4→h7 forks Blue king h10 (file) and Yellow rook k10 (diagonal)"));
+        b.place_piece(sq(4, 1), Piece::new(PieceType::King, Player::Red));
+        b.place_piece(sq(4, 3), Piece::new(PieceType::Queen, Player::Red)); // e4
+        b.place_piece(sq(7, 9), Piece::new(PieceType::King, Player::Blue)); // h10
+        b.place_piece(sq(10, 9), Piece::new(PieceType::Rook, Player::Yellow)); // k10 — forked
+        b.place_piece(sq(10, 12), Piece::new(PieceType::King, Player::Yellow));
+        b.place_piece(sq(13, 6), Piece::new(PieceType::King, Player::Green));
+        out.push((
+            "fork2_queen_fork",
+            b.to_fen4(),
+            "e4h7",
+            "fork",
+            "Red queen e4→h7 forks Blue king h10 (file) and Yellow rook k10 (diagonal)",
+        ));
     }
 
     // -----------------------------------------------------------------------
@@ -835,14 +871,19 @@ fn print_tactical_fen4_strings() {
         let mut b = Board::empty();
         b.set_side_to_move(Player::Red);
         b.set_castling_rights(0);
-        b.place_piece(sq(4,1),  Piece::new(PieceType::King,  Player::Red));
-        b.place_piece(sq(7,4),  Piece::new(PieceType::Queen, Player::Red));  // h5
-        b.place_piece(sq(12,3), Piece::new(PieceType::Rook,  Player::Red));  // m4 covers m-file
-        b.place_piece(sq(13,7), Piece::new(PieceType::King,  Player::Blue)); // n8
-        b.place_piece(sq(10,12),Piece::new(PieceType::King,  Player::Yellow));
-        b.place_piece(sq(6,12), Piece::new(PieceType::King,  Player::Green));
-        out.push(("mate1_Qh5n5", b.to_fen4(), "h5n5", "mate",
-            "[unverified] Red queen h5→n5 mates Blue king n8 (rook covers m-file escapes)"));
+        b.place_piece(sq(4, 1), Piece::new(PieceType::King, Player::Red));
+        b.place_piece(sq(7, 4), Piece::new(PieceType::Queen, Player::Red)); // h5
+        b.place_piece(sq(12, 3), Piece::new(PieceType::Rook, Player::Red)); // m4 covers m-file
+        b.place_piece(sq(13, 7), Piece::new(PieceType::King, Player::Blue)); // n8
+        b.place_piece(sq(10, 12), Piece::new(PieceType::King, Player::Yellow));
+        b.place_piece(sq(6, 12), Piece::new(PieceType::King, Player::Green));
+        out.push((
+            "mate1_Qh5n5",
+            b.to_fen4(),
+            "h5n5",
+            "mate",
+            "[unverified] Red queen h5→n5 mates Blue king n8 (rook covers m-file escapes)",
+        ));
     }
 
     // M2: Red queen slides along rank to deliver check with rook covering the file escapes.
@@ -874,14 +915,19 @@ fn print_tactical_fen4_strings() {
         let mut b = Board::empty();
         b.set_side_to_move(Player::Red);
         b.set_castling_rights(0);
-        b.place_piece(sq(4,1),  Piece::new(PieceType::King,  Player::Red));
-        b.place_piece(sq(3,6),  Piece::new(PieceType::Queen, Player::Red));  // d7
-        b.place_piece(sq(4,0),  Piece::new(PieceType::Rook,  Player::Red));  // e1 covers e-file
-        b.place_piece(sq(3,12), Piece::new(PieceType::King,  Player::Blue)); // d13
-        b.place_piece(sq(10,12),Piece::new(PieceType::King,  Player::Yellow));
-        b.place_piece(sq(7,6),  Piece::new(PieceType::King,  Player::Green));
-        out.push(("mate2_Qd7d11", b.to_fen4(), "d7d11", "mate",
-            "[unverified] Red queen d7→d11 mates Blue king d13 (rook covers e-file escapes)"));
+        b.place_piece(sq(4, 1), Piece::new(PieceType::King, Player::Red));
+        b.place_piece(sq(3, 6), Piece::new(PieceType::Queen, Player::Red)); // d7
+        b.place_piece(sq(4, 0), Piece::new(PieceType::Rook, Player::Red)); // e1 covers e-file
+        b.place_piece(sq(3, 12), Piece::new(PieceType::King, Player::Blue)); // d13
+        b.place_piece(sq(10, 12), Piece::new(PieceType::King, Player::Yellow));
+        b.place_piece(sq(7, 6), Piece::new(PieceType::King, Player::Green));
+        out.push((
+            "mate2_Qd7d11",
+            b.to_fen4(),
+            "d7d11",
+            "mate",
+            "[unverified] Red queen d7→d11 mates Blue king d13 (rook covers e-file escapes)",
+        ));
     }
 
     // M3: Yellow-to-mate perspective (side variety). Yellow queen mates Red king.
@@ -902,15 +948,20 @@ fn print_tactical_fen4_strings() {
         let mut b = Board::empty();
         b.set_side_to_move(Player::Blue);
         b.set_castling_rights(0);
-        b.place_piece(sq(4,1),  Piece::new(PieceType::King,   Player::Red));
-        b.place_piece(sq(7,0),  Piece::new(PieceType::Queen,  Player::Blue)); // h1
-        b.place_piece(sq(6,0),  Piece::new(PieceType::Rook,   Player::Blue)); // g1 covers g-file
-        b.place_piece(sq(8,0),  Piece::new(PieceType::Rook,   Player::Blue)); // i1 covers i-file
-        b.place_piece(sq(1,10), Piece::new(PieceType::King,   Player::Blue)); // b11
-        b.place_piece(sq(7,13), Piece::new(PieceType::King,   Player::Yellow));// h14
-        b.place_piece(sq(13,6), Piece::new(PieceType::King,   Player::Green));
-        out.push(("mate3_Bh1h12_vs_Yh14", b.to_fen4(), "h1h12", "mate",
-            "[unverified] Blue queen h1→h12 mates Yellow king h14 (rooks cover g/i files)"));
+        b.place_piece(sq(4, 1), Piece::new(PieceType::King, Player::Red));
+        b.place_piece(sq(7, 0), Piece::new(PieceType::Queen, Player::Blue)); // h1
+        b.place_piece(sq(6, 0), Piece::new(PieceType::Rook, Player::Blue)); // g1 covers g-file
+        b.place_piece(sq(8, 0), Piece::new(PieceType::Rook, Player::Blue)); // i1 covers i-file
+        b.place_piece(sq(1, 10), Piece::new(PieceType::King, Player::Blue)); // b11
+        b.place_piece(sq(7, 13), Piece::new(PieceType::King, Player::Yellow)); // h14
+        b.place_piece(sq(13, 6), Piece::new(PieceType::King, Player::Green));
+        out.push((
+            "mate3_Bh1h12_vs_Yh14",
+            b.to_fen4(),
+            "h1h12",
+            "mate",
+            "[unverified] Blue queen h1→h12 mates Yellow king h14 (rooks cover g/i files)",
+        ));
     }
 
     // M4: Green queen mates Red king (right-edge zone).
@@ -933,11 +984,11 @@ fn print_tactical_fen4_strings() {
         let mut b = Board::empty();
         b.set_side_to_move(Player::Green);
         b.set_castling_rights(0);
-        b.place_piece(sq(7,13), Piece::new(PieceType::King,  Player::Red));  // h14 — victim
-        b.place_piece(sq(1,10), Piece::new(PieceType::King,  Player::Blue));
-        b.place_piece(sq(10,12),Piece::new(PieceType::King,  Player::Yellow));
-        b.place_piece(sq(13,6), Piece::new(PieceType::King,  Player::Green));
-        b.place_piece(sq(7,10), Piece::new(PieceType::Queen, Player::Green)); // h11
+        b.place_piece(sq(7, 13), Piece::new(PieceType::King, Player::Red)); // h14 — victim
+        b.place_piece(sq(1, 10), Piece::new(PieceType::King, Player::Blue));
+        b.place_piece(sq(10, 12), Piece::new(PieceType::King, Player::Yellow));
+        b.place_piece(sq(13, 6), Piece::new(PieceType::King, Player::Green));
+        b.place_piece(sq(7, 10), Piece::new(PieceType::Queen, Player::Green)); // h11
         out.push(("mate4_Gh11h14_vs_Rh14", b.to_fen4(), "h11h14", "mate",
             "[unverified] Green queen h11→h14 captures/mates Red king h14 (king on file, no blockers)"));
     }
@@ -949,13 +1000,18 @@ fn print_tactical_fen4_strings() {
         let mut b = Board::empty();
         b.set_side_to_move(Player::Yellow);
         b.set_castling_rights(0);
-        b.place_piece(sq(4,1),  Piece::new(PieceType::King,   Player::Red));
-        b.place_piece(sq(1,10), Piece::new(PieceType::King,   Player::Blue));
-        b.place_piece(sq(10,12),Piece::new(PieceType::King,   Player::Yellow));
-        b.place_piece(sq(6,6),  Piece::new(PieceType::Queen,  Player::Yellow)); // g7
-        b.place_piece(sq(9,9),  Piece::new(PieceType::King,   Player::Green));  // j10 — victim
-        out.push(("mate5_Yg7j10_vs_Gj10", b.to_fen4(), "g7j10", "mate",
-            "[unverified] Yellow queen g7→j10 captures/mates Green king j10 (diagonal)"));
+        b.place_piece(sq(4, 1), Piece::new(PieceType::King, Player::Red));
+        b.place_piece(sq(1, 10), Piece::new(PieceType::King, Player::Blue));
+        b.place_piece(sq(10, 12), Piece::new(PieceType::King, Player::Yellow));
+        b.place_piece(sq(6, 6), Piece::new(PieceType::Queen, Player::Yellow)); // g7
+        b.place_piece(sq(9, 9), Piece::new(PieceType::King, Player::Green)); // j10 — victim
+        out.push((
+            "mate5_Yg7j10_vs_Gj10",
+            b.to_fen4(),
+            "g7j10",
+            "mate",
+            "[unverified] Yellow queen g7→j10 captures/mates Green king j10 (diagonal)",
+        ));
     }
 
     // -----------------------------------------------------------------------

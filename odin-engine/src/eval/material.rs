@@ -131,7 +131,11 @@ mod tests {
         }
         let statuses = [crate::gamestate::PlayerStatus::Active; 4];
         let rel = relative_material_advantage(&board, Player::Red, &statuses);
-        assert!(rel > 0, "Red should have positive relative advantage when Blue lost queen, got {}", rel);
+        assert!(
+            rel > 0,
+            "Red should have positive relative advantage when Blue lost queen, got {}",
+            rel
+        );
     }
 
     #[test]
@@ -148,7 +152,11 @@ mod tests {
         }
         let statuses = [crate::gamestate::PlayerStatus::Active; 4];
         let rel = relative_material_advantage(&board, Player::Red, &statuses);
-        assert!(rel < 0, "Red should have negative relative advantage after losing queen, got {}", rel);
+        assert!(
+            rel < 0,
+            "Red should have negative relative advantage after losing queen, got {}",
+            rel
+        );
     }
 
     #[test]

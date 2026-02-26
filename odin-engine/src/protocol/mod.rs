@@ -132,12 +132,10 @@ impl OdinEngine {
                 let v = value.to_lowercase();
                 match v.as_str() {
                     "standard" | "std" => {
-                        self.options.eval_profile =
-                            Some(crate::eval::EvalProfile::Standard);
+                        self.options.eval_profile = Some(crate::eval::EvalProfile::Standard);
                     }
                     "aggressive" | "aggro" => {
-                        self.options.eval_profile =
-                            Some(crate::eval::EvalProfile::Aggressive);
+                        self.options.eval_profile = Some(crate::eval::EvalProfile::Aggressive);
                     }
                     "auto" | "none" => {
                         self.options.eval_profile = None;
@@ -171,11 +169,7 @@ impl OdinEngine {
     fn handle_position_startpos(&mut self, moves: &[String]) {
         let mode = self.options.game_mode;
         let terrain = self.options.terrain_mode;
-        self.game_state = Some(GameState::new(
-            Board::starting_position(),
-            mode,
-            terrain,
-        ));
+        self.game_state = Some(GameState::new(Board::starting_position(), mode, terrain));
         if let Err(e) = self.apply_moves(moves) {
             self.send(&format_error(&e));
             self.game_state = None;
@@ -621,10 +615,7 @@ mod tests {
 
         let fen = board.to_fen4();
         let mut engine = OdinEngine::new();
-        engine.handle_command(Command::PositionFen4 {
-            fen,
-            moves: vec![],
-        });
+        engine.handle_command(Command::PositionFen4 { fen, moves: vec![] });
         engine.take_output();
 
         engine.handle_command(Command::Go(SearchLimits {

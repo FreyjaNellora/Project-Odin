@@ -92,7 +92,7 @@ pub fn scan_board(gs: &GameState, root_player: Player) -> BoardContext {
     // equals root_player (root is never a real opponent).
     let mut per_opponent = [
         OpponentProfile {
-            player: opponents.get(0).copied().unwrap_or(root_player),
+            player: opponents.first().copied().unwrap_or(root_player),
             aggression_toward_root: 0.0,
             own_vulnerability: 0.0,
             best_target: root_player,
@@ -128,8 +128,7 @@ pub fn scan_board(gs: &GameState, root_player: Player) -> BoardContext {
         }
 
         // Aggression: how many of this opponent's pieces attack root's piece squares
-        profile.aggression_toward_root =
-            compute_aggression(board, opp, root_player, gs);
+        profile.aggression_toward_root = compute_aggression(board, opp, root_player, gs);
 
         // Vulnerability: how exposed is this opponent's king
         let opp_king_sq = board.king_square(opp);
@@ -138,12 +137,10 @@ pub fn scan_board(gs: &GameState, root_player: Player) -> BoardContext {
             .copied()
             .filter(|&p| p != opp && gs.player_status(p) != PlayerStatus::Eliminated)
             .collect();
-        profile.own_vulnerability =
-            compute_king_danger(board, opp, opp_king_sq, &other_opps);
+        profile.own_vulnerability = compute_king_danger(board, opp, opp_king_sq, &other_opps);
 
         // Can afford to attack: has non-pawn material worth >= 500cp
-        profile.can_afford_to_attack_root =
-            material[opp.index()] >= 500;
+        profile.can_afford_to_attack_root = material[opp.index()] >= 500;
 
         // Best target: who does this opponent attack most
         profile.best_target = find_best_target(board, opp, gs, &scores);
@@ -160,11 +157,9 @@ pub fn scan_board(gs: &GameState, root_player: Player) -> BoardContext {
         .collect();
 
     if !primary_attackers.is_empty() {
-        for i in 0..3 {
-            if !primary_attackers.contains(&i)
-                && per_opponent[i].aggression_toward_root > 0.15
-            {
-                per_opponent[i].supporting_attack_on_root = true;
+        for (i, opp) in per_opponent.iter_mut().enumerate() {
+            if !primary_attackers.contains(&i) && opp.aggression_toward_root > 0.15 {
+                opp.supporting_attack_on_root = true;
             }
         }
     }
@@ -267,7 +262,7 @@ fn compute_king_danger(
             }
             let f = king_file + df;
             let r = king_rank + dr;
-            if f < 0 || f > 13 || r < 0 || r > 13 {
+            if !(0..=13).contains(&f) || !(0..=13).contains(&r) {
                 continue;
             }
             let sq = (r as u8) * 14 + (f as u8);
@@ -313,12 +308,7 @@ fn compute_king_danger(
 
 /// Compute how aggressively an opponent's pieces point at root's pieces.
 /// Returns 0.0 (not targeting root) to 1.0 (heavily targeting root).
-fn compute_aggression(
-    board: &Board,
-    opponent: Player,
-    root: Player,
-    gs: &GameState,
-) -> f64 {
+fn compute_aggression(board: &Board, opponent: Player, root: Player, gs: &GameState) -> f64 {
     if gs.player_status(opponent) == PlayerStatus::Eliminated {
         return 0.0;
     }
@@ -348,12 +338,7 @@ fn compute_aggression(
 
 /// Find which player this opponent targets most.
 /// Uses a weighted score: attack value toward each other player + score considerations.
-fn find_best_target(
-    board: &Board,
-    opponent: Player,
-    gs: &GameState,
-    scores: &[i32; 4],
-) -> Player {
+fn find_best_target(board: &Board, opponent: Player, gs: &GameState, scores: &[i32; 4]) -> Player {
     let mut best_target = opponent; // fallback
     let mut best_score = -1.0f64;
 
@@ -421,11 +406,10 @@ fn find_high_value_targets(
         for &(pt, sq) in board.piece_list(opp) {
             if PIECE_EVAL_VALUES[pt.index()] >= HVT_MIN_VALUE
                 && is_square_attacked_by(sq, root, board)
+                && (count as usize) < MAX_HVT
             {
-                if (count as usize) < MAX_HVT {
-                    targets[count as usize] = (sq, opp);
-                    count += 1;
-                }
+                targets[count as usize] = (sq, opp);
+                count += 1;
             }
         }
     }
@@ -473,11 +457,7 @@ pub enum MoveClass {
 /// - Lands on or adjacent to root's king square (potential check or proximity threat)
 ///
 /// This is a pure table lookup + comparison. No eval calls.
-pub fn classify_move(
-    mv: Move,
-    board: &Board,
-    root_player: Player,
-) -> MoveClass {
+pub fn classify_move(mv: Move, board: &Board, root_player: Player) -> MoveClass {
     let to = mv.to_sq();
 
     // 1. Does this move capture one of root's pieces?
@@ -508,9 +488,8 @@ pub fn classify_move(
         // Only if the piece is a knight (can attack king from 2 away) or
         // if the piece is a sliding piece landing on a line toward the king
         if let Some(piece) = board.piece_at(mv.from_sq()) {
-            match piece.piece_type {
-                crate::board::PieceType::Knight => return MoveClass::Relevant,
-                _ => {}
+            if piece.piece_type == crate::board::PieceType::Knight {
+                return MoveClass::Relevant;
             }
         }
     }
@@ -557,11 +536,11 @@ pub fn classify_moves(
 // ---------------------------------------------------------------------------
 
 /// Maximum relevant candidates at depth 1-3.
-const NARROWING_SHALLOW: usize = 10;
+const NARROWING_SHALLOW: usize = 12;
 /// Maximum relevant candidates at depth 4-6.
-const NARROWING_MID: usize = 6;
+const NARROWING_MID: usize = 8;
 /// Maximum relevant candidates at depth 7+.
-const NARROWING_DEEP: usize = 3;
+const NARROWING_DEEP: usize = 5;
 
 /// Return the maximum number of relevant opponent moves to evaluate at this
 /// search depth. Shallower depths consider more candidates for accuracy;
@@ -636,10 +615,7 @@ pub fn score_reply(
     max_eval_delta: i16,
 ) -> ScoredReply {
     // Find the opponent's profile from context
-    let profile = ctx
-        .per_opponent
-        .iter()
-        .find(|p| p.player == opponent);
+    let profile = ctx.per_opponent.iter().find(|p| p.player == opponent);
 
     // Objective strength: normalized eval improvement (0.0 to 1.0)
     let max_delta = (max_eval_delta.abs() as f64).max(1.0);
@@ -740,12 +716,32 @@ pub fn select_hybrid_reply(
     }
 
     // Progressive narrowing: limit candidates based on search depth.
-    // Pre-sort by cheap capture-value heuristic before truncating so we
-    // keep the most promising moves.
+    // Root-piece captures (opponent literally taking our pieces) are NEVER
+    // pruned — they're the most critical threats. Only proximity-based
+    // "soft" threats are subject to narrowing.
     let limit = narrowing_limit(depth);
     if relevant.len() > limit {
-        cheap_presort(&mut relevant);
-        relevant.truncate(limit);
+        // Partition into hard threats (captures root's pieces) and soft threats
+        let mut root_captures: Vec<Move> = Vec::new();
+        let mut soft_threats: Vec<Move> = Vec::new();
+        for &mv in &relevant {
+            let is_root_capture = board
+                .piece_at(mv.to_sq())
+                .is_some_and(|piece| piece.owner == root_player && piece.is_alive());
+            if is_root_capture {
+                root_captures.push(mv);
+            } else {
+                soft_threats.push(mv);
+            }
+        }
+        // Only narrow the soft threats
+        let soft_limit = limit.saturating_sub(root_captures.len());
+        if soft_threats.len() > soft_limit {
+            cheap_presort(&mut soft_threats);
+            soft_threats.truncate(soft_limit);
+        }
+        relevant = root_captures;
+        relevant.extend(soft_threats);
     }
 
     // Compute objective eval delta for each relevant move
@@ -876,8 +872,7 @@ mod tests {
         let ctx = scan_board(&gs, Player::Red);
         for profile in &ctx.per_opponent {
             assert!(
-                profile.aggression_toward_root >= 0.0
-                    && profile.aggression_toward_root <= 1.0,
+                profile.aggression_toward_root >= 0.0 && profile.aggression_toward_root <= 1.0,
                 "{:?} aggression {} out of [0, 1]",
                 profile.player,
                 profile.aggression_toward_root
@@ -996,7 +991,11 @@ mod tests {
             crate::board::PieceType::Pawn,
         );
         let class = classify_move(mv, gs.board(), Player::Red);
-        assert_eq!(class, MoveClass::Relevant, "capture of root piece must be relevant");
+        assert_eq!(
+            class,
+            MoveClass::Relevant,
+            "capture of root piece must be relevant"
+        );
     }
 
     // --- Progressive narrowing tests ---
@@ -1037,12 +1036,14 @@ mod tests {
         let sq_c = crate::board::square_from(5, 5).unwrap();
 
         let capture_queen = Move::new_capture(
-            sq_a, sq_b,
+            sq_a,
+            sq_b,
             crate::board::PieceType::Pawn,
             crate::board::PieceType::Queen,
         );
         let capture_pawn = Move::new_capture(
-            sq_a, sq_c,
+            sq_a,
+            sq_c,
             crate::board::PieceType::Pawn,
             crate::board::PieceType::Pawn,
         );
@@ -1073,6 +1074,10 @@ mod tests {
 
         let mv = Move::new(from_sq, to_sq, crate::board::PieceType::Pawn);
         let class = classify_move(mv, gs.board(), Player::Red);
-        assert_eq!(class, MoveClass::Relevant, "move adjacent to root king must be relevant");
+        assert_eq!(
+            class,
+            MoveClass::Relevant,
+            "move adjacent to root king must be relevant"
+        );
     }
 }

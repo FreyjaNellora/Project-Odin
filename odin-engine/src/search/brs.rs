@@ -28,7 +28,9 @@ use std::time::Instant;
 use crate::board::{Board, PieceType, Player};
 use crate::eval::{Evaluator, PIECE_EVAL_VALUES};
 use crate::gamestate::{GameState, PlayerStatus};
-use crate::movegen::{generate_legal, is_in_check, is_square_attacked_by, make_move, unmake_move, Move};
+use crate::movegen::{
+    generate_legal, is_in_check, is_square_attacked_by, make_move, unmake_move, Move,
+};
 
 use super::board_scanner::{scan_board, select_hybrid_reply, BoardContext};
 use super::tt::{TranspositionTable, TT_DEFAULT_ENTRIES, TT_EXACT, TT_LOWER, TT_UPPER};
@@ -374,7 +376,7 @@ impl<'a> BrsContext<'a> {
         self.pv_len[ply] = 0;
 
         // Periodic budget check.
-        if self.nodes % TIME_CHECK_INTERVAL == 0 {
+        if self.nodes.is_multiple_of(TIME_CHECK_INTERVAL) {
             self.check_limits();
         }
         if self.should_stop() {
@@ -454,8 +456,8 @@ impl<'a> BrsContext<'a> {
 
         // Decompress the TT best-move hint against this position's legal moves.
         // Used by max_node to try the TT move first in move ordering.
-        let tt_move = compressed_tt_move
-            .and_then(|c| TranspositionTable::decompress_move(c, &moves));
+        let tt_move =
+            compressed_tt_move.and_then(|c| TranspositionTable::decompress_move(c, &moves));
 
         let score = if current == self.root_player {
             self.max_node(depth, alpha, beta, ply, moves, tt_move)
@@ -596,8 +598,8 @@ impl<'a> BrsContext<'a> {
                         self.history[p][pt][to].saturating_add((depth as i32) * (depth as i32));
                     // Counter-move: record this response to the opponent's last move.
                     if let Some(opp_mv) = self.last_opp_move[ply] {
-                        let idx = opp_mv.from_sq() as usize * TOTAL_SQUARES
-                            + opp_mv.to_sq() as usize;
+                        let idx =
+                            opp_mv.from_sq() as usize * TOTAL_SQUARES + opp_mv.to_sq() as usize;
                         self.countermoves[idx] = Some(mv);
                     }
                 }
@@ -666,7 +668,7 @@ impl<'a> BrsContext<'a> {
     fn quiescence(&mut self, mut alpha: i16, beta: i16, qs_depth: u8) -> i16 {
         self.nodes += 1;
 
-        if self.nodes % TIME_CHECK_INTERVAL == 0 {
+        if self.nodes.is_multiple_of(TIME_CHECK_INTERVAL) {
             self.check_limits();
         }
         if self.should_stop() {
@@ -889,9 +891,8 @@ fn order_moves(
 
     // Helper: find the index of `mv` in `moves` and mark it placed.
     let find_and_mark = |mv: Move, placed: &mut Vec<bool>| -> Option<usize> {
-        moves.iter().position(|&m| m == mv).map(|i| {
+        moves.iter().position(|&m| m == mv).inspect(|&i| {
             placed[i] = true;
-            i
         })
     };
 

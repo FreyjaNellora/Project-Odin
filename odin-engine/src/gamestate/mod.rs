@@ -109,7 +109,11 @@ impl GameState {
 
     /// Create a standard Last King Standing game from the starting position.
     pub fn new_standard_lks() -> Self {
-        Self::new(Board::starting_position(), GameMode::LastKingStanding, false)
+        Self::new(
+            Board::starting_position(),
+            GameMode::LastKingStanding,
+            false,
+        )
     }
 
     /// Create a standard Last King Standing game with terrain mode enabled.
@@ -762,12 +766,18 @@ mod tests {
         board.set_side_to_move(Player::Red);
 
         let mut gs = GameState::new(board, GameMode::FreeForAll, false);
-        assert!(gs.legal_moves().is_empty(), "Red should have no legal moves");
+        assert!(
+            gs.legal_moves().is_empty(),
+            "Red should have no legal moves"
+        );
 
         let result = gs.handle_no_legal_moves();
 
         assert!(
-            result.eliminations.iter().any(|(p, r)| *p == Player::Red && *r == EliminationReason::Checkmate),
+            result
+                .eliminations
+                .iter()
+                .any(|(p, r)| *p == Player::Red && *r == EliminationReason::Checkmate),
             "Red should be eliminated by checkmate"
         );
         assert_ne!(
@@ -821,12 +831,18 @@ mod tests {
         board.set_side_to_move(Player::Red);
 
         let mut gs = GameState::new(board, GameMode::FreeForAll, false);
-        assert!(gs.legal_moves().is_empty(), "Red should have no legal moves");
+        assert!(
+            gs.legal_moves().is_empty(),
+            "Red should have no legal moves"
+        );
 
         let result = gs.handle_no_legal_moves();
 
         assert!(
-            result.eliminations.iter().any(|(p, r)| *p == Player::Red && *r == EliminationReason::Stalemate),
+            result
+                .eliminations
+                .iter()
+                .any(|(p, r)| *p == Player::Red && *r == EliminationReason::Stalemate),
             "Red should be eliminated by stalemate"
         );
     }

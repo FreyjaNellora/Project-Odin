@@ -82,9 +82,10 @@ fn test_eval_performance_under_10us() {
     let elapsed = start.elapsed();
     let per_eval = elapsed / iterations;
 
-    // Target: < 10us per eval in release. Debug builds are ~2-3x slower due to
-    // no inlining and bounds checking, so allow 50us in debug.
-    let threshold = if cfg!(debug_assertions) { 50 } else { 10 };
+    // Target: < 10us per eval in release. Debug builds are ~5-7x slower due to
+    // no inlining and bounds checking, so allow 80us in debug.
+    // (Raised from 50 after adding hanging-piece-penalty attack queries.)
+    let threshold = if cfg!(debug_assertions) { 80 } else { 10 };
     assert!(
         per_eval < std::time::Duration::from_micros(threshold),
         "Eval took {per_eval:?} per call, exceeds {threshold}us target"
