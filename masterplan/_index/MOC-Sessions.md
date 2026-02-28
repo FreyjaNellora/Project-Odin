@@ -12,6 +12,7 @@ Chronological index of build sessions. Each session note captures what was attem
 ## Sessions
 
 <!-- Add newest sessions at the top -->
+- **2026-02-27** [[Session-2026-02-27-Stage10-Cleanup-Tag]] -- Stage 10 cleanup: git push (18 commits), username anonymization, audit log + downstream log filled, tagged `stage-10-complete` / `v1.10`. Game analysis vs baselines.
 - **2026-02-27** [[Session-2026-02-27-Stage10-MCTS]] -- Stage 10: Gumbel MCTS implementation. SplitMix64 PRNG, MctsNode, priors, Gumbel+Top-k, Sequential Halving, PUCT, MaxN backprop, progressive widening, SimConfig, Searcher trait. 1000 sims in 124ms release. AC1-AC8 pass. 440 tests.
 - **2026-02-27** [[Session-2026-02-27-Observer-Baselines-Stage10Prep]] -- Observer infrastructure (AGENT_CONDUCT 1.18, LogFile toggle), human baselines (6 games, Elo 1954-3438), depth-8 diagnostic (~2100-2300 Elo), Stage 10 Claude.T prompt written.
 - **2026-02-27** [[Session-2026-02-27-PreStage10-Cleanup]] -- Pre-Stage-10 cleanup: audit fixes (W1/W2/N1), pawn-push eval mitigations (dev bonuses, pawn gate, king displacement), Vec clone retrofit (Arc position_history, fixed-size piece_lists). Issue-Vec-Clone-Cost resolved. 408 tests.

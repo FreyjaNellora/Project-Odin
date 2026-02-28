@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
 **Last Updated:** 2026-02-27
-**Updated By:** Claude Opus 4.6 (Stage 10 MCTS implementation complete)
+**Updated By:** Claude Opus 4.6 (Stage 10 tagged, cleanup complete)
 
 ---
 
@@ -9,8 +9,8 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 10 (MCTS) implementation complete — pending user tag. All AC1-AC8 pass. |
-| **Current Build-Order Step** | Stage 10 — complete. User confirms and tags, then begin Stage 11 (Hybrid Integration). |
+| **Current Stage** | Stage 10 (MCTS) — COMPLETE. Tagged `stage-10-complete` / `v1.10`. |
+| **Current Build-Order Step** | Stage 11 (Hybrid Integration) — not started. |
 | **Build Compiles** | Yes — `cargo build --release` passes, 0 warnings, 0 clippy warnings |
 | **Tests Pass** | Yes — engine: 281 unit + 159 integration = 440 total (4 ignored); UI: 54 Vitest. |
 | **Blocking Issues** | None |
@@ -31,7 +31,7 @@
 | 7 | Plain BRS + Searcher Trait | complete | post-audit done | stage-07-complete / v1.7 | |
 | 8 | BRS/Paranoid Hybrid Layer | complete | post-audit done | stage-08-complete / v1.8 | User verified. Post-elim crash fixed (v0.4.1-fix). |
 | 9 | TT & Move Ordering | complete | post-audit done | stage-09-complete / v1.9 | 58% node reduction at depth 6; 387 tests. |
-| 10 | MCTS | complete | — | — | Gumbel MCTS, 1000 sims in 124ms release. Pending user tag. |
+| 10 | MCTS | complete | post-audit done | stage-10-complete / v1.10 | Gumbel MCTS standalone, 1000 sims in 124ms release. 440 tests. |
 | 11 | Hybrid Integration | not-started | — | — | |
 | 12 | Self-Play & Regression Testing | not-started | — | — | |
 | 13 | Time Management | not-started | — | — | |
@@ -55,26 +55,25 @@
 | AGENT_CONDUCT.md | current | v1.2 — Section 1.18 added (Diagnostic Observer Protocol). |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
 | DECISIONS.md | current | 15 ADRs. ADR-007/008 superseded by ADR-015 (Huginn → tracing). ADR-014 (UI Vision), ADR-015 (Retire Huginn). |
-| HANDOFF.md | current | Observer infrastructure + baselines + Stage 10 prompt ready. |
+| HANDOFF.md | current | Stage 10 tagged, ready for Stage 11. |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
-| audit_log_stage_00.md through audit_log_stage_09.md | current | All complete. |
-| downstream_log_stage_00.md through downstream_log_stage_09.md | current | All complete. |
+| audit_log_stage_00.md through audit_log_stage_10.md | current | All complete. |
+| downstream_log_stage_00.md through downstream_log_stage_10.md | current | All complete. |
 
 ---
 
 ## What the Next Session Should Do First
 
 1. Read STATUS.md + HANDOFF.md
-2. User confirms Stage 10, tags `stage-10-complete` / `v1.10`
-3. Write `masterplan/audit_log_stage_10.md` + `masterplan/downstream_log_stage_10.md`
-4. Begin Stage 11 (Hybrid Integration) per AGENT_CONDUCT.md Section 1.1
+2. Begin Stage 11 (Hybrid Integration) per AGENT_CONDUCT.md Section 1.1
+3. Read downstream_log_stage_10.md for MCTS API contracts
 
 ---
 
 ## Known Regressions
 
-None. All existing tests pass (408 engine + 54 UI Vitest).
+None. All existing tests pass (440 engine + 54 UI Vitest).
 
 ---
 

@@ -1,86 +1,69 @@
 # HANDOFF — Last Session Summary
 
 **Date:** 2026-02-27
-**Stage:** Stage 10 (MCTS) — Implementation Complete, Pending User Tag
-**Next:** User confirms Stage 10, tags `stage-10-complete` / `v1.10`. Then begin Stage 11 (Hybrid Integration).
+**Stage:** Stage 10 (MCTS) — COMPLETE. Tagged `stage-10-complete` / `v1.10`.
+**Next:** Begin Stage 11 (Hybrid Integration).
 
 ## What Was Done This Session
 
-### Stage 10: Gumbel MCTS Strategic Search (DONE)
+### Stage 10 Cleanup & Tag
 
-Implemented the full standalone Gumbel MCTS searcher as a single new file `odin-engine/src/search/mcts.rs` (~550 lines). All 13 build-order steps completed:
+1. **Git push** — 18 commits pushed to origin/main (17 previously local + 1 new commit covering all post-Stage-9 work through Stage 10: 73 files, +12,726 lines).
+2. **Username anonymization** — Replaced chess.com usernames in observer baselines with Player-A through Player-N (11 files).
+3. **audit_log_stage_10.md** — Full pre-audit (upstream log review, active issues) and post-audit (15 deliverables, 8 AC verified, code quality, search/eval integrity, future conflict analysis for Stages 11/12/13/16/19).
+4. **downstream_log_stage_10.md** — 8 must-know items, full API contracts, 3 known limitations (W7-W9), performance baselines, 4 open questions, 5 design decisions.
+5. **Git tags** — `stage-10-complete` and `v1.10` created.
+6. **STATUS.md + HANDOFF.md** — Updated.
 
-1. **SplitMix64 PRNG** — Embedded PRNG (no `rand` dependency). Configurable seed for deterministic tests.
-2. **MctsNode struct** — visit_count, value_sum[4], prior, gumbel, children Vec, terminal/expanded flags.
-3. **Prior policy** — Softmax over MVV-LVA scores with configurable temperature (default 50.0). Captures > quiets.
-4. **Gumbel noise** — `Gumbel(0,1) = -ln(-ln(U))` sampling at root children.
-5. **Top-k selection** — Rank by `g(a) + ln(pi(a))`, keep top-k (default 16).
-6. **Sequential Halving** — `ceil(log2(k))` rounds, budget split across rounds, bottom half eliminated each round. Score by `sigma(g + ln(pi) + q)`.
-7. **PUCT tree policy** — `Q/N + C*pi/(1+N) + PH(a)`. Unvisited children selected first. Progressive widening limits selectable children.
-8. **Expansion + leaf eval** — Clone GameState, apply moves, `eval_4vec` for [f64; 4] leaf values. Terminal detection via `is_game_over()` / empty legal moves.
-9. **4-player MaxN backpropagation** — All 4 value components propagate up unchanged. No negation.
-10. **Progressive widening** — `max_children = floor(W * N^B)`, defaults W=2.0, B=0.5. Applied to non-root nodes only.
-11. **Budget control** — Stops at max_nodes or max_time_ms (checked every 64 sims). SimConfig struct bundles parameters.
-12. **PV extraction** — Follows most-visited children from selected best root child.
-13. **Temperature selection** — Default 0.0 (deterministic). Stub for self-play temperature sampling.
-14. **Stage 11 stubs** — `set_prior_policy()`, `set_history_table()`, `HistoryTable` type alias. Progressive history term activates when history provided.
-15. **MctsSearcher** — Implements frozen `Searcher` trait. Constructors: `new()`, `with_info_callback()`, `with_seed()`. Info callback emits `phase mcts` lines.
+### First Post-Stage-10 Game Analysis
 
-### Design Decisions
-
-- **D1: No `rand` crate** — Embedded SplitMix64 PRNG (~15 lines). Matches project's minimal-dependency philosophy.
-- **D2: No GameState in nodes** — Replay from root each simulation. O(depth) apply_move per sim. 1000 sims completes in 124ms release.
-- **D3: Nested Vec<MctsNode>** — Simple ownership. Arena can be added in Stage 19 if profiling warrants.
-- **D4: PW at non-root only** — Root creates all children for Gumbel Top-k. PW limits selectable children at internal nodes.
-- **D5: Score conversion** — `q_to_centipawns` via inverse sigmoid: `cp = 400 * ln(q/(1-q))`, clamped to ±9999.
-
-### Acceptance Criteria Results
-
-| AC | Description | Status |
-|----|------------|--------|
-| AC1 | 2 sims finds reasonable move | PASS — returns legal move |
-| AC2 | 100+ sims match/beat UCB1 quality | PASS — legal moves, bounded scores |
-| AC3 | 4-player value backprop correct | PASS — unit tests + integration |
-| AC4 | Progressive widening limits breadth | PASS — pw_limit grows with visits |
-| AC5 | 1000 sims < 5s release | PASS — **124ms** |
-| AC6 | MctsSearcher implements Searcher | PASS — `Box<dyn Searcher>` works |
-| AC7 | Progressive history reduces waste | PASS — API works, PH term activates |
-| AC8 | Sequential Halving eliminates correctly | PASS — budget allocated, candidates reduced |
-
-### Performance
-
-| Metric | Value |
-|--------|-------|
-| 1000 sims (release, starting pos) | 124ms, 986 nodes |
-| Best move at 1000 sims | e2e4 (reasonable opening) |
+13 rounds of BRS-only play analyzed against v0.4.3 baseline and human baselines:
+- **Improvements:** Queen activation R2 (was Never), Blue castled (was Never), first capture R13 (was 0 in 42 ply)
+- **Remaining issues:** Green rook shuffling, Yellow pawn-heavy, 1508cp eval spread
+- **Key insight:** All moves show `phase brs` — MCTS is standalone and not wired into the protocol. Expected behavior; Stage 11 integrates them.
 
 ---
 
 ## What's Next — Priority-Ordered
 
-### 1. User Confirms Stage 10
+### 1. Begin Stage 11 (Hybrid Integration)
 
-Tag `stage-10-complete` / `v1.10`. Fill in `masterplan/audit_log_stage_10.md`. Write `masterplan/downstream_log_stage_10.md` with API contracts for Stage 11.
+**MASTERPLAN Stage 11** composes BRS and MCTS through the `Searcher` trait. Key design:
+- `HybridController` in `search/hybrid.rs`
+- Phase 1: BRS with reduced depth for tactical grounding
+- Phase 2: MCTS with remaining budget, informed by BRS history table
+- Time allocation between phases (e.g., 60/40 BRS/MCTS or adaptive)
 
-### 2. Begin Stage 11 (Hybrid Integration)
+**Stage 10 downstream contracts for Stage 11:**
+- `MctsSearcher::set_history_table(&mut self, history: &HistoryTable)` — pass BRS history after Phase 1
+- `MctsSearcher::set_prior_policy(&mut self, priors: &[f32])` — store but NOT YET consumed in search
+- `HistoryTable = [[[i32; 196]; 7]; 4]` — matches BRS format exactly
+- MCTS info lines emit `phase mcts`; BRS emits `phase brs`
+- `external_priors` field exists but needs wiring into expansion logic
 
-Compose BRS and MCTS through the `Searcher` trait. `HybridController` in `search/hybrid.rs`. BRS provides depth; MCTS provides breadth.
+**BRS accessor needed:** `BrsSearcher` needs a `pub fn history_table(&self) -> &HistoryTable` accessor (or clone). Currently history is in private `BrsContext`, reset per search. Must extract AFTER search completes but BEFORE context is dropped (see downstream_log_stage_09 Open Question 5).
 
 ---
 
 ## Known Issues
 
-- `Issue-Pawn-Push-Preference-King-Walk` (WARNING): MITIGATED — eval-side fixes applied. MCTS now available as alternative search strategy.
+- `Issue-Pawn-Push-Preference-King-Walk` (WARNING): MITIGATED — eval-side fixes applied. MCTS provides alternative search strategy.
 - W5 (stale GameState fields during search): acceptable for bootstrap eval, revisit for NNUE
 - W4 (lead penalty tactical mismatch): mitigated by Aggressive profile for FFA
+- W7 (nested Vec tree structure): acceptable at 1000 sims, arena for Stage 19
+- W8 (no GameState in tree nodes): replay cost acceptable at current sim counts
+- W9 (MVV-LVA priors only): NNUE policy head replaces in Stage 16
 - `Issue-Bootstrap-Eval-Lead-Penalty-Tactical-Mismatch` (NOTE): still open, not blocking
 - `Issue-DKW-Halfmove-Clock` (NOTE): still open, not blocking
 
-## Files Created This Session
+## Files Created/Modified This Session
 
-- `odin-engine/src/search/mcts.rs` — NEW: Complete Gumbel MCTS searcher (~550 lines)
-- `odin-engine/tests/stage_10_mcts.rs` — NEW: 18 integration tests + 1 ignored release perf test
-- `odin-engine/src/search/mod.rs` — MODIFIED: Added `pub mod mcts;` (1 line)
+- `masterplan/audit_log_stage_10.md` — FILLED (was empty template)
+- `masterplan/downstream_log_stage_10.md` — FILLED (was empty template)
+- `masterplan/sessions/Session-2026-02-27-Stage10-Cleanup-Tag.md` — CREATED
+- `masterplan/STATUS.md` — UPDATED
+- `masterplan/HANDOFF.md` — REWRITTEN (this file)
+- `observer/baselines/*.json` + `*_summary.md` + `README.md` — 11 files anonymized
 
 ## Test Counts
 
