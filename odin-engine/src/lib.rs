@@ -1,4 +1,5 @@
 pub mod board;
+pub mod datagen;
 pub mod eval;
 pub mod gamestate;
 pub mod movegen;

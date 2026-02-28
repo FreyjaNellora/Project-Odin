@@ -362,7 +362,13 @@ impl<'a> BrsContext<'a> {
             // Depth fully completed — commit results.
             self.best_score = score;
             self.best_depth = depth;
-            self.best_pv = self.extract_pv();
+            // Guard: aspiration re-search can leave PV table empty at ply 0
+            // when all root moves fail low against the widened window. Keep
+            // the previous depth's PV rather than emitting "pv none".
+            let pv = self.extract_pv();
+            if !pv.is_empty() {
+                self.best_pv = pv;
+            }
             prev_score = score;
 
             // Commit root move scores from this completed depth (Stage 11 handoff).

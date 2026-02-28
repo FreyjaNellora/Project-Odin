@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
 **Last Updated:** 2026-02-28
-**Updated By:** Claude Opus 4.6 (Stage 14 implementation complete, pending human review)
+**Updated By:** Claude Opus 4.6 (Stage 15 implementation complete, pending human review + Gen-0 pipeline run)
 
 ---
 
@@ -9,11 +9,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 14 (NNUE Feature Design & Architecture) — IMPLEMENTATION COMPLETE. Pending human review + tag. |
-| **Current Build-Order Step** | Stage 15 (NNUE Training Pipeline) — not started. |
+| **Current Stage** | Stage 15 (NNUE Training Pipeline) — IMPLEMENTATION COMPLETE. Pending human review, Gen-0 pipeline run, T13 verification, and tag. |
+| **Current Build-Order Step** | Stage 16 (NNUE Integration) — not started. |
 | **Build Compiles** | Yes — `cargo build` passes, 0 warnings, 0 clippy warnings |
-| **Tests Pass** | Yes — engine: 305 unit + 214 integration = 519 total (5 ignored); UI: 54 Vitest. |
-| **Blocking Issues** | None |
+| **Tests Pass** | Yes — engine: 305 unit + 221 integration = 526 total (6 ignored); Python: 8 pytest; UI: 54 Vitest. |
+| **Blocking Issues** | T13 must pass before tagging Stage 15. Requires Gen-0 pipeline run (human-driven). |
 
 ---
 
@@ -36,7 +36,7 @@
 | 12 | Self-Play & Regression Testing | complete | post-audit done | — | 9 regression tests, match manager, Elo+SPRT, data logging. 465 tests. Pending tag. |
 | 13 | Time Management | complete | post-audit done | — | TimeManager, enriched classification, tunable params, timed match support, tune.mjs. 490 tests. Pending tag. |
 | 14 | NNUE Feature Design & Architecture | complete | post-audit done | — | HalfKP-4, dual-head NNUE inference, .onnue format. 519 tests. Pending tag. |
-| 15 | NNUE Training Pipeline | not-started | — | — | |
+| 15 | NNUE Training Pipeline | complete | post-audit done | — | 526 tests. Pending Gen-0 run + T13 + tag. |
 | 16 | NNUE Integration | not-started | — | — | |
 | 17 | Game Mode Variant Tuning | not-started | — | — | |
 | 18 | Full UI | not-started | — | — | |
@@ -55,29 +55,34 @@
 | AGENT_CONDUCT.md | current | v1.2 — Section 1.18 added (Diagnostic Observer Protocol). |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
 | DECISIONS.md | current | 15 ADRs. ADR-007/008 superseded by ADR-015 (Huginn → tracing). ADR-014 (UI Vision), ADR-015 (Retire Huginn). |
-| HANDOFF.md | current | Stage 14 complete, pending review + tag. |
+| HANDOFF.md | current | Stage 15 complete, pending review + Gen-0 pipeline run + tag. |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
-| audit_log_stage_00.md through audit_log_stage_14.md | current | All complete. |
-| downstream_log_stage_00.md through downstream_log_stage_14.md | current | All complete. |
+| audit_log_stage_00.md through audit_log_stage_15.md | current | All complete. |
+| downstream_log_stage_00.md through downstream_log_stage_15.md | current | All complete. |
 
 ---
 
 ## What the Next Session Should Do First
 
 1. Read STATUS.md + HANDOFF.md
-2. Human reviews Stage 14 changes, tags `stage-14-complete` / `v1.14`
-3. Begin Stage 15 (NNUE Training Pipeline) per AGENT_CONDUCT.md Section 1.1
+2. Human reviews Stage 15 changes, runs Gen-0 pipeline (Step 7), verifies T13 passes
+3. Human tags `stage-15-complete` / `v1.15`
+4. Begin Stage 16 (NNUE Integration) per AGENT_CONDUCT.md Section 1.1
 
 ---
 
 ## Known Regressions
 
-None. All tests pass (519 engine + 54 UI Vitest).
+None. All tests pass (526 engine + 8 Python pytest + 54 UI Vitest).
 
 ---
 
 ## Non-Stage Changes
+
+**2026-02-28 — Stage 15: NNUE Training Pipeline** ([[Session-2026-02-28-Stage15-Training-Pipeline]]):
+
+Complete training pipeline: self-play data generation (match.mjs datagen mode) → Rust feature extraction (datagen.rs, 556-byte binary .bin format) → PyTorch training (model.py, dataset.py, train.py: multi-task loss with BRS + MCTS + game result heads) → .onnue weight export (export.py: quantized int16/int8 weights, FNV-1a arch hash, CRC32). Added `serde` + `serde_json` to engine (datagen CLI path only). v1-v4 null positions and eliminated players skipped. Cross-language invariants verified: architecture hash (T10), CRC32, weight transposition. Tests: 305 unit + 221 integration = 526 total (6 ignored), 8 Python pytest, 0 clippy warnings. T13 (`test_load_exported_weights`) is #[ignore] — requires human to run Gen-0 pipeline first.
 
 **2026-02-28 — Stage 14: NNUE Feature Design & Architecture** ([[Session-2026-02-28-Stage14-NNUE-Design]]):
 
@@ -224,6 +229,9 @@ Follow-up items noted but not blocking:
 | AccumulatorStack memory | ~262 KB | 14 | 128 entries × 4 × 256 × 2 bytes pre-allocated. |
 | FT weight memory | ~8.7 MB | 14 | Per-perspective (4 × 4480 × 256 × 2 bytes). |
 | Test count | 519 | 14 | 305 unit + 214 integration (5 ignored). +13 nnue unit, +18 stage_14 integration. |
+| Test count | 526 | 15 | 305 unit + 221 integration (6 ignored). +7 stage_15 datagen integration. +8 Python pytest. |
+| Rust datagen (per sample) | ~100-200us | 15 | `replay_moves` + `extract_sample`, debug build |
+| .bin sample size | 556 bytes | 15 | Fixed-size binary training records |
 
 ---
 

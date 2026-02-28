@@ -1,72 +1,102 @@
 # HANDOFF — Last Session Summary
 
 **Date:** 2026-02-28
-**Stage:** Stage 14 (NNUE Feature Design & Architecture) — IMPLEMENTATION COMPLETE. Pending human review + tag.
-**Next:** Human reviews, tags `stage-14-complete` / `v1.14`, then begin Stage 15 (NNUE Training Pipeline).
+**Stage:** Stage 15 (NNUE Training Pipeline) — IMPLEMENTATION COMPLETE. Pending human review, Gen-0 pipeline run, T13 verification, and tag.
+**Next:** Human reviews, runs Gen-0 pipeline, verifies T13, tags `stage-15-complete` / `v1.15`, then begin Stage 16 (NNUE Integration).
 
 ## What Was Done This Session
 
-### Stage 14: NNUE Feature Design & Architecture
+### Stage 15: NNUE Training Pipeline
 
-1. **`odin-engine/src/util.rs` (CREATE)** — Extracted `SplitMix64` PRNG from `search/mcts.rs` to shared module. Added `next_i16()`, `next_i8()`, `next_i32()` convenience methods. Pure refactor.
+1. **`observer/match.mjs` (MODIFIED)** — Added datagen mode: v1-v4 capture from engine info, `runDatagen()` self-play loop, `samplePositions()` with skip logic (first 4 plies, eliminated, null v1-v4), `computeGameResult()` backfill, JSONL output.
 
-2. **`odin-engine/src/eval/nnue/features.rs` (CREATE)** — HalfKP-4 feature encoding. 160 valid squares × 7 piece types × 4 relative owners = 4,480 features per perspective. Static const dense square mapping tables. `relative_owner()` CW rotation. `active_features()` returns fixed `[u16; 64]` + count (zero heap allocation). 7 unit tests.
+2. **`observer/datagen_config.json` (CREATED)** — Datagen config: 1000 games, depth 6, sample_interval 4, FFA mode, aggressive eval.
 
-3. **`odin-engine/src/eval/nnue/weights.rs` (CREATE)** — `NnueWeights` struct with per-perspective FT weights (~8.7 MB), hidden layer, dual output heads. `.onnue` binary format (48-byte header, CRC32 footer). Inline CRC32 IEEE 802.3 + FNV-1a architecture hash (no external crates). `random(seed)`, `save(path)`, `load(path)`. 5 unit tests.
+3. **`odin-engine/Cargo.toml` (MODIFIED)** — Added `serde` (derive feature) + `serde_json` dependencies.
 
-4. **`odin-engine/src/eval/nnue/accumulator.rs` (CREATE)** — `Accumulator` (4 perspectives × 256 int16) + `AccumulatorStack` (128 pre-allocated entries, ~262 KB). Copy-on-push, zero-cost pop. Full refresh + incremental delta updates. King moves mark `needs_refresh` for owner's perspective; EP/castling fall back to full refresh.
+4. **`odin-engine/src/main.rs` (MODIFIED)** — `--datagen` CLI flag dispatch before protocol loop.
 
-5. **`odin-engine/src/eval/nnue/mod.rs` (CREATE)** — Quantized forward pass: SCReLU (QA=255) → hidden layer (1024→32, int8 weights) → dual output heads (BRS scalar centipawns + MCTS 4-player sigmoid). `NnueEvaluator` implements frozen Evaluator trait via `RefCell<AccumulatorStack>`. Stage 14: full refresh every eval call.
+5. **`odin-engine/src/lib.rs` (MODIFIED)** — Added `pub mod datagen;`.
 
-6. **`odin-engine/tests/stage_14_nnue.rs` (CREATE, 18 tests)** — T1-T18: feature indexing, square mapping, weight determinism, save/load roundtrip, accumulator full/incremental, push/pop, forward pass determinism, eval range, sensitivity, captures, castling, promotion, magic validation, benchmarks.
+6. **`odin-engine/src/datagen.rs` (CREATED)** — JSONL reader, `replay_moves()`, `extract_sample()` (556-byte binary format), `run()` CLI entry point. Skips null v1-v4 and eliminated players.
 
-7. **Module wiring** — `lib.rs`: added `pub mod util;`. `eval/mod.rs`: added `pub mod nnue;` + `pub use nnue::NnueEvaluator;`. `search/mcts.rs`: replaced inline SplitMix64 with `use crate::util::SplitMix64;`.
+7. **`odin-nnue/model.py` (CREATED)** — OdinNNUE: 4× FT(4480→256) + SCReLU → hidden(1024→32) → dual heads (BRS + MCTS).
 
-8. **Documentation** — `audit_log_stage_14.md` (pre+post audit), `downstream_log_stage_14.md` (W17-W19, API contracts, baselines), STATUS.md, HANDOFF.md, session note.
+8. **`odin-nnue/dataset.py` (CREATED)** — Binary .bin dataset loader (556-byte samples).
+
+9. **`odin-nnue/train.py` (CREATED)** — Multi-task training: λ_BRS=1.0 MSE + λ_MCTS=0.5 sigmoid-MSE (70% search / 30% result) + λ_result=0.25 sigmoid-MSE. Adam, StepLR, early stopping. Windows auto-detect.
+
+10. **`odin-nnue/export.py` (CREATED)** — PyTorch → `.onnue`: FNV-1a arch hash, CRC32, quantization (FT→int16, hidden→int8, biases→int32), weight transposition (PyTorch [out,in] → .onnue [in,out]).
+
+11. **`odin-nnue/requirements.txt` (CREATED)** — `torch>=2.0`, `numpy`.
+
+12. **`odin-nnue/test_pipeline.py` (CREATED)** — 8 Python tests (T6-T12).
+
+13. **`odin-engine/tests/stage_15_datagen.rs` (CREATED)** — 7 Rust tests (T1-T5, T13).
+
+14. **Documentation** — audit_log_stage_15.md, downstream_log_stage_15.md, STATUS.md, HANDOFF.md, session note.
 
 ---
 
 ## What's Next — Priority-Ordered
 
-### 1. Human Review + Tag Stage 14
+### 1. Human Review + Gen-0 Pipeline Run + Tag Stage 15
 
-Review the changes. Tag `stage-14-complete` / `v1.14`.
+Review the changes. Run the Gen-0 pipeline:
 
-### 2. Begin Stage 15 (NNUE Training Pipeline)
+```bash
+cd observer && node match.mjs datagen_config.json
+cd ../odin-engine && cargo run --release -- --datagen --input ../observer/training_data_gen0.jsonl --output ../odin-nnue/training_data_gen0.bin
+cd ../odin-nnue && pip install -r requirements.txt && python train.py
+python export.py best_model.pt weights_gen0.onnue
+cd ../odin-engine && cargo test -- test_load_exported_weights --ignored
+```
 
-Per MASTERPLAN. Training data generation, self-play data pipeline, NNUE weight training.
+T13 must pass before tagging `stage-15-complete` / `v1.15`.
+
+### 2. Begin Stage 16 (NNUE Integration)
+
+Per MASTERPLAN. Wire `NnueEvaluator` into BRS search with incremental `AccumulatorStack` updates.
 
 ---
 
 ## Known Issues
 
-- **W17:** `NnueEvaluator` does full refresh every eval call. Stage 16 must wire `AccumulatorStack::push/pop` into BRS make/unmake for incremental updates.
-- **W18:** King moves mark `needs_refresh` even without king bucketing (Phase 1). Correct but wasteful — profile in Stage 19 if needed.
-- **W19:** EP/castling fall back to full refresh. Conservative but correct. Optimize in Stage 19 if profiling warrants.
-- **W15 (carried):** `PositionType::Endgame` triggers at `piece_count() <= 16`. May need tuning.
+- **W17 (carried):** `NnueEvaluator` does full refresh every eval call. Stage 16 must wire `AccumulatorStack::push/pop` into BRS make/unmake.
+- **W18 (carried):** King moves mark `needs_refresh` even without king bucketing. Profile in Stage 19.
+- **W19 (carried):** EP/castling fall back to full refresh. Profile in Stage 19.
+- **W20 (new):** `serde` + `serde_json` in engine. Scoped to datagen CLI path only — not in eval/search hot path.
+- **W21 (new):** T13 must be run manually after Gen-0 pipeline completes.
+- **W22 (new):** Null v1-v4 positions excluded from training data.
+- **W15 (carried):** `PositionType::Endgame` triggers at `piece_count() <= 16`.
 - **W16 (carried):** `limits_to_budget()` takes `current_player: Option<Player>`.
 - **W13 (carried):** MCTS score 9999 (max) — unchanged.
 - **Pondering not implemented:** Deferred from Stage 13.
 
 ## Files Created/Modified This Session
 
-- `odin-engine/src/util.rs` — CREATED (SplitMix64 shared module)
-- `odin-engine/src/eval/nnue/mod.rs` — CREATED (forward pass, NnueEvaluator)
-- `odin-engine/src/eval/nnue/features.rs` — CREATED (HalfKP-4 feature indexing)
-- `odin-engine/src/eval/nnue/accumulator.rs` — CREATED (Accumulator, AccumulatorStack)
-- `odin-engine/src/eval/nnue/weights.rs` — CREATED (NnueWeights, .onnue format)
-- `odin-engine/tests/stage_14_nnue.rs` — CREATED (18 acceptance tests)
-- `odin-engine/src/lib.rs` — MODIFIED (pub mod util)
-- `odin-engine/src/eval/mod.rs` — MODIFIED (pub mod nnue + re-export)
-- `odin-engine/src/search/mcts.rs` — MODIFIED (use crate::util::SplitMix64)
-- `masterplan/audit_log_stage_14.md` — FILLED
-- `masterplan/downstream_log_stage_14.md` — FILLED
+- `observer/match.mjs` — MODIFIED (datagen mode)
+- `observer/datagen_config.json` — CREATED
+- `odin-engine/Cargo.toml` — MODIFIED (serde deps)
+- `odin-engine/src/main.rs` — MODIFIED (--datagen dispatch)
+- `odin-engine/src/lib.rs` — MODIFIED (pub mod datagen)
+- `odin-engine/src/datagen.rs` — CREATED
+- `odin-nnue/model.py` — CREATED
+- `odin-nnue/dataset.py` — CREATED
+- `odin-nnue/train.py` — CREATED
+- `odin-nnue/export.py` — CREATED
+- `odin-nnue/requirements.txt` — CREATED
+- `odin-nnue/test_pipeline.py` — CREATED
+- `odin-engine/tests/stage_15_datagen.rs` — CREATED
+- `masterplan/audit_log_stage_15.md` — FILLED
+- `masterplan/downstream_log_stage_15.md` — FILLED
 - `masterplan/STATUS.md` — UPDATED
 - `masterplan/HANDOFF.md` — REWRITTEN (this file)
-- `masterplan/sessions/Session-2026-02-28-Stage14-NNUE-Design.md` — CREATED
+- `masterplan/sessions/Session-2026-02-28-Stage15-Training-Pipeline.md` — CREATED
 
 ## Test Counts
 
-- Engine: 519 (305 unit + 214 integration, 5 ignored)
+- Engine: 526 (305 unit + 221 integration, 6 ignored)
+- Python: 8 (pytest)
 - UI Vitest: 54
 - Total: 0 failures, 0 clippy warnings

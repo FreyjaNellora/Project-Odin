@@ -7,7 +7,7 @@
 //
 // Usage: node match.mjs [match_config.json]
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, appendFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Engine, parseLine, PLAYERS } from './lib/engine.mjs';
@@ -131,6 +131,10 @@ async function playMatchGame(engineAPath, engineBPath, gameNum) {
         pv: lastSearch?.pv ?? null,
         phase: lastSearch?.phase ?? null,
         position_moves: moveList.join(' '),
+        v1: lastSearch?.v1 ?? null,
+        v2: lastSearch?.v2 ?? null,
+        v3: lastSearch?.v3 ?? null,
+        v4: lastSearch?.v4 ?? null,
       });
 
       // Stage 13: Update clock for timed games
@@ -195,9 +199,119 @@ async function playMatchGame(engineAPath, engineBPath, gameNum) {
 }
 
 // ---------------------------------------------------------------------------
+// Datagen helpers — sample positions and backfill game results
+// ---------------------------------------------------------------------------
+const PLAYER_INDEX = { Red: 0, Blue: 1, Yellow: 2, Green: 3 };
+
+function computeGameResult(gameRecord) {
+  const result = [0.0, 0.0, 0.0, 0.0];
+  if (gameRecord.result.winner) {
+    result[PLAYER_INDEX[gameRecord.result.winner]] = 1.0;
+  } else {
+    // Draw at ply cap: surviving players share equally
+    const eliminatedSet = new Set(gameRecord.result.eliminations.map((e) => e.player));
+    const survivors = PLAYERS.filter((p) => !eliminatedSet.has(p));
+    const share = survivors.length > 0 ? 1.0 / survivors.length : 0.25;
+    for (const p of survivors) result[PLAYER_INDEX[p]] = share;
+  }
+  return result;
+}
+
+function samplePositions(gameRecord, interval) {
+  const samples = [];
+  const eliminatedSet = new Set();
+  let nextSamplePly = 4 + Math.floor(Math.random() * interval);
+
+  for (const move of gameRecord.moves) {
+    // Track eliminations up to this ply
+    for (const e of gameRecord.result.eliminations) {
+      if (e.at_ply <= move.ply) eliminatedSet.add(e.player);
+    }
+
+    if (move.ply < 4) continue;                    // Skip first 4 plies
+    if (eliminatedSet.has(move.player)) continue;  // Skip eliminated players
+    if (move.v1 == null || move.v2 == null || move.v3 == null || move.v4 == null) continue; // Skip if no MCTS values
+
+    if (move.ply >= nextSamplePly) {
+      samples.push({
+        position_moves: move.position_moves,
+        ply: move.ply,
+        side_to_move: move.player,
+        score_cp: move.score_cp ?? 0,
+        v1: move.v1,
+        v2: move.v2,
+        v3: move.v3,
+        v4: move.v4,
+        depth: move.depth ?? 0,
+        game_id: gameRecord.game_id,
+      });
+      // Next sample at random interval (interval ± 1 ply)
+      nextSamplePly = move.ply + interval + Math.floor(Math.random() * 3) - 1;
+    }
+  }
+  return samples;
+}
+
+// ---------------------------------------------------------------------------
+// Datagen mode — self-play data generation for NNUE training
+// ---------------------------------------------------------------------------
+async function runDatagen() {
+  const enginePath = resolve(__dirname, config.engine_a);
+  if (!existsSync(enginePath)) {
+    console.error(`Engine not found: ${enginePath}`);
+    process.exit(1);
+  }
+
+  const outputFile = resolve(__dirname, config.output_file || 'training_data_gen0.jsonl');
+  const interval = config.sample_interval || 4;
+  const totalGames = config.games || 1000;
+
+  console.log(`[datagen] Engine: ${enginePath}`);
+  console.log(`[datagen] Games: ${totalGames} | Depth: ${config.depth} | Sample interval: ${interval}`);
+  console.log(`[datagen] Output: ${outputFile}`);
+  console.log('');
+
+  // Clear output file
+  writeFileSync(outputFile, '');
+
+  let totalSamples = 0;
+
+  for (let i = 1; i <= totalGames; i++) {
+    process.stdout.write(`[datagen] Game ${i}/${totalGames} ... `);
+
+    // Self-play: same engine for both sides
+    const gameRecord = await playMatchGame(enginePath, enginePath, i);
+
+    // Compute game result and sample positions
+    const gameResult = computeGameResult(gameRecord);
+    const samples = samplePositions(gameRecord, interval);
+
+    // Backfill game_result and write JSONL
+    if (samples.length > 0) {
+      const lines = samples.map((s) => {
+        s.game_result = gameResult;
+        return JSON.stringify(s);
+      }).join('\n') + '\n';
+      appendFileSync(outputFile, lines);
+    }
+
+    totalSamples += samples.length;
+    console.log(`${gameRecord.result.total_ply} ply, winner: ${gameRecord.result.winner ?? 'none'}, samples: ${samples.length} (total: ${totalSamples})`);
+  }
+
+  console.log('');
+  console.log(`[datagen] Complete: ${totalGames} games, ${totalSamples} samples written to ${outputFile}`);
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 async function main() {
+  // Datagen mode — triggered by config.mode === 'datagen'
+  if (config.mode === 'datagen') {
+    return runDatagen();
+  }
+
   const outputDir = resolve(__dirname, config.output_dir);
   if (!existsSync(outputDir)) mkdirSync(outputDir, { recursive: true });
 
