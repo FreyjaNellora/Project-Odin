@@ -17,9 +17,8 @@ use std::fs::File;
 use std::rc::Rc;
 
 use crate::board::{Board, Player};
-use crate::eval::BootstrapEvaluator;
 use crate::gamestate::{EliminationReason, GameMode, GameState};
-use crate::search::brs::BrsSearcher;
+use crate::search::hybrid::HybridController;
 use crate::search::{SearchBudget, Searcher};
 
 use emitter::{format_bestmove, format_error, format_id, format_readyok};
@@ -33,10 +32,10 @@ pub struct OdinEngine {
     options: EngineOptions,
     /// Collected output lines (for testing).
     output_buffer: Vec<String>,
-    /// Persistent searcher — TT survives across `go` calls so entries from
-    /// earlier searches can inform later ones (generation-based aging handles
+    /// Persistent hybrid searcher — BRS TT survives across `go` calls so entries
+    /// from earlier searches can inform later ones (generation-based aging handles
     /// staleness). Created lazily on the first `go` command.
-    searcher: Option<BrsSearcher>,
+    searcher: Option<HybridController>,
     /// Optional protocol log file. When Some, all incoming commands and outgoing
     /// responses are written here. Toggle via `setoption name LogFile value <path>`
     /// (set to "none" or "" to close). Zero overhead when None.
@@ -279,7 +278,7 @@ impl OdinEngine {
 
         let profile = self.options.resolved_eval_profile();
         let searcher = self.searcher.get_or_insert_with(|| {
-            BrsSearcher::new(Box::new(BootstrapEvaluator::new(profile)))
+            HybridController::new(profile)
         });
         searcher.set_info_callback(cb);
         let result = searcher.search(&position, budget);

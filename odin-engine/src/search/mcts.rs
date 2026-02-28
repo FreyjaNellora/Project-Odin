@@ -469,7 +469,8 @@ fn temperature_select(
 // ---------------------------------------------------------------------------
 
 /// Convert a Q-value in [0,1] (sigmoid space) back to centipawns.
-/// Inverse sigmoid: cp = 400 * ln(q / (1-q)), clamped to ±MCTS_SCORE_CAP.
+/// Inverse sigmoid: cp = K * ln(q / (1-q)), clamped to ±MCTS_SCORE_CAP.
+/// K must match SIGMOID_K in eval/mod.rs (currently 4000).
 fn q_to_centipawns(q: f64) -> i16 {
     if q <= 0.001 {
         return -MCTS_SCORE_CAP;
@@ -477,7 +478,7 @@ fn q_to_centipawns(q: f64) -> i16 {
     if q >= 0.999 {
         return MCTS_SCORE_CAP;
     }
-    let cp = 400.0 * (q / (1.0 - q)).ln();
+    let cp = 4000.0 * (q / (1.0 - q)).ln();
     (cp as i16).clamp(-MCTS_SCORE_CAP, MCTS_SCORE_CAP)
 }
 
@@ -576,6 +577,12 @@ impl MctsSearcher {
     pub fn set_history_table(&mut self, history: &HistoryTable) {
         self.history_table = Some(Box::new(*history));
     }
+
+    /// Take the info callback out of the searcher (returns ownership).
+    /// Used by HybridController to move the callback between sub-searchers.
+    pub fn take_info_callback(&mut self) -> Option<Box<dyn FnMut(String)>> {
+        self.info_cb.take()
+    }
 }
 
 impl Searcher for MctsSearcher {
@@ -606,8 +613,24 @@ impl Searcher for MctsSearcher {
         // Create root node
         let mut root = MctsNode::new_root(root_player);
 
-        // Expand root fully (no progressive widening at root)
-        let priors = compute_priors(&legal_moves, self.prior_temperature);
+        // Expand root fully (no progressive widening at root).
+        // Use external priors (from HybridController) if available; else MVV-LVA.
+        let priors = if let Some(ext) = self.external_priors.take() {
+            debug_assert_eq!(
+                ext.len(),
+                legal_moves.len(),
+                "external_priors length ({}) must match legal_moves length ({})",
+                ext.len(),
+                legal_moves.len()
+            );
+            if ext.len() == legal_moves.len() {
+                ext
+            } else {
+                compute_priors(&legal_moves, self.prior_temperature)
+            }
+        } else {
+            compute_priors(&legal_moves, self.prior_temperature)
+        };
         for (i, &mv) in legal_moves.iter().enumerate() {
             let mut child_gs = position.clone();
             child_gs.apply_move(mv);
@@ -807,6 +830,9 @@ impl Searcher for MctsSearcher {
             total_sims = total_sims_done,
             "MCTS search complete"
         );
+
+        // Clear history table after use — not persistent across searches.
+        self.history_table = None;
 
         SearchResult {
             best_move,

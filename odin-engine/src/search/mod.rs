@@ -9,6 +9,7 @@
 
 pub mod board_scanner;
 pub mod brs;
+pub mod hybrid;
 pub mod mcts;
 pub mod tt;
 

@@ -33,6 +33,7 @@ use crate::movegen::{
 };
 
 use super::board_scanner::{scan_board, select_hybrid_reply, BoardContext};
+use super::mcts::HistoryTable;
 use super::tt::{TranspositionTable, TT_DEFAULT_ENTRIES, TT_EXACT, TT_LOWER, TT_UPPER};
 use super::{SearchBudget, SearchResult, Searcher};
 
@@ -101,6 +102,12 @@ pub struct BrsSearcher {
     /// Transposition table — persists across iterative deepening depths and
     /// between moves. Not reset between `search()` calls.
     tt: TranspositionTable,
+    /// History table extracted from the last completed search (Stage 11).
+    /// Contains accumulated move ordering scores for progressive history handoff.
+    last_history: Option<Box<HistoryTable>>,
+    /// Root move scores from the last completed depth of the last search (Stage 11).
+    /// Each entry is (move, clamped_score) for all root moves that were searched.
+    last_root_move_scores: Option<Vec<(Move, i16)>>,
 }
 
 impl BrsSearcher {
@@ -110,6 +117,8 @@ impl BrsSearcher {
             evaluator,
             info_cb: None,
             tt: TranspositionTable::new(TT_DEFAULT_ENTRIES),
+            last_history: None,
+            last_root_move_scores: None,
         }
     }
 
@@ -122,6 +131,8 @@ impl BrsSearcher {
             evaluator,
             info_cb: Some(cb),
             tt: TranspositionTable::new(TT_DEFAULT_ENTRIES),
+            last_history: None,
+            last_root_move_scores: None,
         }
     }
 
@@ -131,13 +142,39 @@ impl BrsSearcher {
     pub fn set_info_callback(&mut self, cb: Box<dyn FnMut(String)>) {
         self.info_cb = Some(cb);
     }
+
+    /// Take the info callback out of the searcher (returns ownership).
+    /// Used by HybridController to move the callback between sub-searchers.
+    pub fn take_info_callback(&mut self) -> Option<Box<dyn FnMut(String)>> {
+        self.info_cb.take()
+    }
+
+    /// History table from the last completed search. Returns None if no search
+    /// has been performed yet.
+    pub fn history_table(&self) -> Option<&HistoryTable> {
+        self.last_history.as_deref()
+    }
+
+    /// Root move scores from the last completed depth of the last search.
+    /// Each entry is (move, score_clamped_to_BRS_SCORE_CAP).
+    pub fn root_move_scores(&self) -> Option<&[(Move, i16)]> {
+        self.last_root_move_scores.as_deref()
+    }
 }
 
 impl Searcher for BrsSearcher {
     fn search(&mut self, position: &GameState, budget: SearchBudget) -> SearchResult {
         self.tt.increment_generation();
         let mut ctx = BrsContext::new(position, self.evaluator.as_ref(), &budget, &mut self.tt);
-        ctx.iterative_deepening(&mut self.info_cb)
+        let result = ctx.iterative_deepening(&mut self.info_cb);
+        // Extract BRS knowledge for Stage 11 hybrid handoff.
+        self.last_history = Some(Box::new(ctx.history));
+        self.last_root_move_scores = if ctx.root_move_scores.is_empty() {
+            None
+        } else {
+            Some(ctx.root_move_scores)
+        };
+        result
     }
 }
 
@@ -197,6 +234,12 @@ struct BrsContext<'a> {
     /// Most recent opponent move at each ply, set by min_node before recursing.
     /// Used by max_node to look up the counter-move for the current position.
     last_opp_move: [Option<Move>; MAX_DEPTH],
+    /// Root move scores from the last fully completed iterative deepening depth.
+    /// Used by HybridController (Stage 11) for survivor filtering.
+    root_move_scores: Vec<(Move, i16)>,
+    /// Temporary buffer for root move scores during the current depth iteration.
+    /// Committed to `root_move_scores` when a depth completes without aborting.
+    current_depth_root_scores: Vec<(Move, i16)>,
 }
 
 impl<'a> BrsContext<'a> {
@@ -230,6 +273,8 @@ impl<'a> BrsContext<'a> {
             history: [[[0; TOTAL_SQUARES]; PIECE_TYPE_COUNT]; PLAYER_COUNT],
             countermoves: vec![None; TOTAL_SQUARES * TOTAL_SQUARES],
             last_opp_move: [None; MAX_DEPTH],
+            root_move_scores: Vec::new(),
+            current_depth_root_scores: Vec::new(),
         }
     }
 
@@ -286,6 +331,9 @@ impl<'a> BrsContext<'a> {
                 break;
             }
 
+            // Clear temporary root score buffer for this depth iteration.
+            self.current_depth_root_scores.clear();
+
             // Aspiration windows for depth >= 2.
             let score = if depth >= 2 && prev_score.abs() < MATE_SCORE - MAX_DEPTH as i16 {
                 let lo = prev_score.saturating_sub(ASPIRATION_WINDOW);
@@ -316,6 +364,11 @@ impl<'a> BrsContext<'a> {
             self.best_depth = depth;
             self.best_pv = self.extract_pv();
             prev_score = score;
+
+            // Commit root move scores from this completed depth (Stage 11 handoff).
+            if !self.current_depth_root_scores.is_empty() {
+                self.root_move_scores = std::mem::take(&mut self.current_depth_root_scores);
+            }
 
             // Emit info line.
             let elapsed = self.elapsed_ms();
@@ -545,7 +598,10 @@ impl<'a> BrsContext<'a> {
     ) -> i16 {
         // Null move pruning: skip root player's turn and check if the position
         // is still >= beta even with opponents getting priority.
-        if depth >= NULL_MOVE_MIN_DEPTH
+        // Guard: ply > 0 prevents null move cutoff at root, which would prevent
+        // root move score collection needed by Stage 11 hybrid survivor filter.
+        if ply > 0
+            && depth >= NULL_MOVE_MIN_DEPTH
             && !is_in_check(self.root_player, self.gs.board())
             && has_non_pawn_material(self.gs.board(), self.root_player)
         {
@@ -615,6 +671,12 @@ impl<'a> BrsContext<'a> {
 
             if self.should_stop() {
                 return best.max(NEG_INF);
+            }
+
+            // Record root move scores for Stage 11 hybrid survivor filter.
+            if ply == 0 {
+                let clamped = score.clamp(-BRS_SCORE_CAP, BRS_SCORE_CAP);
+                self.current_depth_root_scores.push((mv, clamped));
             }
 
             if score > best {

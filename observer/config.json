@@ -5,7 +5,7 @@
   "game_mode": "ffa",
   "eval_profile": "standard",
   "stop_at": {
-    "max_ply": 80,
+    "max_ply": 200,
     "on_gameover": true
   },
   "output_dir": "./reports"

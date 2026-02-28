@@ -24,8 +24,15 @@ pub use values::{
 const ELIMINATED_SCORE: i16 = -30_000;
 
 /// Sigmoid scaling constant for eval_4vec normalization.
-/// At 0cp -> 0.5, +300cp -> ~0.68, +900cp -> ~0.90, -30000cp -> ~0.0.
-const SIGMOID_K: f64 = 400.0;
+/// Must match the inverse sigmoid constant in mcts::q_to_centipawns().
+///
+/// K=4000 keeps bootstrap eval's typical range (3000-5000cp) in the
+/// sigmoid's discriminating region: 3000cp -> ~0.68, 4000cp -> ~0.73,
+/// 5000cp -> ~0.78, -30000cp -> ~0.0.
+///
+/// K=400 (the original value) caused all positions to saturate at Q≈1.0,
+/// making MCTS unable to distinguish between moves.
+const SIGMOID_K: f64 = 4000.0;
 
 // ---------------------------------------------------------------------------
 // EvalProfile — evaluation personality (ADR-014)

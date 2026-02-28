@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
-**Last Updated:** 2026-02-27
-**Updated By:** Claude Opus 4.6 (Stage 10 tagged, cleanup complete)
+**Last Updated:** 2026-02-28
+**Updated By:** Claude Opus 4.6 (Stage 11 implementation complete, pending human review)
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 10 (MCTS) — COMPLETE. Tagged `stage-10-complete` / `v1.10`. |
-| **Current Build-Order Step** | Stage 11 (Hybrid Integration) — not started. |
-| **Build Compiles** | Yes — `cargo build --release` passes, 0 warnings, 0 clippy warnings |
-| **Tests Pass** | Yes — engine: 281 unit + 159 integration = 440 total (4 ignored); UI: 54 Vitest. |
+| **Current Stage** | Stage 11 (Hybrid Integration) — IMPLEMENTATION COMPLETE. Pending human review + tag. |
+| **Current Build-Order Step** | Stage 12 (Self-Play & Regression Testing) — not started. |
+| **Build Compiles** | Yes — `cargo build` passes, 0 warnings, 0 clippy warnings |
+| **Tests Pass** | Yes — engine: 281 unit + 176 integration = 457 total (4 ignored); UI: 54 Vitest. |
 | **Blocking Issues** | None |
 
 ---
@@ -32,7 +32,7 @@
 | 8 | BRS/Paranoid Hybrid Layer | complete | post-audit done | stage-08-complete / v1.8 | User verified. Post-elim crash fixed (v0.4.1-fix). |
 | 9 | TT & Move Ordering | complete | post-audit done | stage-09-complete / v1.9 | 58% node reduction at depth 6; 387 tests. |
 | 10 | MCTS | complete | post-audit done | stage-10-complete / v1.10 | Gumbel MCTS standalone, 1000 sims in 124ms release. 440 tests. |
-| 11 | Hybrid Integration | not-started | — | — | |
+| 11 | Hybrid Integration | complete | post-audit done | — | HybridController: BRS→MCTS two-phase. 457 tests. Pending tag. |
 | 12 | Self-Play & Regression Testing | not-started | — | — | |
 | 13 | Time Management | not-started | — | — | |
 | 14 | NNUE Feature Design & Architecture | not-started | — | — | |
@@ -55,29 +55,33 @@
 | AGENT_CONDUCT.md | current | v1.2 — Section 1.18 added (Diagnostic Observer Protocol). |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
 | DECISIONS.md | current | 15 ADRs. ADR-007/008 superseded by ADR-015 (Huginn → tracing). ADR-014 (UI Vision), ADR-015 (Retire Huginn). |
-| HANDOFF.md | current | Stage 10 tagged, ready for Stage 11. |
+| HANDOFF.md | current | Stage 11 complete, pending review + tag. |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
-| audit_log_stage_00.md through audit_log_stage_10.md | current | All complete. |
-| downstream_log_stage_00.md through downstream_log_stage_10.md | current | All complete. |
+| audit_log_stage_00.md through audit_log_stage_11.md | current | All complete. |
+| downstream_log_stage_00.md through downstream_log_stage_11.md | current | All complete. |
 
 ---
 
 ## What the Next Session Should Do First
 
 1. Read STATUS.md + HANDOFF.md
-2. Begin Stage 11 (Hybrid Integration) per AGENT_CONDUCT.md Section 1.1
-3. Read downstream_log_stage_10.md for MCTS API contracts
+2. Human reviews Stage 11 changes, tags `stage-11-complete` / `v1.11`
+3. Begin Stage 12 (Self-Play & Regression Testing) per AGENT_CONDUCT.md Section 1.1
 
 ---
 
 ## Known Regressions
 
-None. All existing tests pass (440 engine + 54 UI Vitest).
+None. All tests pass (457 engine + 54 UI Vitest).
 
 ---
 
 ## Non-Stage Changes
+
+**2026-02-28 — Stage 11: Hybrid Integration (BRS→MCTS)** ([[Session-2026-02-28-Stage11-Hybrid]]):
+
+HybridController in `search/hybrid.rs` (~280 lines). Two-phase search: BRS Phase 1 (tactical filter, adaptive 10-30% time budget) → MCTS Phase 2 (strategic search, BRS-informed priors + progressive history warm-start). BRS modifications: `last_history` + `last_root_move_scores` extraction, `take_info_callback`, null move ply>0 guard, root score tracking at ply 0. MCTS modifications: external_priors wired into root expansion (replaces MVV-LVA when available), `take_info_callback`, history cleanup. Protocol: `Option<HybridController>` replaces `Option<BrsSearcher>`. Adaptive time allocation: tactical positions (≥30% captures) get 30/70 BRS/MCTS split, quiet positions get 10/90. BRS_MAX_DEPTH=8. All AC1-AC7 pass. Tests: 281 unit + 176 integration = 457 total (4 ignored), 0 clippy warnings.
 
 **2026-02-27 — Stage 10: Gumbel MCTS Implementation** ([[Session-2026-02-27-Stage10-MCTS]]):
 
@@ -195,6 +199,8 @@ Follow-up items noted but not blocking:
 | Test count | 408 | 9 (pre-10 cleanup) | 267 unit + 141 integration (3 ignored). Audit fixes, eval mitigations, Vec clone retrofit. |
 | MCTS 1000 sims (release, starting pos) | 124ms / 986 nodes | 10 | Gumbel MCTS standalone. AC5: <5s target met. |
 | Test count | 440 | 10 | 281 unit + 159 integration (4 ignored). +14 MCTS unit, +18 MCTS integration. |
+| Hybrid `go depth 8` (debug, starting pos) | ~10s (BRS ~4s + MCTS ~6s) | 11 | Two-phase: BRS depth 8 + MCTS 2000 sims. |
+| Test count | 457 | 11 | 281 unit + 176 integration (4 ignored). +17 Stage 11 hybrid integration. |
 
 ---
 
