@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
 **Last Updated:** 2026-02-28
-**Updated By:** Claude Opus 4.6 (Stage 15 implementation complete, pending human review + Gen-0 pipeline run)
+**Updated By:** Claude Opus 4.6 (Stage 16 NNUE Integration implementation complete, pending human review + tag)
 
 ---
 
@@ -9,11 +9,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 15 (NNUE Training Pipeline) — IMPLEMENTATION COMPLETE. Pending human review, Gen-0 pipeline run, T13 verification, and tag. |
-| **Current Build-Order Step** | Stage 16 (NNUE Integration) — not started. |
+| **Current Stage** | Stage 16 (NNUE Integration) — IMPLEMENTATION COMPLETE. Pending human review and tag. |
+| **Current Build-Order Step** | Stage 17 (Game Mode Variant Tuning) — not started. |
 | **Build Compiles** | Yes — `cargo build` passes, 0 warnings, 0 clippy warnings |
-| **Tests Pass** | Yes — engine: 305 unit + 221 integration = 526 total (6 ignored); Python: 8 pytest; UI: 54 Vitest. |
-| **Blocking Issues** | T13 must pass before tagging Stage 15. Requires Gen-0 pipeline run (human-driven). |
+| **Tests Pass** | Yes — engine: 305 unit + 231 integration = 536 total (6 ignored); Python: 8 pytest; UI: 54 Vitest. |
+| **Blocking Issues** | None blocking implementation. Gen-0 pipeline run (Stage 15) still needed for trained weights. |
 
 ---
 
@@ -37,7 +37,7 @@
 | 13 | Time Management | complete | post-audit done | — | TimeManager, enriched classification, tunable params, timed match support, tune.mjs. 490 tests. Pending tag. |
 | 14 | NNUE Feature Design & Architecture | complete | post-audit done | — | HalfKP-4, dual-head NNUE inference, .onnue format. 519 tests. Pending tag. |
 | 15 | NNUE Training Pipeline | complete | post-audit done | — | 526 tests. Pending Gen-0 run + T13 + tag. |
-| 16 | NNUE Integration | not-started | — | — | |
+| 16 | NNUE Integration | complete | post-audit done | — | 536 tests. AccumulatorStack wired into BRS+MCTS. Pending tag. |
 | 17 | Game Mode Variant Tuning | not-started | — | — | |
 | 18 | Full UI | not-started | — | — | |
 | 19 | Optimization & Hardening | not-started | — | — | |
@@ -55,30 +55,34 @@
 | AGENT_CONDUCT.md | current | v1.2 — Section 1.18 added (Diagnostic Observer Protocol). |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
 | DECISIONS.md | current | 15 ADRs. ADR-007/008 superseded by ADR-015 (Huginn → tracing). ADR-014 (UI Vision), ADR-015 (Retire Huginn). |
-| HANDOFF.md | current | Stage 15 complete, pending review + Gen-0 pipeline run + tag. |
+| HANDOFF.md | current | Stage 16 complete, pending review + tag. |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
-| audit_log_stage_00.md through audit_log_stage_15.md | current | All complete. |
-| downstream_log_stage_00.md through downstream_log_stage_15.md | current | All complete. |
+| audit_log_stage_00.md through audit_log_stage_16.md | current | All complete. |
+| downstream_log_stage_00.md through downstream_log_stage_16.md | current | All complete. |
 
 ---
 
 ## What the Next Session Should Do First
 
 1. Read STATUS.md + HANDOFF.md
-2. Human reviews Stage 15 changes, runs Gen-0 pipeline (Step 7), verifies T13 passes
-3. Human tags `stage-15-complete` / `v1.15`
-4. Begin Stage 16 (NNUE Integration) per AGENT_CONDUCT.md Section 1.1
+2. Human reviews Stage 16 changes, tags `stage-16-complete` / `v1.16`
+3. If Gen-0 pipeline hasn't been run yet (Stage 15), run it to produce trained weights
+4. Begin Stage 17 (Game Mode Variant Tuning) per AGENT_CONDUCT.md Section 1.1
 
 ---
 
 ## Known Regressions
 
-None. All tests pass (526 engine + 8 Python pytest + 54 UI Vitest).
+None. All tests pass (536 engine + 8 Python pytest + 54 UI Vitest).
 
 ---
 
 ## Non-Stage Changes
+
+**2026-02-28 — Stage 16: NNUE Integration** ([[Session-2026-02-28-Stage16-NNUE-Integration]]):
+
+Wired `AccumulatorStack` push/pop into BRS and MCTS search paths for incremental NNUE evaluation. BRS: push before all 4 make_move sites (MAX, MIN, qsearch MAX, qsearch MIN), pop after unmake_move. MCTS: push before each `gs.apply_move()` in simulation, elimination-aware refresh (`needs_refresh = [true; 4]` after eliminations), pop all after backpropagation. Replaced 3 BRS eval_scalar call sites (root seed, info line, qsearch stand-pat) with `nnue_eval_scalar()` helper. Replaced MCTS leaf `eval_4vec()` with `forward_pass()`. Added `nnue_file` engine option (`setoption name NnueFile value <path>`), `Arc<NnueWeights>` shared between BRS and MCTS. Debug-gated tracing: periodic accumulator correctness check, NNUE vs bootstrap root comparison, stack depth assertion. Constructor signatures updated: `BrsSearcher::new()`, `MctsSearcher::new/with_seed/with_info_callback()`, `HybridController::new()` accept NNUE weights parameter. W17 resolved. Tests: 305 unit + 231 integration = 536 total (6 ignored), 0 clippy warnings.
 
 **2026-02-28 — Stage 15: NNUE Training Pipeline** ([[Session-2026-02-28-Stage15-Training-Pipeline]]):
 
@@ -232,6 +236,9 @@ Follow-up items noted but not blocking:
 | Test count | 526 | 15 | 305 unit + 221 integration (6 ignored). +7 stage_15 datagen integration. +8 Python pytest. |
 | Rust datagen (per sample) | ~100-200us | 15 | `replay_moves` + `extract_sample`, debug build |
 | .bin sample size | 556 bytes | 15 | Fixed-size binary training records |
+| Test count | 536 | 16 | 305 unit + 231 integration (6 ignored). +10 Stage 16 NNUE integration. |
+| BRS depth 6 + NNUE (random weights) | Comparable to bootstrap | 16 | No significant overhead from incremental updates |
+| Incremental push+forward_pass | Faster than full init+forward_pass | 16 | T10 verified |
 
 ---
 

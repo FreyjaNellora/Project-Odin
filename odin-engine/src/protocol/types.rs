@@ -95,6 +95,9 @@ pub struct EngineOptions {
     pub mcts_default_sims: Option<u64>,
     /// Maximum BRS search depth. Default: 8.
     pub brs_max_depth: Option<u8>,
+    // --- NNUE (Stage 16) ---
+    /// Path to .onnue weight file. None = use bootstrap eval.
+    pub nnue_file: Option<String>,
 }
 
 impl Default for EngineOptions {
@@ -109,6 +112,7 @@ impl Default for EngineOptions {
             brs_fraction_quiet: None,
             mcts_default_sims: None,
             brs_max_depth: None,
+            nnue_file: None,
         }
     }
 }

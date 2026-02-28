@@ -19,7 +19,7 @@ use odin_engine::search::{SearchBudget, Searcher};
 // ---------------------------------------------------------------------------
 
 fn make_hybrid() -> HybridController {
-    HybridController::new(EvalProfile::Standard)
+    HybridController::new(EvalProfile::Standard, None)
 }
 
 fn depth_budget(d: u8) -> SearchBudget {

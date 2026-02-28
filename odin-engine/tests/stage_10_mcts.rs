@@ -26,6 +26,7 @@ use odin_engine::search::{SearchBudget, Searcher};
 fn make_mcts_searcher() -> MctsSearcher {
     MctsSearcher::with_seed(
         Box::new(BootstrapEvaluator::new(EvalProfile::Aggressive)),
+        None,
         42,
     )
 }
@@ -353,11 +354,13 @@ fn test_info_callback_receives_lines() {
 
     let _searcher = MctsSearcher::with_info_callback(
         Box::new(BootstrapEvaluator::new(EvalProfile::Aggressive)),
+        None,
         cb,
     );
     // Use a fixed seed for deterministic behavior
     let mut det_searcher = MctsSearcher::with_seed(
         Box::new(BootstrapEvaluator::new(EvalProfile::Aggressive)),
+        None,
         42,
     );
     let info_lines: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
@@ -437,10 +440,12 @@ fn test_deterministic_with_same_seed() {
     let gs = starting_gs();
     let mut s1 = MctsSearcher::with_seed(
         Box::new(BootstrapEvaluator::new(EvalProfile::Aggressive)),
+        None,
         12345,
     );
     let mut s2 = MctsSearcher::with_seed(
         Box::new(BootstrapEvaluator::new(EvalProfile::Aggressive)),
+        None,
         12345,
     );
 

@@ -212,6 +212,17 @@ impl OdinEngine {
                     self.options.brs_max_depth = Some(v.clamp(1, 20));
                 }
             }
+            // --- NNUE (Stage 16) ---
+            "nnuefile" | "nnue_file" => {
+                let v = value.trim();
+                if v.is_empty() || v.eq_ignore_ascii_case("none") || v.eq_ignore_ascii_case("off") {
+                    self.options.nnue_file = None;
+                } else {
+                    self.options.nnue_file = Some(v.to_string());
+                }
+                // Force searcher recreation with new eval
+                self.searcher = None;
+            }
             _ => {
                 // Accept and silently ignore unrecognized options (UCI convention)
             }
@@ -304,8 +315,9 @@ impl OdinEngine {
         });
 
         let profile = self.options.resolved_eval_profile();
+        let nnue_path = self.options.nnue_file.clone();
         let searcher = self.searcher.get_or_insert_with(|| {
-            HybridController::new(profile)
+            HybridController::new(profile, nnue_path.as_deref())
         });
 
         // Stage 13: Set time context if time controls are present.

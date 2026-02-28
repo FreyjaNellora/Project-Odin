@@ -28,15 +28,15 @@ use odin_engine::search::{SearchBudget, Searcher};
 // ---------------------------------------------------------------------------
 
 fn make_hybrid() -> HybridController {
-    HybridController::new(EvalProfile::Standard)
+    HybridController::new(EvalProfile::Standard, None)
 }
 
 fn make_brs() -> BrsSearcher {
-    BrsSearcher::new(Box::new(BootstrapEvaluator::new(EvalProfile::Standard)))
+    BrsSearcher::new(Box::new(BootstrapEvaluator::new(EvalProfile::Standard)), None)
 }
 
 fn make_mcts() -> MctsSearcher {
-    MctsSearcher::new(Box::new(BootstrapEvaluator::new(EvalProfile::Standard)))
+    MctsSearcher::new(Box::new(BootstrapEvaluator::new(EvalProfile::Standard)), None)
 }
 
 fn depth_budget(d: u8) -> SearchBudget {

@@ -23,10 +23,13 @@
 // Player::prev() on side_to_move without storing it in MoveUndo. Manual
 // set_side_to_move() between make and unmake corrupts restoration.
 
+use std::sync::Arc;
 use std::time::Instant;
 
 use crate::board::{Board, PieceType, Player};
 use crate::eval::{Evaluator, PIECE_EVAL_VALUES};
+use crate::eval::nnue::accumulator::AccumulatorStack;
+use crate::eval::nnue::{forward_pass, weights::NnueWeights};
 use crate::gamestate::{GameState, PlayerStatus};
 use crate::movegen::{
     generate_legal, is_in_check, is_square_attacked_by, make_move, unmake_move, Move,
@@ -108,17 +111,30 @@ pub struct BrsSearcher {
     /// Root move scores from the last completed depth of the last search (Stage 11).
     /// Each entry is (move, clamped_score) for all root moves that were searched.
     last_root_move_scores: Option<Vec<(Move, i16)>>,
+    // --- NNUE (Stage 16) ---
+    /// Accumulator stack for incremental NNUE updates through the search tree.
+    /// None when using BootstrapEvaluator (no NNUE weights loaded).
+    acc_stack: Option<AccumulatorStack>,
+    /// Shared NNUE weights (read-only during search). None = bootstrap eval.
+    nnue_weights: Option<Arc<NnueWeights>>,
 }
 
 impl BrsSearcher {
-    /// Create a new BrsSearcher with the given evaluator.
-    pub fn new(evaluator: Box<dyn Evaluator>) -> Self {
+    /// Create a new BrsSearcher with the given evaluator and optional NNUE weights.
+    pub fn new(evaluator: Box<dyn Evaluator>, nnue_weights: Option<Arc<NnueWeights>>) -> Self {
+        let acc_stack = if nnue_weights.is_some() {
+            Some(AccumulatorStack::new())
+        } else {
+            None
+        };
         Self {
             evaluator,
             info_cb: None,
             tt: TranspositionTable::new(TT_DEFAULT_ENTRIES),
             last_history: None,
             last_root_move_scores: None,
+            acc_stack,
+            nnue_weights,
         }
     }
 
@@ -126,14 +142,14 @@ impl BrsSearcher {
     ///
     /// The callback receives a formatted `info` string after each completed
     /// iterative deepening depth. The protocol can use this to emit progress.
-    pub fn with_info_callback(evaluator: Box<dyn Evaluator>, cb: Box<dyn FnMut(String)>) -> Self {
-        Self {
-            evaluator,
-            info_cb: Some(cb),
-            tt: TranspositionTable::new(TT_DEFAULT_ENTRIES),
-            last_history: None,
-            last_root_move_scores: None,
-        }
+    pub fn with_info_callback(
+        evaluator: Box<dyn Evaluator>,
+        cb: Box<dyn FnMut(String)>,
+        nnue_weights: Option<Arc<NnueWeights>>,
+    ) -> Self {
+        let mut searcher = Self::new(evaluator, nnue_weights);
+        searcher.info_cb = Some(cb);
+        searcher
     }
 
     /// Replace the info callback. Called before each `search()` when the
@@ -165,7 +181,23 @@ impl BrsSearcher {
 impl Searcher for BrsSearcher {
     fn search(&mut self, position: &GameState, budget: SearchBudget) -> SearchResult {
         self.tt.increment_generation();
-        let mut ctx = BrsContext::new(position, self.evaluator.as_ref(), &budget, &mut self.tt);
+
+        // Stage 16: Initialize accumulator from root position before search.
+        if let (Some(stack), Some(w)) = (&mut self.acc_stack, &self.nnue_weights) {
+            stack.init_from_board(position.board(), w);
+        }
+
+        // Split borrows: acc_stack and nnue_weights are passed as Option refs.
+        let nnue_w = self.nnue_weights.as_deref();
+        let acc = self.acc_stack.as_mut();
+        let mut ctx = BrsContext::new(
+            position,
+            self.evaluator.as_ref(),
+            &budget,
+            &mut self.tt,
+            acc,
+            nnue_w,
+        );
         let result = ctx.iterative_deepening(&mut self.info_cb);
         // Extract BRS knowledge for Stage 11 hybrid handoff.
         self.last_history = Some(Box::new(ctx.history));
@@ -240,6 +272,11 @@ struct BrsContext<'a> {
     /// Temporary buffer for root move scores during the current depth iteration.
     /// Committed to `root_move_scores` when a depth completes without aborting.
     current_depth_root_scores: Vec<(Move, i16)>,
+    // --- NNUE (Stage 16) ---
+    /// Accumulator stack for incremental NNUE updates. None = bootstrap eval.
+    acc_stack: Option<&'a mut AccumulatorStack>,
+    /// NNUE weights reference. None = bootstrap eval.
+    nnue_weights: Option<&'a NnueWeights>,
 }
 
 impl<'a> BrsContext<'a> {
@@ -248,6 +285,8 @@ impl<'a> BrsContext<'a> {
         evaluator: &'a dyn Evaluator,
         budget: &'a SearchBudget,
         tt: &'a mut TranspositionTable,
+        acc_stack: Option<&'a mut AccumulatorStack>,
+        nnue_weights: Option<&'a NnueWeights>,
     ) -> Self {
         let root_player = position.current_player();
         let board_ctx = scan_board(position, root_player);
@@ -275,6 +314,20 @@ impl<'a> BrsContext<'a> {
             last_opp_move: [None; MAX_DEPTH],
             root_move_scores: Vec::new(),
             current_depth_root_scores: Vec::new(),
+            acc_stack,
+            nnue_weights,
+        }
+    }
+
+    /// NNUE-aware scalar eval. Uses the accumulator stack + forward pass when
+    /// available, falls back to bootstrap evaluator otherwise.
+    fn nnue_eval_scalar(&mut self, player: Player) -> i16 {
+        if let (Some(ref mut stack), Some(weights)) = (&mut self.acc_stack, self.nnue_weights) {
+            stack.refresh_if_needed(self.gs.board(), weights);
+            let (brs_score, _) = forward_pass(stack.current(), weights, player);
+            brs_score
+        } else {
+            self.evaluator.eval_scalar(&self.gs, player)
         }
     }
 
@@ -322,7 +375,21 @@ impl<'a> BrsContext<'a> {
             "BrsSearcher::search called with no legal moves"
         );
         self.best_pv = vec![root_moves[0]];
-        self.best_score = self.evaluator.eval_scalar(&self.gs, self.root_player);
+        self.best_score = self.nnue_eval_scalar(self.root_player);
+
+        // Debug: compare NNUE vs bootstrap at root, flag large disagreements.
+        #[cfg(debug_assertions)]
+        if self.nnue_weights.is_some() {
+            let bootstrap = self.evaluator.eval_scalar(&self.gs, self.root_player);
+            let nnue = self.best_score;
+            let diff = (nnue as i32 - bootstrap as i32).abs();
+            if diff > 200 {
+                eprintln!(
+                    "info string [debug] NNUE vs bootstrap disagreement at root: nnue={} bootstrap={} diff={}",
+                    nnue, bootstrap, diff
+                );
+            }
+        }
 
         let mut prev_score = self.best_score;
 
@@ -386,10 +453,10 @@ impl<'a> BrsContext<'a> {
             let pv_str: Vec<String> = self.best_pv.iter().map(|m| m.to_algebraic()).collect();
             // Per-player evaluation at the root position for UI display.
             let v = [
-                self.evaluator.eval_scalar(&self.gs, Player::Red) as i32,
-                self.evaluator.eval_scalar(&self.gs, Player::Blue) as i32,
-                self.evaluator.eval_scalar(&self.gs, Player::Yellow) as i32,
-                self.evaluator.eval_scalar(&self.gs, Player::Green) as i32,
+                self.nnue_eval_scalar(Player::Red) as i32,
+                self.nnue_eval_scalar(Player::Blue) as i32,
+                self.nnue_eval_scalar(Player::Yellow) as i32,
+                self.nnue_eval_scalar(Player::Green) as i32,
             ];
             // FFA game scores (capture points, checkmate bonuses, etc.)
             let s = self.gs.scores();
@@ -459,6 +526,29 @@ impl<'a> BrsContext<'a> {
         // Periodic budget check.
         if self.nodes.is_multiple_of(TIME_CHECK_INTERVAL) {
             self.check_limits();
+
+            // Debug: every 1024 nodes, verify incremental accumulator matches full recompute.
+            #[cfg(debug_assertions)]
+            if let (Some(ref mut stack), Some(weights)) = (&mut self.acc_stack, self.nnue_weights) {
+                use crate::eval::nnue::accumulator::Accumulator;
+                // Verify stack depth is reasonable (should never exceed ~60 for depth 8).
+                debug_assert!(
+                    stack.depth() <= 64,
+                    "[debug] acc_stack depth {} exceeds 64 at node {}",
+                    stack.depth(), self.nodes
+                );
+                stack.refresh_if_needed(self.gs.board(), weights);
+                let inc = stack.current();
+                let mut full = Accumulator::zeroed();
+                full.compute_full(self.gs.board(), weights);
+                for p in 0..4 {
+                    assert_eq!(
+                        inc.values[p], full.values[p],
+                        "[debug] accumulator divergence at perspective {} node {}",
+                        p, self.nodes
+                    );
+                }
+            }
         }
         if self.should_stop() {
             return 0;
@@ -650,6 +740,9 @@ impl<'a> BrsContext<'a> {
         let mut best = NEG_INF;
 
         for (move_idx, &mv) in ordered.iter().enumerate() {
+            if let (Some(ref mut s), Some(w)) = (&mut self.acc_stack, self.nnue_weights) {
+                s.push(mv, self.gs.board(), w);
+            }
             let undo = make_move(self.gs.board_mut(), mv);
             self.nodes += 1;
             self.rep_stack.push(self.gs.board().zobrist());
@@ -674,6 +767,9 @@ impl<'a> BrsContext<'a> {
 
             self.rep_stack.pop();
             unmake_move(self.gs.board_mut(), mv, undo);
+            if let Some(ref mut s) = self.acc_stack {
+                s.pop();
+            }
 
             if self.should_stop() {
                 return best.max(NEG_INF);
@@ -753,6 +849,9 @@ impl<'a> BrsContext<'a> {
             return self.alphabeta(depth - 1, alpha, beta, ply + 1);
         };
 
+        if let (Some(ref mut s), Some(w)) = (&mut self.acc_stack, self.nnue_weights) {
+            s.push(mv, self.gs.board(), w);
+        }
         let undo = make_move(self.gs.board_mut(), mv);
         self.nodes += 1;
         self.rep_stack.push(self.gs.board().zobrist());
@@ -763,6 +862,9 @@ impl<'a> BrsContext<'a> {
         let score = self.alphabeta(depth - 1, alpha, beta, ply + 1);
         self.rep_stack.pop();
         unmake_move(self.gs.board_mut(), mv, undo);
+        if let Some(ref mut s) = self.acc_stack {
+            s.pop();
+        }
 
         score
     }
@@ -786,7 +888,7 @@ impl<'a> BrsContext<'a> {
             return alpha;
         }
 
-        let stand_pat = self.evaluator.eval_scalar(&self.gs, self.root_player);
+        let stand_pat = self.nnue_eval_scalar(self.root_player);
         let current = self.gs.board().side_to_move();
 
         // Skip eliminated players — same reasoning as in alphabeta.
@@ -819,9 +921,15 @@ impl<'a> BrsContext<'a> {
             let captures: Vec<Move> = all_moves.into_iter().filter(|m| m.is_capture()).collect();
 
             for mv in captures {
+                if let (Some(ref mut s), Some(w)) = (&mut self.acc_stack, self.nnue_weights) {
+                    s.push(mv, self.gs.board(), w);
+                }
                 let undo = make_move(self.gs.board_mut(), mv);
                 let score = self.quiescence(alpha, beta, qs_depth - 1);
                 unmake_move(self.gs.board_mut(), mv, undo);
+                if let Some(ref mut s) = self.acc_stack {
+                    s.pop();
+                }
 
                 if self.should_stop() {
                     return alpha;
@@ -857,9 +965,15 @@ impl<'a> BrsContext<'a> {
             );
 
             if let Some(mv) = best_cap {
+                if let (Some(ref mut s), Some(w)) = (&mut self.acc_stack, self.nnue_weights) {
+                    s.push(mv, self.gs.board(), w);
+                }
                 let undo = make_move(self.gs.board_mut(), mv);
                 let score = self.quiescence(alpha, beta, qs_depth - 1);
                 unmake_move(self.gs.board_mut(), mv, undo);
+                if let Some(ref mut s) = self.acc_stack {
+                    s.pop();
+                }
 
                 if self.should_stop() {
                     return stand_pat;
@@ -1121,7 +1235,7 @@ mod tests {
     use crate::gamestate::GameState;
 
     fn make_searcher() -> BrsSearcher {
-        BrsSearcher::new(Box::new(BootstrapEvaluator::new(EvalProfile::Standard)))
+        BrsSearcher::new(Box::new(BootstrapEvaluator::new(EvalProfile::Standard)), None)
     }
 
     #[test]

@@ -178,7 +178,7 @@ fn test_hybrid_forced_move_instant() {
     );
 
     let start = Instant::now();
-    let mut hybrid = HybridController::new(EvalProfile::Standard);
+    let mut hybrid = HybridController::new(EvalProfile::Standard, None);
     let result = hybrid.search(
         &gs,
         SearchBudget {

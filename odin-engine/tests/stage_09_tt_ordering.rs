@@ -19,7 +19,7 @@ use odin_engine::search::{SearchBudget, Searcher};
 // ---------------------------------------------------------------------------
 
 fn make_searcher() -> BrsSearcher {
-    BrsSearcher::new(Box::new(BootstrapEvaluator::new(EvalProfile::Aggressive)))
+    BrsSearcher::new(Box::new(BootstrapEvaluator::new(EvalProfile::Aggressive)), None)
 }
 
 fn budget_depth(d: u8) -> SearchBudget {

@@ -27,7 +27,7 @@ use odin_engine::search::{SearchBudget, Searcher};
 // ---------------------------------------------------------------------------
 
 fn make_searcher_with_profile(profile: EvalProfile) -> BrsSearcher {
-    BrsSearcher::new(Box::new(BootstrapEvaluator::new(profile)))
+    BrsSearcher::new(Box::new(BootstrapEvaluator::new(profile)), None)
 }
 
 fn make_searcher() -> BrsSearcher {

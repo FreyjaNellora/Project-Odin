@@ -7,9 +7,12 @@
 // Implements the frozen `Searcher` trait so it can be used as a drop-in
 // replacement for BrsSearcher in the protocol handler.
 
+use std::path::Path;
+use std::sync::Arc;
 use std::time::Instant;
 
 use crate::eval::{BootstrapEvaluator, EvalProfile};
+use crate::eval::nnue::weights::NnueWeights;
 use crate::gamestate::GameState;
 use crate::movegen::is_in_check;
 use crate::movegen::Move;
@@ -163,9 +166,36 @@ pub struct HybridController {
 
 impl HybridController {
     /// Create a new HybridController. Creates both sub-searchers internally.
-    pub fn new(profile: EvalProfile) -> Self {
-        let brs = BrsSearcher::new(Box::new(BootstrapEvaluator::new(profile)));
-        let mcts = MctsSearcher::new(Box::new(BootstrapEvaluator::new(profile)));
+    ///
+    /// When `nnue_path` is Some, loads NNUE weights and passes them to both
+    /// BRS and MCTS for incremental accumulator-based evaluation. Falls back
+    /// to BootstrapEvaluator when the path is None or loading fails.
+    pub fn new(profile: EvalProfile, nnue_path: Option<&str>) -> Self {
+        // Load NNUE weights if a path is provided. Shared via Arc (read-only during search).
+        let nnue_weights: Option<Arc<NnueWeights>> = nnue_path.and_then(|path| {
+            match NnueWeights::load(Path::new(path)) {
+                Ok(w) => {
+                    eprintln!("info string NNUE weights loaded from {path}");
+                    Some(Arc::new(w))
+                }
+                Err(e) => {
+                    eprintln!("info string warning: NNUE load failed from {path}: {e:?}. Using bootstrap eval.");
+                    None
+                }
+            }
+        });
+
+        // Both searchers always get BootstrapEvaluator — used for opponent move
+        // selection in BRS (select_hybrid_reply / pick_objectively_strongest)
+        // and as fallback when NNUE weights are absent.
+        let brs = BrsSearcher::new(
+            Box::new(BootstrapEvaluator::new(profile)),
+            nnue_weights.clone(),
+        );
+        let mcts = MctsSearcher::new(
+            Box::new(BootstrapEvaluator::new(profile)),
+            nnue_weights,
+        );
         Self {
             brs,
             mcts,

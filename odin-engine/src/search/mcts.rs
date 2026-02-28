@@ -5,11 +5,14 @@
 // for non-root selection, 4-player MaxN backpropagation, and progressive
 // widening. Not integrated with BRS — that's Stage 11.
 
+use std::sync::Arc;
 use std::time::Instant;
 
 use crate::board::Player;
+use crate::eval::nnue::accumulator::AccumulatorStack;
+use crate::eval::nnue::{forward_pass, weights::NnueWeights};
 use crate::eval::{Evaluator, PIECE_EVAL_VALUES};
-use crate::gamestate::GameState;
+use crate::gamestate::{GameState, PlayerStatus};
 use crate::movegen::Move;
 use crate::util::SplitMix64;
 
@@ -306,6 +309,8 @@ fn run_simulation(
     root_gs: &GameState,
     evaluator: &dyn Evaluator,
     cfg: &SimConfig<'_>,
+    mut acc_stack: Option<&mut AccumulatorStack>,
+    nnue_weights: Option<&NnueWeights>,
 ) -> u8 {
     // Build selection path starting with forced root child
     let mut path: Vec<usize> = vec![target_child_idx];
@@ -315,7 +320,19 @@ fn run_simulation(
     let child_mv = root.children[target_child_idx]
         .move_to_here
         .expect("root child must have a move");
-    gs.apply_move(child_mv);
+
+    // NNUE: push BEFORE apply_move (needs board_before)
+    if let (Some(ref mut stack), Some(w)) = (&mut acc_stack, nnue_weights) {
+        stack.push(child_mv, gs.board(), w);
+    }
+    let move_result = gs.apply_move(child_mv);
+    // Elimination-aware refresh: apply_move can remove kings from the board
+    // that push() didn't account for. Force full refresh on all perspectives.
+    if !move_result.eliminations.is_empty() {
+        if let Some(ref mut stack) = acc_stack {
+            stack.current_mut().needs_refresh = [true; 4];
+        }
+    }
 
     let mut depth: u8 = 1;
 
@@ -333,7 +350,18 @@ fn run_simulation(
             let mv = node_ref.children[child_idx]
                 .move_to_here
                 .expect("child must have a move");
-            gs.apply_move(mv);
+
+            // NNUE: push BEFORE apply_move
+            if let (Some(ref mut stack), Some(w)) = (&mut acc_stack, nnue_weights) {
+                stack.push(mv, gs.board(), w);
+            }
+            let move_result = gs.apply_move(mv);
+            if !move_result.eliminations.is_empty() {
+                if let Some(ref mut stack) = acc_stack {
+                    stack.current_mut().needs_refresh = [true; 4];
+                }
+            }
+
             path.push(child_idx);
             depth += 1;
             node_ref = &node_ref.children[child_idx];
@@ -348,11 +376,32 @@ fn run_simulation(
         expand_node(leaf, &mut gs, cfg.prior_temperature);
     }
 
-    // Evaluation
-    let leaf_values: [f64; 4] = evaluator.eval_4vec(&gs);
+    // Evaluation: use NNUE if available, otherwise bootstrap
+    let leaf_values: [f64; 4] = if let (Some(ref mut stack), Some(weights)) = (&mut acc_stack, nnue_weights) {
+        stack.refresh_if_needed(gs.board(), weights);
+        let root_player = root_gs.board().side_to_move();
+        let (_, mcts_vals) = forward_pass(stack.current(), weights, root_player);
+        // Override eliminated players with near-zero values
+        let mut result = mcts_vals;
+        for &p in &Player::ALL {
+            if gs.player_status(p) == PlayerStatus::Eliminated {
+                result[p.index()] = 0.001;
+            }
+        }
+        result
+    } else {
+        evaluator.eval_4vec(&gs)
+    };
 
     // Backpropagation
     backpropagate(root, &path, leaf_values);
+
+    // NNUE: pop all pushes to return acc_stack to root depth
+    if let Some(ref mut stack) = acc_stack {
+        for _ in 0..depth {
+            stack.pop();
+        }
+    }
 
     depth
 }
@@ -492,15 +541,24 @@ pub struct MctsSearcher {
     // External state for Stage 11 hybrid integration
     history_table: Option<Box<HistoryTable>>,
     external_priors: Option<Vec<f32>>,
+
+    // NNUE (Stage 16)
+    acc_stack: Option<AccumulatorStack>,
+    nnue_weights: Option<Arc<NnueWeights>>,
 }
 
 impl MctsSearcher {
     /// Create a new MCTS searcher with default configuration.
-    pub fn new(evaluator: Box<dyn Evaluator>) -> Self {
+    pub fn new(evaluator: Box<dyn Evaluator>, nnue_weights: Option<Arc<NnueWeights>>) -> Self {
         let seed = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_nanos() as u64)
             .unwrap_or(0xDEAD_BEEF);
+        let acc_stack = if nnue_weights.is_some() {
+            Some(AccumulatorStack::new())
+        } else {
+            None
+        };
         Self {
             evaluator,
             info_cb: None,
@@ -514,15 +572,18 @@ impl MctsSearcher {
             temperature: 0.0,
             history_table: None,
             external_priors: None,
+            acc_stack,
+            nnue_weights,
         }
     }
 
     /// Create a new MCTS searcher with an info callback.
     pub fn with_info_callback(
         evaluator: Box<dyn Evaluator>,
+        nnue_weights: Option<Arc<NnueWeights>>,
         cb: Box<dyn FnMut(String)>,
     ) -> Self {
-        let mut searcher = Self::new(evaluator);
+        let mut searcher = Self::new(evaluator, nnue_weights);
         searcher.info_cb = Some(cb);
         searcher
     }
@@ -533,8 +594,8 @@ impl MctsSearcher {
     }
 
     /// Create with a fixed seed for deterministic tests.
-    pub fn with_seed(evaluator: Box<dyn Evaluator>, seed: u64) -> Self {
-        let mut searcher = Self::new(evaluator);
+    pub fn with_seed(evaluator: Box<dyn Evaluator>, nnue_weights: Option<Arc<NnueWeights>>, seed: u64) -> Self {
+        let mut searcher = Self::new(evaluator, nnue_weights);
         searcher.rng = SplitMix64::new(seed);
         searcher
     }
@@ -561,6 +622,11 @@ impl Searcher for MctsSearcher {
         let start = Instant::now();
         let root_player = position.current_player();
         let root_player_idx = root_player.index();
+
+        // Init NNUE accumulator from root position
+        if let (Some(stack), Some(w)) = (&mut self.acc_stack, &self.nnue_weights) {
+            stack.init_from_board(position.board(), w);
+        }
 
         // Generate legal moves
         let mut gs_clone = position.clone();
@@ -671,6 +737,8 @@ impl Searcher for MctsSearcher {
                         position,
                         self.evaluator.as_ref(),
                         &sim_cfg,
+                        self.acc_stack.as_mut(),
+                        self.nnue_weights.as_deref(),
                     );
                     max_depth_reached = max_depth_reached.max(depth);
                     total_sims_done += 1;
@@ -776,6 +844,8 @@ impl Searcher for MctsSearcher {
                         position,
                         self.evaluator.as_ref(),
                         &sim_cfg,
+                        self.acc_stack.as_mut(),
+                        self.nnue_weights.as_deref(),
                     );
                     max_depth_reached = max_depth_reached.max(depth);
                     total_sims_done += 1;
