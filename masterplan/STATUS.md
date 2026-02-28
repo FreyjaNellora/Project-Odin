@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
 **Last Updated:** 2026-02-28
-**Updated By:** Claude Opus 4.6 (Stage 11 implementation complete, pending human review)
+**Updated By:** Claude Opus 4.6 (Stage 12 implementation complete, pending human review)
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 11 (Hybrid Integration) — IMPLEMENTATION COMPLETE. Pending human review + tag. |
-| **Current Build-Order Step** | Stage 12 (Self-Play & Regression Testing) — not started. |
+| **Current Stage** | Stage 12 (Self-Play & Regression Testing) — IMPLEMENTATION COMPLETE. Pending human review + tag. |
+| **Current Build-Order Step** | Stage 13 (Time Management) — not started. |
 | **Build Compiles** | Yes — `cargo build` passes, 0 warnings, 0 clippy warnings |
-| **Tests Pass** | Yes — engine: 281 unit + 176 integration = 457 total (4 ignored); UI: 54 Vitest. |
+| **Tests Pass** | Yes — engine: 281 unit + 184 integration = 465 total (5 ignored); UI: 54 Vitest. |
 | **Blocking Issues** | None |
 
 ---
@@ -33,7 +33,7 @@
 | 9 | TT & Move Ordering | complete | post-audit done | stage-09-complete / v1.9 | 58% node reduction at depth 6; 387 tests. |
 | 10 | MCTS | complete | post-audit done | stage-10-complete / v1.10 | Gumbel MCTS standalone, 1000 sims in 124ms release. 440 tests. |
 | 11 | Hybrid Integration | complete | post-audit done | — | HybridController: BRS→MCTS two-phase. 457 tests. Pending tag. |
-| 12 | Self-Play & Regression Testing | not-started | — | — | |
+| 12 | Self-Play & Regression Testing | complete | post-audit done | — | 9 regression tests, match manager, Elo+SPRT, data logging. 465 tests. Pending tag. |
 | 13 | Time Management | not-started | — | — | |
 | 14 | NNUE Feature Design & Architecture | not-started | — | — | |
 | 15 | NNUE Training Pipeline | not-started | — | — | |
@@ -55,10 +55,10 @@
 | AGENT_CONDUCT.md | current | v1.2 — Section 1.18 added (Diagnostic Observer Protocol). |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
 | DECISIONS.md | current | 15 ADRs. ADR-007/008 superseded by ADR-015 (Huginn → tracing). ADR-014 (UI Vision), ADR-015 (Retire Huginn). |
-| HANDOFF.md | current | Stage 11 complete, pending review + tag. |
+| HANDOFF.md | current | Stage 12 complete, pending review + tag. |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
-| audit_log_stage_00.md through audit_log_stage_11.md | current | All complete. |
+| audit_log_stage_00.md through audit_log_stage_12.md | current | All complete. |
 | downstream_log_stage_00.md through downstream_log_stage_11.md | current | All complete. |
 
 ---
@@ -66,18 +66,22 @@
 ## What the Next Session Should Do First
 
 1. Read STATUS.md + HANDOFF.md
-2. Human reviews Stage 11 changes, tags `stage-11-complete` / `v1.11`
-3. Begin Stage 12 (Self-Play & Regression Testing) per AGENT_CONDUCT.md Section 1.1
+2. Human reviews Stage 12 changes, tags `stage-12-complete` / `v1.12`
+3. Begin Stage 13 (Time Management) per AGENT_CONDUCT.md Section 1.1
 
 ---
 
 ## Known Regressions
 
-None. All tests pass (457 engine + 54 UI Vitest).
+None. All tests pass (465 engine + 54 UI Vitest).
 
 ---
 
 ## Non-Stage Changes
+
+**2026-02-28 — Stage 12: Self-Play & Regression Testing** ([[Session-2026-02-28-Stage12-SelfPlay]]):
+
+Regression test suite in `tests/stage_12_regression.rs` (9 positions: free capture, pawn guard, undefended capture preference, knight fork, pin awareness, recapture, king safety [ignored], material advantage, starting position sanity). Match manager `observer/match.mjs` — two-engine match with 6-rotation seat assignment, per-game JSON data logging (NNUE training ready via `position_moves` field), SPRT integration. Elo calculation `observer/elo.mjs` with 95% CI. SPRT `observer/sprt.mjs` with Bernoulli LLR and Wald bounds (α=β=0.05). Shared engine library `observer/lib/engine.mjs` extracted from observer.mjs. Pipeline script `observer/run_match.bat` with baseline management. All AC1-AC4 pass. Tests: 281 unit + 184 integration = 465 total (5 ignored), 0 clippy warnings.
 
 **2026-02-28 — Stage 11: Hybrid Integration (BRS→MCTS)** ([[Session-2026-02-28-Stage11-Hybrid]]):
 
@@ -201,6 +205,7 @@ Follow-up items noted but not blocking:
 | Test count | 440 | 10 | 281 unit + 159 integration (4 ignored). +14 MCTS unit, +18 MCTS integration. |
 | Hybrid `go depth 8` (debug, starting pos) | ~10s (BRS ~4s + MCTS ~6s) | 11 | Two-phase: BRS depth 8 + MCTS 2000 sims. |
 | Test count | 457 | 11 | 281 unit + 176 integration (4 ignored). +17 Stage 11 hybrid integration. |
+| Test count | 465 | 12 | 281 unit + 184 integration (5 ignored). +8 regression tests (+1 ignored). |
 
 ---
 

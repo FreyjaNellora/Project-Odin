@@ -1,0 +1,117 @@
+// lib/engine.mjs — Shared engine process wrapper and protocol parser
+//
+// Extracted from observer.mjs for reuse by match.mjs and other tools.
+
+import { spawn } from 'node:child_process';
+import { createInterface } from 'node:readline';
+
+export const PLAYERS = ['Red', 'Blue', 'Yellow', 'Green'];
+
+// ---------------------------------------------------------------------------
+// Engine process wrapper — line-based stdin/stdout communication
+// ---------------------------------------------------------------------------
+export class Engine {
+  #proc;
+  #rl;
+  #lineQueue = [];
+  #lineResolve = null;
+
+  constructor(enginePath) {
+    this.#proc = spawn(enginePath, [], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    this.#proc.on('error', (err) => {
+      console.error(`Engine failed to start: ${err.message}`);
+      process.exit(1);
+    });
+    this.#rl = createInterface({ input: this.#proc.stdout });
+    this.#rl.on('line', (line) => {
+      if (this.#lineResolve) {
+        const r = this.#lineResolve;
+        this.#lineResolve = null;
+        r(line);
+      } else {
+        this.#lineQueue.push(line);
+      }
+    });
+  }
+
+  send(cmd) {
+    this.#proc.stdin.write(cmd + '\n');
+  }
+
+  async readLine() {
+    if (this.#lineQueue.length > 0) return this.#lineQueue.shift();
+    return new Promise((resolve) => { this.#lineResolve = resolve; });
+  }
+
+  /** Read lines until one starts with `prefix`. Returns all lines including the match. */
+  async readUntil(prefix) {
+    const lines = [];
+    while (true) {
+      const line = await this.readLine();
+      lines.push(line);
+      if (line.startsWith(prefix)) break;
+    }
+    return lines;
+  }
+
+  async handshake() {
+    this.send('odin');
+    await this.readUntil('odinok');
+    this.send('isready');
+    await this.readUntil('readyok');
+  }
+
+  close() {
+    this.send('quit');
+    setTimeout(() => this.#proc.kill(), 500);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Parse one protocol line into a typed object
+// ---------------------------------------------------------------------------
+export function parseLine(line) {
+  if (line.startsWith('info string eliminated ')) {
+    const rest = line.slice('info string eliminated '.length);
+    const color = rest.split(' ')[0];
+    const reason = rest.split(' ').slice(1).join(' ') || null;
+    return { type: 'eliminated', color, reason, raw: line };
+  }
+  if (line.startsWith('info string gameover ')) {
+    return { type: 'gameover', winner: line.slice('info string gameover '.length).trim(), raw: line };
+  }
+  if (line.startsWith('info string nextturn ')) {
+    return { type: 'nextturn', player: line.slice('info string nextturn '.length).trim(), raw: line };
+  }
+  if (line.startsWith('info string')) {
+    return { type: 'info_string', raw: line };
+  }
+  if (line.startsWith('bestmove ')) {
+    return { type: 'bestmove', move: line.slice('bestmove '.length).trim(), raw: line };
+  }
+  if (line.startsWith('info ')) {
+    // Search info — pull out key fields
+    const o = { type: 'search_info', raw: line };
+    const t = line.split(' ');
+    for (let i = 1; i < t.length; i++) {
+      switch (t[i]) {
+        case 'depth':    o.depth = +t[++i]; break;
+        case 'seldepth': o.seldepth = +t[++i]; break;
+        case 'score':    if (t[i+1] === 'cp') { o.score_cp = +t[i+2]; i += 2; } break;
+        case 'v1': o.v1 = +t[++i]; break;
+        case 'v2': o.v2 = +t[++i]; break;
+        case 'v3': o.v3 = +t[++i]; break;
+        case 'v4': o.v4 = +t[++i]; break;
+        case 'nodes': o.nodes = +t[++i]; break;
+        case 'nps':   o.nps = +t[++i]; break;
+        case 'time':  o.time_ms = +t[++i]; break;
+        case 'phase': o.phase = t[++i]; break;
+        case 'pv':    o.pv = t.slice(i+1).join(' '); i = t.length; break;
+      }
+    }
+    return o;
+  }
+  return { type: 'unknown', raw: line };
+}

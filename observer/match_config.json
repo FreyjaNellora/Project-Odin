@@ -1,0 +1,19 @@
+{
+  "engine_a": "../target/release/odin-engine.exe",
+  "engine_b": "../target/release/odin-engine-baseline.exe",
+  "games": 100,
+  "depth": 6,
+  "game_mode": "ffa",
+  "eval_profile": "standard",
+  "stop_at": {
+    "max_ply": 200,
+    "on_gameover": true
+  },
+  "output_dir": "./match_reports",
+  "sprt": {
+    "elo0": 0,
+    "elo1": 5,
+    "alpha": 0.05,
+    "beta": 0.05
+  }
+}
