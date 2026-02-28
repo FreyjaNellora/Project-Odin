@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
 **Last Updated:** 2026-02-28
-**Updated By:** Claude Opus 4.6 (Stage 12 implementation complete, pending human review)
+**Updated By:** Claude Opus 4.6 (Stage 13 implementation complete, pending human review)
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 12 (Self-Play & Regression Testing) — IMPLEMENTATION COMPLETE. Pending human review + tag. |
-| **Current Build-Order Step** | Stage 13 (Time Management) — not started. |
+| **Current Stage** | Stage 13 (Time Management) — IMPLEMENTATION COMPLETE. Pending human review + tag. |
+| **Current Build-Order Step** | Stage 14 (NNUE Feature Design & Architecture) — not started. |
 | **Build Compiles** | Yes — `cargo build` passes, 0 warnings, 0 clippy warnings |
-| **Tests Pass** | Yes — engine: 281 unit + 184 integration = 465 total (5 ignored); UI: 54 Vitest. |
+| **Tests Pass** | Yes — engine: 292 unit + 198 integration = 490 total (5 ignored); UI: 54 Vitest. |
 | **Blocking Issues** | None |
 
 ---
@@ -34,7 +34,7 @@
 | 10 | MCTS | complete | post-audit done | stage-10-complete / v1.10 | Gumbel MCTS standalone, 1000 sims in 124ms release. 440 tests. |
 | 11 | Hybrid Integration | complete | post-audit done | — | HybridController: BRS→MCTS two-phase. 457 tests. Pending tag. |
 | 12 | Self-Play & Regression Testing | complete | post-audit done | — | 9 regression tests, match manager, Elo+SPRT, data logging. 465 tests. Pending tag. |
-| 13 | Time Management | not-started | — | — | |
+| 13 | Time Management | complete | post-audit done | — | TimeManager, enriched classification, tunable params, timed match support, tune.mjs. 490 tests. Pending tag. |
 | 14 | NNUE Feature Design & Architecture | not-started | — | — | |
 | 15 | NNUE Training Pipeline | not-started | — | — | |
 | 16 | NNUE Integration | not-started | — | — | |
@@ -55,29 +55,33 @@
 | AGENT_CONDUCT.md | current | v1.2 — Section 1.18 added (Diagnostic Observer Protocol). |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
 | DECISIONS.md | current | 15 ADRs. ADR-007/008 superseded by ADR-015 (Huginn → tracing). ADR-014 (UI Vision), ADR-015 (Retire Huginn). |
-| HANDOFF.md | current | Stage 12 complete, pending review + tag. |
+| HANDOFF.md | current | Stage 13 complete, pending review + tag. |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
-| audit_log_stage_00.md through audit_log_stage_12.md | current | All complete. |
-| downstream_log_stage_00.md through downstream_log_stage_11.md | current | All complete. |
+| audit_log_stage_00.md through audit_log_stage_13.md | current | All complete. |
+| downstream_log_stage_00.md through downstream_log_stage_13.md | current | All complete. |
 
 ---
 
 ## What the Next Session Should Do First
 
 1. Read STATUS.md + HANDOFF.md
-2. Human reviews Stage 12 changes, tags `stage-12-complete` / `v1.12`
-3. Begin Stage 13 (Time Management) per AGENT_CONDUCT.md Section 1.1
+2. Human reviews Stage 13 changes, tags `stage-13-complete` / `v1.13`
+3. Begin Stage 14 (NNUE Feature Design & Architecture) per AGENT_CONDUCT.md Section 1.1
 
 ---
 
 ## Known Regressions
 
-None. All tests pass (465 engine + 54 UI Vitest).
+None. All tests pass (490 engine + 54 UI Vitest).
 
 ---
 
 ## Non-Stage Changes
+
+**2026-02-28 — Stage 13: Time Management** ([[Session-2026-02-28-Stage13-TimeManagement]]):
+
+Position-aware time allocation via `TimeManager::allocate()` pure function in `search/time_manager.rs`. Two-layer design: protocol layer extracts clock into `TimeContext`, `HybridController` consumes it with full position context (tactical/quiet/endgame/forced classification, check detection, near-elimination, piece count). Safety constraints: 25% cap, 100ms min, panic mode (<1s: 10%). Enriched `PositionType` enum (was Tactical/Quiet, now + Endgame/Forced). Increment parsing (`winc`/`binc`/`yinc`/`ginc`/`movestogo`). Fixed `limits_to_budget()` player-time mapping bug (`.or()` chain picked wrong player). 5 tunable params via `setoption`: `tactical_margin`, `brs_fraction_tactical`, `brs_fraction_quiet`, `mcts_default_sims`, `brs_max_depth`. Match manager time control support (`go wtime/btime/ytime/gtime` with clock tracking). Parameter tuning script `observer/tune.mjs`. All AC1-AC3 pass. Tests: 292 unit + 198 integration = 490 total (5 ignored), 0 clippy warnings.
 
 **2026-02-28 — Stage 12: Self-Play & Regression Testing** ([[Session-2026-02-28-Stage12-SelfPlay]]):
 
@@ -206,6 +210,11 @@ Follow-up items noted but not blocking:
 | Hybrid `go depth 8` (debug, starting pos) | ~10s (BRS ~4s + MCTS ~6s) | 11 | Two-phase: BRS depth 8 + MCTS 2000 sims. |
 | Test count | 457 | 11 | 281 unit + 176 integration (4 ignored). +17 Stage 11 hybrid integration. |
 | Test count | 465 | 12 | 281 unit + 184 integration (5 ignored). +8 regression tests (+1 ignored). |
+| TimeManager::allocate() | <1us per call | 13 | Pure arithmetic, no allocation. |
+| Enriched classify_position() | ~2us overhead | 13 | +1 is_in_check call per search. |
+| Time alloc for 60s clock | ~960ms quiet, ~1560ms tactical | 13 | At ply 0, 50 moves estimated. |
+| Forced move return | <1ms | 13 | Bypasses search entirely. |
+| Test count | 490 | 13 | 292 unit + 198 integration (5 ignored). +11 time_manager unit, +12 stage_13 integration, +2 parser. |
 
 ---
 

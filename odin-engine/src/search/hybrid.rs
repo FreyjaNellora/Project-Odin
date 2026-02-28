@@ -11,10 +11,13 @@ use std::time::Instant;
 
 use crate::eval::{BootstrapEvaluator, EvalProfile};
 use crate::gamestate::GameState;
+use crate::movegen::is_in_check;
 use crate::movegen::Move;
+use crate::protocol::EngineOptions;
 
 use super::brs::BrsSearcher;
 use super::mcts::MctsSearcher;
+use super::time_manager::{TimeContext, TimeManager};
 use super::{SearchBudget, SearchResult, Searcher};
 
 // ---------------------------------------------------------------------------
@@ -63,30 +66,49 @@ const MCTS_DEFAULT_SIMS: u64 = 2_000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum PositionType {
+    /// Many captures, checks, threats — give BRS more time.
     Tactical,
+    /// Calm position — lean on MCTS.
     Quiet,
+    /// Few pieces on board — need deeper search.
+    Endgame,
+    /// Exactly 1 legal move — instant return.
+    Forced,
 }
 
-/// Classify a position by counting captures among legal moves.
-fn classify_position(legal_moves: &[Move]) -> PositionType {
-    if legal_moves.is_empty() {
-        return PositionType::Quiet;
+/// Classify a position using multiple signals.
+///
+/// Priority: Forced > Endgame > Tactical > Quiet.
+fn classify_position(legal_moves: &[Move], position: &GameState) -> PositionType {
+    // 1. Forced: exactly 0 or 1 legal move
+    if legal_moves.len() <= 1 {
+        return PositionType::Forced;
     }
+
+    // 2. Endgame: few total pieces on board (from 64 starting)
+    let total_pieces = position.board().piece_count();
+    if total_pieces <= 16 {
+        return PositionType::Endgame;
+    }
+
+    // 3. Tactical: in check
+    if is_in_check(position.current_player(), position.board()) {
+        return PositionType::Tactical;
+    }
+
+    // 4. Tactical: high capture ratio
     let captures = legal_moves.iter().filter(|m| m.is_capture()).count();
     let ratio = captures as f64 / legal_moves.len() as f64;
     if ratio >= TACTICAL_CAPTURE_RATIO {
-        PositionType::Tactical
-    } else {
-        PositionType::Quiet
+        return PositionType::Tactical;
     }
-}
 
-/// BRS time fraction based on position type.
-fn brs_fraction(pos_type: PositionType) -> f64 {
-    match pos_type {
-        PositionType::Tactical => BRS_FRACTION_TACTICAL,
-        PositionType::Quiet => BRS_FRACTION_QUIET,
+    // 5. Tactical: few legal moves (constrained/near-forced)
+    if legal_moves.len() < 5 {
+        return PositionType::Tactical;
     }
+
+    PositionType::Quiet
 }
 
 // ---------------------------------------------------------------------------
@@ -126,6 +148,17 @@ pub struct HybridController {
     brs: BrsSearcher,
     mcts: MctsSearcher,
     info_cb: Option<Box<dyn FnMut(String)>>,
+    /// Time context set by the protocol layer before each search (Stage 13).
+    /// Consumed (taken) during search() via `.take()`.
+    time_context: Option<TimeContext>,
+    /// Score from the previous search, used for near-elimination detection.
+    last_score: Option<i16>,
+    // --- Tunable parameter overrides (Stage 13) ---
+    tactical_margin_override: Option<i16>,
+    brs_frac_tactical_override: Option<f64>,
+    brs_frac_quiet_override: Option<f64>,
+    mcts_sims_override: Option<u64>,
+    brs_max_depth_override: Option<u8>,
 }
 
 impl HybridController {
@@ -137,6 +170,13 @@ impl HybridController {
             brs,
             mcts,
             info_cb: None,
+            time_context: None,
+            last_score: None,
+            tactical_margin_override: None,
+            brs_frac_tactical_override: None,
+            brs_frac_quiet_override: None,
+            mcts_sims_override: None,
+            brs_max_depth_override: None,
         }
     }
 
@@ -145,15 +185,60 @@ impl HybridController {
         self.info_cb = Some(cb);
     }
 
-    /// Filter root moves to those within TACTICAL_MARGIN of the best score.
+    /// Set the time context for the next search. Called by protocol handler
+    /// before `search()` when time controls are active.
+    pub fn set_time_context(&mut self, ctx: TimeContext) {
+        self.time_context = Some(ctx);
+    }
+
+    /// Apply tunable parameter overrides from engine options.
+    pub fn apply_options(&mut self, opts: &EngineOptions) {
+        self.tactical_margin_override = opts.tactical_margin;
+        self.brs_frac_tactical_override = opts.brs_fraction_tactical;
+        self.brs_frac_quiet_override = opts.brs_fraction_quiet;
+        self.mcts_sims_override = opts.mcts_default_sims;
+        self.brs_max_depth_override = opts.brs_max_depth;
+    }
+
+    /// Effective tactical margin (override or default constant).
+    fn effective_tactical_margin(&self) -> i16 {
+        self.tactical_margin_override.unwrap_or(TACTICAL_MARGIN)
+    }
+
+    /// Effective BRS max depth (override or default constant).
+    fn effective_brs_max_depth(&self) -> u8 {
+        self.brs_max_depth_override.unwrap_or(BRS_MAX_DEPTH)
+    }
+
+    /// Effective MCTS default sims (override or default constant).
+    fn effective_mcts_default_sims(&self) -> u64 {
+        self.mcts_sims_override.unwrap_or(MCTS_DEFAULT_SIMS)
+    }
+
+    /// Effective BRS fraction for a position type.
+    fn effective_brs_fraction(&self, pos_type: PositionType) -> f64 {
+        match pos_type {
+            PositionType::Tactical | PositionType::Endgame => {
+                self.brs_frac_tactical_override
+                    .unwrap_or(BRS_FRACTION_TACTICAL)
+            }
+            PositionType::Quiet => {
+                self.brs_frac_quiet_override.unwrap_or(BRS_FRACTION_QUIET)
+            }
+            PositionType::Forced => 0.0,
+        }
+    }
+
+    /// Filter root moves to those within the tactical margin of the best score.
     /// Always keeps at least MIN_SURVIVORS moves.
-    fn filter_survivors(root_scores: &[(Move, i16)]) -> Vec<(Move, i16)> {
+    fn filter_survivors(&self, root_scores: &[(Move, i16)]) -> Vec<(Move, i16)> {
         if root_scores.is_empty() {
             return Vec::new();
         }
 
+        let margin = self.effective_tactical_margin();
         let best_score = root_scores.iter().map(|(_, s)| *s).max().unwrap();
-        let threshold = best_score.saturating_sub(TACTICAL_MARGIN);
+        let threshold = best_score.saturating_sub(margin);
 
         let mut survivors: Vec<(Move, i16)> = root_scores
             .iter()
@@ -196,10 +281,11 @@ impl HybridController {
     }
 
     /// Allocate BRS budget from the total budget.
-    fn allocate_brs_budget(budget: &SearchBudget, pos_type: PositionType) -> SearchBudget {
-        let frac = brs_fraction(pos_type);
+    fn allocate_brs_budget(&self, budget: &SearchBudget, pos_type: PositionType) -> SearchBudget {
+        let frac = self.effective_brs_fraction(pos_type);
+        let max_depth = self.effective_brs_max_depth();
         SearchBudget {
-            max_depth: budget.max_depth.map(|d| d.min(BRS_MAX_DEPTH)),
+            max_depth: budget.max_depth.map(|d| d.min(max_depth)),
             max_nodes: budget.max_nodes.map(|n| ((n as f64 * frac) as u64).max(1)),
             max_time_ms: budget.max_time_ms.map(|t| ((t as f64 * frac) as u64).max(1)),
         }
@@ -207,6 +293,7 @@ impl HybridController {
 
     /// Allocate MCTS budget from remaining time/nodes after BRS.
     fn allocate_mcts_budget(
+        &self,
         budget: &SearchBudget,
         brs_elapsed_ms: u64,
         brs_nodes: u64,
@@ -234,9 +321,10 @@ impl HybridController {
             }
         } else {
             // Depth-only: give MCTS a default sim budget.
+            let default_sims = self.effective_mcts_default_sims();
             SearchBudget {
                 max_depth: None,
-                max_nodes: Some(MCTS_DEFAULT_SIMS),
+                max_nodes: Some(default_sims),
                 max_time_ms: None,
             }
         }
@@ -254,8 +342,10 @@ impl Searcher for HybridController {
             panic!("HybridController::search called with no legal moves");
         }
 
-        // Edge case: single legal move — return immediately.
+        // Edge case: single legal move — return immediately (Stage 13: forced move).
         if legal_moves.len() == 1 {
+            self.time_context = None; // consume any pending time context
+            self.last_score = Some(0);
             return SearchResult {
                 best_move: legal_moves[0],
                 score: 0,
@@ -265,26 +355,60 @@ impl Searcher for HybridController {
             };
         }
 
+        // Classify position (enriched: Tactical/Quiet/Endgame/Forced — Stage 13).
+        let pos_type = classify_position(&legal_moves, position);
+        let in_check = is_in_check(position.current_player(), position.board());
+
+        // Stage 13: Time allocation via TimeManager when time controls are active.
+        let effective_budget = if let Some(ctx) = self.time_context.take() {
+            let is_tactical =
+                pos_type == PositionType::Tactical || pos_type == PositionType::Endgame;
+            let allocated_ms = TimeManager::allocate(
+                ctx.remaining_ms,
+                ctx.increment_ms,
+                ctx.ply,
+                ctx.movestogo,
+                legal_moves.len(),
+                is_tactical,
+                in_check,
+                self.last_score,
+            );
+
+            // Emit time allocation info.
+            if let Some(ref mut cb) = self.info_cb {
+                cb(format!(
+                    "info string time_alloc total={}ms type={:?} remaining={}ms inc={}ms",
+                    allocated_ms, pos_type, ctx.remaining_ms, ctx.increment_ms,
+                ));
+            }
+
+            SearchBudget {
+                max_depth: budget.max_depth,
+                max_nodes: budget.max_nodes,
+                max_time_ms: Some(allocated_ms),
+            }
+        } else {
+            budget // no time context → use budget as-is
+        };
+
         // Edge case: time pressure — BRS only, skip MCTS.
-        if let Some(t) = budget.max_time_ms {
+        if let Some(t) = effective_budget.max_time_ms {
             if t < TIME_PRESSURE_MS {
                 // Give BRS the full budget.
                 if let Some(cb) = self.info_cb.take() {
                     self.brs.set_info_callback(cb);
                 }
-                let result = self.brs.search(position, budget);
+                let result = self.brs.search(position, effective_budget);
                 self.info_cb = self.brs.take_info_callback();
+                self.last_score = Some(result.score);
                 return result;
             }
         }
 
-        // Classify position for adaptive time allocation (AC4).
-        let pos_type = classify_position(&legal_moves);
-
         // ---------------------------------------------------------------
         // Phase 1: BRS tactical filter
         // ---------------------------------------------------------------
-        let brs_budget = Self::allocate_brs_budget(&budget, pos_type);
+        let brs_budget = self.allocate_brs_budget(&effective_budget, pos_type);
 
         if let Some(cb) = self.info_cb.take() {
             self.brs.set_info_callback(cb);
@@ -298,9 +422,9 @@ impl Searcher for HybridController {
         let root_scores = self.brs.root_move_scores();
         let history = self.brs.history_table();
 
-        // Survivor filter.
+        // Survivor filter (uses effective tactical margin).
         let survivors = if let Some(scores) = root_scores {
-            Self::filter_survivors(scores)
+            self.filter_survivors(scores)
         } else {
             // No root scores (search aborted before completing depth 1).
             // Fall through to MCTS with all moves.
@@ -309,6 +433,7 @@ impl Searcher for HybridController {
 
         // If only one survivor, return immediately.
         if survivors.len() == 1 {
+            self.last_score = Some(survivors[0].1);
             return SearchResult {
                 best_move: survivors[0].0,
                 score: survivors[0].1,
@@ -324,11 +449,12 @@ impl Searcher for HybridController {
         let spread_is_tight =
             best_survivor_score.saturating_sub(worst_survivor_score) < BRS_SPREAD_THRESHOLD;
 
+        let margin = self.effective_tactical_margin();
         if let Some(ref mut cb) = self.info_cb {
             cb(format!(
                 "info string hybrid phase1 done survivors {} threshold {}cp spread {}cp time {}ms",
                 survivors.len(),
-                TACTICAL_MARGIN,
+                margin,
                 best_survivor_score - worst_survivor_score,
                 brs_elapsed_ms,
             ));
@@ -347,8 +473,8 @@ impl Searcher for HybridController {
         // ---------------------------------------------------------------
         // Phase 2: MCTS strategic search
         // ---------------------------------------------------------------
-        let mcts_budget = Self::allocate_mcts_budget(
-            &budget,
+        let mcts_budget = self.allocate_mcts_budget(
+            &effective_budget,
             brs_elapsed_ms,
             brs_result.nodes,
             spread_is_tight,
@@ -361,12 +487,14 @@ impl Searcher for HybridController {
         self.info_cb = self.mcts.take_info_callback();
 
         // Combine results: use MCTS's best move but include BRS nodes in total.
-        SearchResult {
+        let result = SearchResult {
             best_move: mcts_result.best_move,
             score: mcts_result.score,
             depth: mcts_result.depth,
             nodes: brs_result.nodes + mcts_result.nodes,
             pv: mcts_result.pv,
-        }
+        };
+        self.last_score = Some(result.score);
+        result
     }
 }

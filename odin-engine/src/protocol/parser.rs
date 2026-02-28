@@ -135,6 +135,21 @@ fn parse_go<'a>(tokens: impl Iterator<Item = &'a str>) -> Command {
             "gtime" => {
                 limits.gtime = parse_next_u64(&token_vec, &mut i);
             }
+            "winc" => {
+                limits.winc = parse_next_u64(&token_vec, &mut i);
+            }
+            "binc" => {
+                limits.binc = parse_next_u64(&token_vec, &mut i);
+            }
+            "yinc" => {
+                limits.yinc = parse_next_u64(&token_vec, &mut i);
+            }
+            "ginc" => {
+                limits.ginc = parse_next_u64(&token_vec, &mut i);
+            }
+            "movestogo" => {
+                limits.movestogo = parse_next_u64(&token_vec, &mut i).map(|v| v as u32);
+            }
             "depth" => {
                 limits.depth = parse_next_u64(&token_vec, &mut i).map(|v| v as u32);
             }
@@ -381,6 +396,38 @@ mod tests {
         match parse_command("setoption") {
             Command::Unknown(_) => {}
             _ => panic!("expected Unknown for missing name keyword"),
+        }
+    }
+
+    #[test]
+    fn test_parse_go_with_increments() {
+        let cmd = parse_command(
+            "go wtime 60000 winc 1000 btime 60000 binc 1000 ytime 60000 yinc 1000 gtime 60000 ginc 1000",
+        );
+        match cmd {
+            Command::Go(limits) => {
+                assert_eq!(limits.wtime, Some(60000));
+                assert_eq!(limits.winc, Some(1000));
+                assert_eq!(limits.btime, Some(60000));
+                assert_eq!(limits.binc, Some(1000));
+                assert_eq!(limits.ytime, Some(60000));
+                assert_eq!(limits.yinc, Some(1000));
+                assert_eq!(limits.gtime, Some(60000));
+                assert_eq!(limits.ginc, Some(1000));
+            }
+            _ => panic!("expected Go command"),
+        }
+    }
+
+    #[test]
+    fn test_parse_go_with_movestogo() {
+        let cmd = parse_command("go wtime 60000 btime 60000 ytime 60000 gtime 60000 movestogo 30");
+        match cmd {
+            Command::Go(limits) => {
+                assert_eq!(limits.movestogo, Some(30));
+                assert_eq!(limits.wtime, Some(60000));
+            }
+            _ => panic!("expected Go command"),
         }
     }
 }

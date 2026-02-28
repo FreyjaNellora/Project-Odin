@@ -63,6 +63,13 @@ async function playMatchGame(engineAPath, engineBPath, gameNum) {
   let winner = null;
   let ply = 0;
 
+  // Stage 13: Time control clocks (per-player remaining time in ms)
+  const clocks = {};
+  const tc = config.time_control;
+  if (tc) {
+    for (const p of PLAYERS) clocks[p] = tc.initial_ms;
+  }
+
   while (!gameOver && ply < (config.stop_at?.max_ply ?? 200)) {
     const engineLabel = seatToEngine[currentPlayer];
     const engine = engines[engineLabel];
@@ -72,7 +79,16 @@ async function playMatchGame(engineAPath, engineBPath, gameNum) {
       ? 'position startpos'
       : `position startpos moves ${moveList.join(' ')}`;
     engine.send(posCmd);
-    engine.send(`go depth ${config.depth}`);
+
+    // Build go command: time control or fixed depth (Stage 13)
+    let goCmd;
+    if (tc) {
+      const inc = tc.increment_ms ?? 0;
+      goCmd = `go wtime ${clocks.Red} winc ${inc} btime ${clocks.Blue} binc ${inc} ytime ${clocks.Yellow} yinc ${inc} gtime ${clocks.Green} ginc ${inc}`;
+    } else {
+      goCmd = `go depth ${config.depth}`;
+    }
+    engine.send(goCmd);
 
     // Collect output until bestmove
     const rawLines = [];
@@ -100,6 +116,8 @@ async function playMatchGame(engineAPath, engineBPath, gameNum) {
     }
 
     if (bestmove) {
+      const moveTimeMs = lastSearch?.time_ms ?? 0;
+
       moves.push({
         ply,
         player: currentPlayer,
@@ -109,11 +127,23 @@ async function playMatchGame(engineAPath, engineBPath, gameNum) {
         depth: lastSearch?.depth ?? null,
         nodes: lastSearch?.nodes ?? null,
         nps: lastSearch?.nps ?? null,
-        time_ms: lastSearch?.time_ms ?? null,
+        time_ms: moveTimeMs,
         pv: lastSearch?.pv ?? null,
         phase: lastSearch?.phase ?? null,
         position_moves: moveList.join(' '),
       });
+
+      // Stage 13: Update clock for timed games
+      if (tc) {
+        clocks[currentPlayer] -= moveTimeMs;
+        clocks[currentPlayer] += (tc.increment_ms ?? 0);
+
+        // Time forfeit check
+        if (clocks[currentPlayer] <= 0) {
+          eliminations.push({ player: currentPlayer, reason: 'timeout', at_ply: ply });
+          clocks[currentPlayer] = 0;
+        }
+      }
 
       moveList.push(bestmove);
       ply++;
@@ -149,6 +179,7 @@ async function playMatchGame(engineAPath, engineBPath, gameNum) {
       engine_a: config.engine_a,
       engine_b: config.engine_b,
       depth: config.depth,
+      time_control: config.time_control ?? null,
       game_mode: config.game_mode,
       eval_profile: config.eval_profile,
     },
@@ -186,7 +217,10 @@ async function main() {
 
   console.log(`Engine A: ${engineAPath}`);
   console.log(`Engine B: ${engineBPath}`);
-  console.log(`Games: ${config.games} | Depth: ${config.depth} | Mode: ${config.game_mode} | Profile: ${config.eval_profile}`);
+  const tcInfo = config.time_control
+    ? `TC: ${config.time_control.initial_ms}ms+${config.time_control.increment_ms ?? 0}ms`
+    : `Depth: ${config.depth}`;
+  console.log(`Games: ${config.games} | ${tcInfo} | Mode: ${config.game_mode} | Profile: ${config.eval_profile}`);
   console.log(`SPRT: H0 elo<=${config.sprt?.elo0 ?? 0}, H1 elo>=${config.sprt?.elo1 ?? 5}, alpha=${config.sprt?.alpha ?? 0.05}, beta=${config.sprt?.beta ?? 0.05}`);
   console.log('');
 

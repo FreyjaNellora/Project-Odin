@@ -3,6 +3,7 @@
   "engine_b": "../target/release/odin-engine-baseline.exe",
   "games": 100,
   "depth": 6,
+  "time_control": null,
   "game_mode": "ffa",
   "eval_profile": "standard",
   "stop_at": {

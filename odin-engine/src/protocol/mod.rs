@@ -186,6 +186,32 @@ impl OdinEngine {
                     }
                 }
             }
+            // --- Tunable search parameters (Stage 13) ---
+            "tactical_margin" => {
+                if let Ok(v) = value.parse::<i16>() {
+                    self.options.tactical_margin = Some(v);
+                }
+            }
+            "brs_fraction_tactical" => {
+                if let Ok(v) = value.parse::<f64>() {
+                    self.options.brs_fraction_tactical = Some(v.clamp(0.0, 1.0));
+                }
+            }
+            "brs_fraction_quiet" => {
+                if let Ok(v) = value.parse::<f64>() {
+                    self.options.brs_fraction_quiet = Some(v.clamp(0.0, 1.0));
+                }
+            }
+            "mcts_default_sims" => {
+                if let Ok(v) = value.parse::<u64>() {
+                    self.options.mcts_default_sims = Some(v);
+                }
+            }
+            "brs_max_depth" => {
+                if let Ok(v) = value.parse::<u8>() {
+                    self.options.brs_max_depth = Some(v.clamp(1, 20));
+                }
+            }
             _ => {
                 // Accept and silently ignore unrecognized options (UCI convention)
             }
@@ -266,8 +292,9 @@ impl OdinEngine {
         // Normal path: clone position, search, apply to get post-move state.
         // Clone so the mutable borrow of self.game_state is released before send().
         let position = self.game_state.as_ref().unwrap().clone();
+        let current_player = position.current_player();
 
-        let budget = Self::limits_to_budget(limits);
+        let budget = Self::limits_to_budget(limits, Some(current_player));
 
         // Collect info strings via callback (Rc/RefCell: single-threaded, blocking search).
         let info_buf = Rc::new(RefCell::new(Vec::<String>::new()));
@@ -280,6 +307,22 @@ impl OdinEngine {
         let searcher = self.searcher.get_or_insert_with(|| {
             HybridController::new(profile)
         });
+
+        // Stage 13: Set time context if time controls are present.
+        let (own_time, own_inc) = limits.time_for_player(current_player);
+        if let Some(remaining) = own_time {
+            let ply = position.position_history().len() as u32;
+            searcher.set_time_context(crate::search::time_manager::TimeContext {
+                remaining_ms: remaining,
+                increment_ms: own_inc.unwrap_or(0),
+                movestogo: limits.movestogo,
+                ply,
+            });
+        }
+
+        // Apply tunable parameter overrides.
+        searcher.apply_options(&self.options);
+
         searcher.set_info_callback(cb);
         let result = searcher.search(&position, budget);
 
@@ -312,8 +355,12 @@ impl OdinEngine {
 
     /// Convert `SearchLimits` (from the protocol) into a `SearchBudget` for the searcher.
     ///
-    /// Priority: infinite > movetime > depth > nodes > time controls > default (depth 6).
-    fn limits_to_budget(limits: &SearchLimits) -> SearchBudget {
+    /// Priority: infinite > movetime > depth > nodes > time controls > default (depth 8).
+    ///
+    /// When `current_player` is Some, the correct player's time is used (Stage 13 fix).
+    /// The real time allocation is computed by `TimeManager` inside `HybridController`,
+    /// so this function provides a conservative fallback (time/50, min 200ms).
+    fn limits_to_budget(limits: &SearchLimits, current_player: Option<Player>) -> SearchBudget {
         if limits.infinite {
             return SearchBudget {
                 max_depth: None,
@@ -342,13 +389,20 @@ impl OdinEngine {
                 max_time_ms: None,
             };
         }
-        // Time controls: allocate a fraction of the remaining clock.
-        let own_time = limits
-            .wtime
-            .or(limits.btime)
-            .or(limits.ytime)
-            .or(limits.gtime);
+        // Time controls: use the current player's time (Stage 13 fix).
+        // Falls back to first available if no player specified.
+        let own_time = if let Some(player) = current_player {
+            limits.time_for_player(player).0
+        } else {
+            limits
+                .wtime
+                .or(limits.btime)
+                .or(limits.ytime)
+                .or(limits.gtime)
+        };
         if let Some(t) = own_time {
+            // Conservative fallback: time/50 with min 200ms.
+            // The real allocation is computed by TimeManager in HybridController.
             let ms = (t / 50).max(200);
             return SearchBudget {
                 max_depth: None,

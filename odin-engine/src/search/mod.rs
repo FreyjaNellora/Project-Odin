@@ -11,6 +11,7 @@ pub mod board_scanner;
 pub mod brs;
 pub mod hybrid;
 pub mod mcts;
+pub mod time_manager;
 pub mod tt;
 
 use crate::gamestate::GameState;

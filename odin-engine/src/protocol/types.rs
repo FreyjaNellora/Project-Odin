@@ -3,6 +3,7 @@
 // Command, response, and configuration types for the UCI-like
 // Odin protocol extended for four-player chess.
 
+use crate::board::Player;
 use crate::eval::EvalProfile;
 use crate::gamestate::GameMode;
 
@@ -40,6 +41,16 @@ pub struct SearchLimits {
     pub ytime: Option<u64>,
     /// Green time remaining in ms
     pub gtime: Option<u64>,
+    /// Red increment per move in ms
+    pub winc: Option<u64>,
+    /// Blue increment per move in ms
+    pub binc: Option<u64>,
+    /// Yellow increment per move in ms
+    pub yinc: Option<u64>,
+    /// Green increment per move in ms
+    pub ginc: Option<u64>,
+    /// Moves until next time control reset
+    pub movestogo: Option<u32>,
     /// Maximum search depth
     pub depth: Option<u32>,
     /// Maximum nodes to search
@@ -48,6 +59,18 @@ pub struct SearchLimits {
     pub movetime: Option<u64>,
     /// Search until `stop` command
     pub infinite: bool,
+}
+
+impl SearchLimits {
+    /// Get remaining time and increment for a specific player.
+    pub fn time_for_player(&self, player: Player) -> (Option<u64>, Option<u64>) {
+        match player {
+            Player::Red => (self.wtime, self.winc),
+            Player::Blue => (self.btime, self.binc),
+            Player::Yellow => (self.ytime, self.yinc),
+            Player::Green => (self.gtime, self.ginc),
+        }
+    }
 }
 
 /// Engine options set via `setoption`.
@@ -61,6 +84,17 @@ pub struct EngineOptions {
     pub game_mode: GameMode,
     /// Eval profile override. None = auto-resolve from game_mode.
     pub eval_profile: Option<EvalProfile>,
+    // --- Tunable search parameters (Stage 13) ---
+    /// BRS survivor threshold in centipawns. Default: 150.
+    pub tactical_margin: Option<i16>,
+    /// BRS time fraction for tactical positions. Default: 0.30.
+    pub brs_fraction_tactical: Option<f64>,
+    /// BRS time fraction for quiet positions. Default: 0.10.
+    pub brs_fraction_quiet: Option<f64>,
+    /// Default MCTS simulation count (depth-only mode). Default: 2000.
+    pub mcts_default_sims: Option<u64>,
+    /// Maximum BRS search depth. Default: 8.
+    pub brs_max_depth: Option<u8>,
 }
 
 impl Default for EngineOptions {
@@ -70,6 +104,11 @@ impl Default for EngineOptions {
             terrain_mode: false,
             game_mode: GameMode::FreeForAll,
             eval_profile: None,
+            tactical_margin: None,
+            brs_fraction_tactical: None,
+            brs_fraction_quiet: None,
+            mcts_default_sims: None,
+            brs_max_depth: None,
         }
     }
 }
