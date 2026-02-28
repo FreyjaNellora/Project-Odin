@@ -41,9 +41,9 @@ Position -> BRS Phase 1 (tactical filter, depth 8) -> Survivor moves -> Gumbel M
 
 See `masterplan/STATUS.md` for detailed progress.
 
-**Current state:** Stage 11 complete (`v1.11`). The engine plays four-player chess with a BRS->Gumbel MCTS hybrid search, transposition tables, move ordering (TT/killers/history/countermoves), multi-perspective opponent modeling, adaptive time allocation, and a functional Tauri UI. 457 tests passing.
+**Current state:** Stage 12 complete (`v1.12`). The engine plays four-player chess with a BRS->Gumbel MCTS hybrid search, transposition tables, move ordering (TT/killers/history/countermoves), multi-perspective opponent modeling, adaptive time allocation, and a functional Tauri UI. Self-play infrastructure with match manager, Elo calculation, SPRT early stopping, and 9 regression test positions. 465 tests passing.
 
-**Next:** Stage 12 (Self-Play & Regression Testing) — measurement infrastructure to quantify improvement.
+**Next:** Stage 13 (Time Management) — smart clock allocation, position complexity detection, parameter tuning.
 
 ---
 
@@ -56,7 +56,7 @@ See `masterplan/STATUS.md` for detailed progress.
 | 1. Foundation | 0-5 | Board, moves, rules, protocol, basic UI | Complete |
 | 2. Simple Search | 6-7 | Bootstrap eval, plain BRS with quiescence. Engine plays chess. | Complete |
 | 3. Strengthen Search | 8-11 | Hybrid scoring, TT + move ordering, Gumbel MCTS, integrated two-phase search | Complete |
-| 4. Measurement | 12-13 | Self-play framework, regression tests, time management | Next |
+| 4. Measurement | 12-13 | Self-play framework, regression tests, time management | In Progress |
 | 5. Learn | 14-16 | NNUE design, training pipeline, integration | Planned |
 | 6. Polish | 17-19 | Variant tuning, full UI, optimization | Planned |
 
@@ -77,6 +77,8 @@ Each stage produces a testable, runnable artifact. The engine has been playable 
 | `masterplan/audit_log_stage_XX.md` | Pre/post audit findings per stage. |
 | `masterplan/downstream_log_stage_XX.md` | API contracts, limitations, baselines for downstream stages. |
 | `observer/baselines/` | Human game baselines from chess.com (1954-3438 Elo) for engine comparison. |
+| `observer/match.mjs` | Two-engine match manager with seat rotation, Elo + SPRT, per-game JSON logging. |
+| `observer/elo.mjs` + `sprt.mjs` | Elo difference calculation (95% CI) and Sequential Probability Ratio Test. |
 
 ---
 
