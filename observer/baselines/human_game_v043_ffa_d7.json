@@ -1,0 +1,107 @@
+{
+  "game": 1,
+  "source": "human-observed",
+  "engine_version": "v0.4.3-narrowing",
+  "notes": "Game analyzed by user for behavioral bugs. Not played to completion. Pre-multi-perspective, pre-pawn-structure, pre-king-displacement fixes.",
+  "settings": {
+    "depth": 7,
+    "game_mode": "ffa",
+    "eval_profile": "standard"
+  },
+  "known_bugs_in_game": [
+    "Green exposes rook, loses it to Red's bishop snipe (Be2→n11)",
+    "Blue pushes undefended pawns repeatedly (b9d9, b6d6, b5c5, d9e9, d6e6, b10d10, e9f9)",
+    "Red undevelops knight (Ni3→j1 at move 11, eval 5142cp — engine thinks this is good)"
+  ],
+  "plies": [
+    { "ply": 0,  "player": "Red",    "move": "e2e4",    "eval": 4456, "depth": 7, "nodes": 7441,   "nps": null, "time_ms": null, "pv": "e2e4" },
+    { "ply": 1,  "player": "Blue",   "move": "b9d9",    "eval": 4402, "depth": 7, "nodes": 11625,  "nps": null, "time_ms": null, "pv": "b9d9" },
+    { "ply": 2,  "player": "Yellow", "move": "d13d11",  "eval": 4264, "depth": 7, "nodes": 2077,   "nps": null, "time_ms": null, "pv": "d13d11" },
+    { "ply": 3,  "player": "Green",  "move": "m5k5",    "eval": 4506, "depth": 7, "nodes": 8276,   "nps": null, "time_ms": null, "pv": "m5k5" },
+    { "ply": 4,  "player": "Red",    "move": "j1i3",    "eval": 4483, "depth": 7, "nodes": 13241,  "nps": null, "time_ms": null, "pv": "j1i3" },
+    { "ply": 5,  "player": "Blue",   "move": "b6d6",    "eval": 4422, "depth": 7, "nodes": 18964,  "nps": null, "time_ms": null, "pv": "b6d6" },
+    { "ply": 6,  "player": "Yellow", "move": "i13i11",  "eval": 4443, "depth": 7, "nodes": 6474,   "nps": null, "time_ms": null, "pv": "i13i11" },
+    { "ply": 7,  "player": "Green",  "move": "m10l10",  "eval": 4441, "depth": 7, "nodes": 2117,   "nps": null, "time_ms": null, "pv": "m10l10" },
+    { "ply": 8,  "player": "Red",    "move": "f1e2",    "eval": 4486, "depth": 7, "nodes": 20090,  "nps": null, "time_ms": null, "pv": "f1e2" },
+    { "ply": 9,  "player": "Blue",   "move": "a5c6",    "eval": 4465, "depth": 7, "nodes": 16519,  "nps": null, "time_ms": null, "pv": "a5c6" },
+    { "ply": 10, "player": "Yellow", "move": "k13k12",  "eval": 4176, "depth": 7, "nodes": 6645,   "nps": null, "time_ms": null, "pv": "k13k12" },
+    { "ply": 11, "player": "Green",  "move": "n6m5",    "eval": 3803, "depth": 7, "nodes": 15034,  "nps": null, "time_ms": null, "pv": "n6m5" },
+    { "ply": 12, "player": "Red",    "move": "e2n11",   "eval": 4523, "depth": 7, "nodes": 30292,  "nps": null, "time_ms": null, "pv": "e2n11" },
+    { "ply": 13, "player": "Blue",   "move": "b5c5",    "eval": 4595, "depth": 7, "nodes": 12355,  "nps": null, "time_ms": null, "pv": "b5c5" },
+    { "ply": 14, "player": "Yellow", "move": "j14i12",  "eval": 4187, "depth": 7, "nodes": 9111,   "nps": null, "time_ms": null, "pv": "j14i12" },
+    { "ply": 15, "player": "Green",  "move": "m6k6",    "eval": 3840, "depth": 7, "nodes": 29748,  "nps": null, "time_ms": null, "pv": "m6k6" },
+    { "ply": 16, "player": "Red",    "move": "k2k4",    "eval": 5076, "depth": 7, "nodes": 5026,   "nps": null, "time_ms": null, "pv": "k2k4" },
+    { "ply": 17, "player": "Blue",   "move": "a6c4",    "eval": 4612, "depth": 7, "nodes": 16950,  "nps": null, "time_ms": null, "pv": "a6c4" },
+    { "ply": 18, "player": "Yellow", "move": "k12k11",  "eval": 4153, "depth": 7, "nodes": 26788,  "nps": null, "time_ms": null, "pv": "k12k11" },
+    { "ply": 19, "player": "Green",  "move": "l10k10",  "eval": 3950, "depth": 7, "nodes": 36575,  "nps": null, "time_ms": null, "pv": "l10k10" },
+    { "ply": 20, "player": "Red",    "move": "n11h5",   "eval": 5104, "depth": 7, "nodes": 18004,  "nps": null, "time_ms": null, "pv": "n11h5" },
+    { "ply": 21, "player": "Blue",   "move": "a10c11",  "eval": 4470, "depth": 7, "nodes": 53083,  "nps": null, "time_ms": null, "pv": "a10c11" },
+    { "ply": 22, "player": "Yellow", "move": "d14d12",  "eval": 3811, "depth": 7, "nodes": 28044,  "nps": null, "time_ms": null, "pv": "d14d12" },
+    { "ply": 23, "player": "Green",  "move": "m5j8",    "eval": 3945, "depth": 7, "nodes": 21462,  "nps": null, "time_ms": null, "pv": "m5j8" },
+    { "ply": 24, "player": "Red",    "move": "e1f3",    "eval": 5110, "depth": 7, "nodes": 19707,  "nps": null, "time_ms": null, "pv": "e1f3" },
+    { "ply": 25, "player": "Blue",   "move": "c4i10",   "eval": 4456, "depth": 7, "nodes": 58773,  "nps": null, "time_ms": null, "pv": "c4i10" },
+    { "ply": 26, "player": "Yellow", "move": "g13g12",  "eval": 3942, "depth": 7, "nodes": 10875,  "nps": null, "time_ms": null, "pv": "g13g12" },
+    { "ply": 27, "player": "Green",  "move": "n10l9",   "eval": 4029, "depth": 7, "nodes": 49716,  "nps": null, "time_ms": null, "pv": "n10l9" },
+    { "ply": 28, "player": "Red",    "move": "d2d3",    "eval": 5199, "depth": 7, "nodes": 12604,  "nps": null, "time_ms": null, "pv": "d2d3" },
+    { "ply": 29, "player": "Blue",   "move": "d9e9",    "eval": 4293, "depth": 7, "nodes": 34817,  "nps": null, "time_ms": null, "pv": "d9e9" },
+    { "ply": 30, "player": "Yellow", "move": "f14h12",  "eval": 4093, "depth": 7, "nodes": 61310,  "nps": null, "time_ms": null, "pv": "f14h12" },
+    { "ply": 31, "player": "Green",  "move": "m8k8",    "eval": 3823, "depth": 7, "nodes": 83435,  "nps": null, "time_ms": null, "pv": "m8k8" },
+    { "ply": 32, "player": "Red",    "move": "j2j3",    "eval": 5212, "depth": 7, "nodes": 57421,  "nps": null, "time_ms": null, "pv": "j2j3" },
+    { "ply": 33, "player": "Blue",   "move": "d6e6",    "eval": 4243, "depth": 7, "nodes": 26837,  "nps": null, "time_ms": null, "pv": "d6e6" },
+    { "ply": 34, "player": "Yellow", "move": "e13e11",  "eval": 3948, "depth": 7, "nodes": 91069,  "nps": null, "time_ms": null, "pv": "e13e11" },
+    { "ply": 35, "player": "Green",  "move": "n9l7",    "eval": 3801, "depth": 7, "nodes": 44308,  "nps": null, "time_ms": null, "pv": "n9l7" },
+    { "ply": 36, "player": "Red",    "move": "k1k2",    "eval": 5057, "depth": 7, "nodes": 72380,  "nps": null, "time_ms": null, "pv": "k1k2" },
+    { "ply": 37, "player": "Blue",   "move": "b10d10",  "eval": 4286, "depth": 7, "nodes": 58094,  "nps": null, "time_ms": null, "pv": "b10d10" },
+    { "ply": 38, "player": "Yellow", "move": "e11d10",  "eval": 3969, "depth": 7, "nodes": 110146, "nps": null, "time_ms": null, "pv": "e11d10" },
+    { "ply": 39, "player": "Green",  "move": "n5l6",    "eval": 3824, "depth": 7, "nodes": 22270,  "nps": null, "time_ms": null, "pv": "n5l6" },
+    { "ply": 40, "player": "Red",    "move": "i3j1",    "eval": 5142, "depth": 7, "nodes": 42967,  "nps": null, "time_ms": null, "pv": "i3j1" },
+    { "ply": 41, "player": "Blue",   "move": "e9f9",    "eval": 4198, "depth": 7, "nodes": 55625,  "nps": null, "time_ms": null, "pv": "e9f9" }
+  ],
+  "eliminations": [],
+  "winner": null,
+  "total_ply": 42,
+  "final_evals": {
+    "Red": 5146,
+    "Blue": 4327,
+    "Yellow": 4631,
+    "Green": 3897
+  },
+  "per_player_stats": {
+    "Red": {
+      "moves": 11,
+      "avg_eval": 4876,
+      "avg_nodes": 26820,
+      "eval_range": [4456, 5212],
+      "pawn_moves": ["e2e4", "k2k4", "d2d3", "j2j3"],
+      "piece_moves": ["j1i3", "f1e2", "e2n11", "n11h5", "e1f3", "k1k2", "i3j1"],
+      "flags": ["knight_undevelopment(i3→j1 at ply 40)"]
+    },
+    "Blue": {
+      "moves": 11,
+      "avg_eval": 4386,
+      "avg_nodes": 33149,
+      "eval_range": [4198, 4612],
+      "pawn_moves": ["b9d9", "b6d6", "b5c5", "d9e9", "d6e6", "b10d10", "e9f9"],
+      "piece_moves": ["a5c6", "a6c4", "a10c11", "c4i10"],
+      "flags": ["excessive_pawn_pushes(7/11 moves are pawn)", "undefended_advances(d6e6, e9f9)"]
+    },
+    "Yellow": {
+      "moves": 10,
+      "avg_eval": 4099,
+      "avg_nodes": 35254,
+      "eval_range": [3811, 4443],
+      "pawn_moves": ["d13d11", "i13i11", "k13k12", "k12k11", "g13g12", "e13e11"],
+      "piece_moves": ["j14i12", "d14d12", "f14h12", "e11d10"],
+      "flags": ["pawn_heavy(6/10 moves are pawn)"]
+    },
+    "Green": {
+      "moves": 10,
+      "avg_eval": 3961,
+      "avg_nodes": 29374,
+      "eval_range": [3801, 4506],
+      "pawn_moves": ["m5k5", "m10l10", "m6k6", "l10k10", "m8k8"],
+      "piece_moves": ["n6m5", "m5j8", "n10l9", "n9l7", "n5l6"],
+      "flags": ["excessive_pawn_pushes(5/10 moves are pawn)", "rook_exposure(bishop snipe target)"]
+    }
+  }
+}

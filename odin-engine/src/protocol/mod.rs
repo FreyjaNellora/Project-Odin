@@ -12,7 +12,8 @@ pub use parser::parse_command;
 pub use types::{Command, EngineOptions, SearchLimits};
 
 use std::cell::RefCell;
-use std::io::BufRead;
+use std::io::{BufRead, BufWriter, Write};
+use std::fs::File;
 use std::rc::Rc;
 
 use crate::board::{Board, Player};
@@ -32,6 +33,14 @@ pub struct OdinEngine {
     options: EngineOptions,
     /// Collected output lines (for testing).
     output_buffer: Vec<String>,
+    /// Persistent searcher — TT survives across `go` calls so entries from
+    /// earlier searches can inform later ones (generation-based aging handles
+    /// staleness). Created lazily on the first `go` command.
+    searcher: Option<BrsSearcher>,
+    /// Optional protocol log file. When Some, all incoming commands and outgoing
+    /// responses are written here. Toggle via `setoption name LogFile value <path>`
+    /// (set to "none" or "" to close). Zero overhead when None.
+    log_file: Option<BufWriter<File>>,
 }
 
 impl OdinEngine {
@@ -41,6 +50,8 @@ impl OdinEngine {
             game_state: None,
             options: EngineOptions::default(),
             output_buffer: Vec::new(),
+            searcher: None,
+            log_file: None,
         }
     }
 
@@ -52,6 +63,10 @@ impl OdinEngine {
         for line in reader.lines() {
             match line {
                 Ok(input) => {
+                    // Log incoming command if logging is active
+                    if let Some(ref mut f) = self.log_file {
+                        let _ = writeln!(f, "> {input}");
+                    }
                     let command = parser::parse_command(&input);
                     if self.handle_command(command) {
                         break;
@@ -141,6 +156,35 @@ impl OdinEngine {
                         self.options.eval_profile = None;
                     }
                     _ => {} // Silently ignore unknown values
+                }
+            }
+            "logfile" | "log_file" => {
+                let v = value.trim();
+                if v.is_empty() || v.eq_ignore_ascii_case("none") || v.eq_ignore_ascii_case("off") {
+                    // Flush and close
+                    if let Some(ref mut f) = self.log_file {
+                        let _ = f.flush();
+                    }
+                    self.log_file = None;
+                } else {
+                    // Create parent dirs if needed, then open file
+                    if let Some(parent) = std::path::Path::new(v).parent() {
+                        let _ = std::fs::create_dir_all(parent);
+                    }
+                    match File::create(v) {
+                        Ok(f) => {
+                            self.log_file = Some(BufWriter::new(f));
+                            // Write header
+                            if let Some(ref mut lf) = self.log_file {
+                                let _ = writeln!(lf, "# Odin protocol log");
+                                let _ = writeln!(lf, "# > = incoming command, < = engine response");
+                                let _ = writeln!(lf, "# LogFile opened");
+                            }
+                        }
+                        Err(e) => {
+                            self.send(&format_error(&format!("cannot open log file: {e}")));
+                        }
+                    }
                 }
             }
             _ => {
@@ -234,8 +278,10 @@ impl OdinEngine {
         });
 
         let profile = self.options.resolved_eval_profile();
-        let mut searcher =
-            BrsSearcher::with_info_callback(Box::new(BootstrapEvaluator::new(profile)), cb);
+        let searcher = self.searcher.get_or_insert_with(|| {
+            BrsSearcher::new(Box::new(BootstrapEvaluator::new(profile)))
+        });
+        searcher.set_info_callback(cb);
         let result = searcher.search(&position, budget);
 
         // Apply the best move to determine post-move state for UI synchronization.
@@ -311,9 +357,9 @@ impl OdinEngine {
                 max_time_ms: Some(ms),
             };
         }
-        // No limits specified: default to depth 7.
+        // No limits specified: default to depth 8 (2 full rotations in 4PC).
         SearchBudget {
-            max_depth: Some(7),
+            max_depth: Some(8),
             max_nodes: None,
             max_time_ms: None,
         }
@@ -344,9 +390,14 @@ impl OdinEngine {
     }
 
     /// Send a line to stdout and record it in the output buffer.
+    /// If a log file is active, also writes there (prefixed with `< `).
     fn send(&mut self, line: &str) {
         println!("{line}");
         self.output_buffer.push(line.to_string());
+        if let Some(ref mut f) = self.log_file {
+            let _ = writeln!(f, "< {line}");
+            let _ = f.flush();
+        }
     }
 }
 

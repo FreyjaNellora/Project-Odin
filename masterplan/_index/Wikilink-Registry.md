@@ -2,7 +2,7 @@
 type: moc
 tags:
   - type/moc
-last_updated: 2026-02-24
+last_updated: 2026-02-27
 ---
 
 # Wikilink Registry
@@ -36,6 +36,7 @@ Single source of truth for all `[[wikilink]]` targets in the vault. Before creat
 | `[[MOC-Tier-6-Polish]]` | `_index/MOC-Tier-6-Polish.md` | Stages 17-19 hub |
 | `[[MOC-Active-Issues]]` | `_index/MOC-Active-Issues.md` | Open issues registry |
 | `[[MOC-Sessions]]` | `_index/MOC-Sessions.md` | Session history |
+| `[[MOC-Tasks]]` | `_index/MOC-Tasks.md` | Active and completed task tracker |
 | `[[Wikilink-Registry]]` | `_index/Wikilink-Registry.md` | This file — canonical wikilink index |
 
 ## Stage Specs
@@ -168,6 +169,14 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Session-2026-02-24-Bugfix-Pause-Resume]]` | `sessions/Session-2026-02-24-Bugfix-Pause-Resume.md` | UI bugfix: pause/resume race condition causing duplicate moves |
 | `[[Session-2026-02-25-PostElim-Crash-Fix]]` | `sessions/Session-2026-02-25-PostElim-Crash-Fix.md` | Post-elimination crash fix: BRS alphabeta/quiescence skip, board scanner Active filter, king square sentinel, eval strengthening |
 | `[[Session-2026-02-25-UI-Bugfixes]]` | `sessions/Session-2026-02-25-UI-Bugfixes.md` | Stage 8 debugging: repetition detection, piece notation, player label React batching fix |
+| `[[Session-2026-02-25-Stage9-TT-Ordering]]` | `sessions/Session-2026-02-25-Stage9-TT-Ordering.md` | Stage 9: TT & Move Ordering, 58% node reduction |
+| `[[Session-2026-02-26-KingSafety-SEE-Hotfixes]]` | `sessions/Session-2026-02-26-KingSafety-SEE-Hotfixes.md` | King safety + SEE hotfixes: KING_GRID, pawn shield, open king file |
+| `[[Session-2026-02-26-PST-Tuning]]` | `sessions/Session-2026-02-26-PST-Tuning.md` | PST tuning: knight gradient flattened, bishop development strengthened |
+| `[[Session-2026-02-27-Game-Analysis-Fixes]]` | `sessions/Session-2026-02-27-Game-Analysis-Fixes.md` | Game analysis fixes: likelihood tuning, TT player-awareness, TT persistence, root TT probe safety |
+| `[[Session-2026-02-27-Multi-Perspective]]` | `sessions/Session-2026-02-27-Multi-Perspective.md` | Multi-perspective opponent modeling: 3-term blend scoring |
+| `[[Session-2026-02-27-PreStage10-Cleanup]]` | `sessions/Session-2026-02-27-PreStage10-Cleanup.md` | Pre-Stage-10 cleanup: audit fixes, eval mitigations, Vec clone retrofit |
+| `[[Session-2026-02-27-BRS-ScoreCap-PawnStructure]]` | `sessions/Session-2026-02-27-BRS-ScoreCap-PawnStructure.md` | BRS score cap, connected pawn bonus, development bonus, depth 8 |
+| `[[Session-2026-02-26-BRS-Architecture-Investigation]]` | `sessions/Session-2026-02-26-BRS-Architecture-Investigation.md` | Narrowing fix, hanging penalty revert, BRS architecture investigation |
 
 ### Issues
 
@@ -189,6 +198,11 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Issue-UI-Pause-Resume-Race-Condition]]` | `issues/Issue-UI-Pause-Resume-Race-Condition.md` | Pause/resume sends duplicate go commands causing double-move (resolved) |
 | `[[Issue-GameLog-Player-Label-React-Batching]]` | `issues/Issue-GameLog-Player-Label-React-Batching.md` | Game log player labels shifted by one — React 18 deferred updater reads wrong ref (pending-verification) |
 | `[[Issue-PostElim-BRS-Crash]]` | `issues/Issue-PostElim-BRS-Crash.md` | Post-elimination BRS panic: generate_legal on kingless board. Four-layer fix applied and user-verified (resolved 2026-02-25) |
+| `[[Issue-BRS-Paranoid-Opponent-Modeling]]` | `issues/Issue-BRS-Paranoid-Opponent-Modeling.md` | Hybrid scoring 80/20 paranoid blend too aggressive for FFA (open) |
+| `[[Issue-TT-Not-Player-Aware]]` | `issues/Issue-TT-Not-Player-Aware.md` | TT hash missing root_player — latent contamination (open) |
+| `[[Issue-TT-Fresh-Per-Search]]` | `issues/Issue-TT-Fresh-Per-Search.md` | TT discarded between moves — easy perf win (open) |
+| `[[Issue-Hanging-Piece-Eval-Double-Count]]` | `issues/Issue-Hanging-Piece-Eval-Double-Count.md` | Eval-side hanging penalty double-counts search threats (resolved 2026-02-26) |
+| `[[Issue-Pawn-Push-Preference-King-Walk]]` | `issues/Issue-Pawn-Push-Preference-King-Walk.md` | Engine prefers pawn pushes over development, walks king (open 2026-02-27) |
 
 ### Patterns
 

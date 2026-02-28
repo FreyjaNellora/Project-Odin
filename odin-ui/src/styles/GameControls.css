@@ -27,6 +27,14 @@
   gap: 4px;
 }
 
+.scores-header {
+  color: #888;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
 .score-row {
   display: flex;
   justify-content: space-between;

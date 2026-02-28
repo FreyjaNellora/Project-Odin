@@ -10,6 +10,13 @@
 //   Green:  270 CW (faces west)  canonical = (13-rank, 13-file)
 //
 // Each table is 196 entries (14x14 flat). Invalid corner entries are 0.
+//
+// DESIGN PHILOSOPHY (v0.5.1):
+// PSTs are tiebreakers, not decision-makers. Max ±10cp for pieces, ±25cp for king.
+// The eval pipeline has stronger signals (material 100-900cp, mobility 10-60cp,
+// king safety 10-50cp). PSTs whisper gentle preferences — they should never
+// override a mobility or safety signal. In 4-player chess, advanced pawns are
+// targets for 3 opponents, not assets approaching promotion.
 
 use crate::board::{
     Board, PieceStatus, PieceType, Player, Square, PIECE_TYPE_COUNT, TOTAL_SQUARES,
@@ -65,7 +72,7 @@ pub(crate) fn positional_score(board: &Board, player: Player) -> i16 {
 }
 
 // ─────────────────────────────────────────────────
-// Piece-Square Tables — Red's perspective
+// Piece-Square Tables — Red's perspective (v0.5.1 rework)
 // ─────────────────────────────────────────────────
 //
 // Layout: rank 0 (Red's back rank) at bottom, rank 13 at top.
@@ -74,7 +81,8 @@ pub(crate) fn positional_score(board: &Board, player: Player) -> i16 {
 //                  files 0-2/ranks 11-13, files 11-13/ranks 11-13.
 // Those entries are 0 (never accessed in practice).
 //
-// Values are intentionally simple — this is a bootstrap eval replaced by NNUE.
+// All values are intentionally small — PSTs are gentle guides, not demands.
+// Mobility, material, and king safety do the heavy lifting.
 
 /// Helper to build a 196-entry PST from a 14x14 grid expressed as [rank][file].
 /// rank 0 = Red's back rank (bottom), rank 13 = opposite side (top).
@@ -92,216 +100,209 @@ const fn flatten_pst(grid: [[i16; 14]; 14]) -> [i16; TOTAL_SQUARES] {
     table
 }
 
-// Pawn PST: reward advancement toward promotion (rank 8 for Red).
-// Center files (5-8, 0-indexed) get a small bonus.
+// Pawn PST: nearly flat advancement curve, max +8cp.
+// In 4PC, advanced pawns are exposed to 3 opponents — pushing is risky, not free.
+// Center files get +1-2cp bonus (control more useful squares).
+// This is a tiebreaker, not a motivation to advance.
 #[rustfmt::skip]
 const PAWN_GRID: [[i16; 14]; 14] = [
     // rank 0: back rank (no pawns here normally)
-    [0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0],
+    [0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     // rank 1: starting rank for Red pawns
-    [0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0],
-    // rank 2
-    [0, 0, 0,  5,  5,  8, 10, 10,  8,  5,  5, 0, 0, 0],
+    [0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    // rank 2: first push — tiny nudge
+    [0, 0, 0,  1, 1, 2, 3, 3, 2, 1, 1, 0, 0, 0],
     // rank 3
-    [0, 0, 0,  5,  8, 12, 15, 15, 12,  8,  5, 0, 0, 0],
-    // rank 4
-    [0, 0, 0, 10, 12, 18, 22, 22, 18, 12, 10, 0, 0, 0],
-    // rank 5
-    [0, 0, 0, 15, 18, 25, 30, 30, 25, 18, 15, 0, 0, 0],
-    // rank 6
-    [0, 0, 0, 20, 25, 32, 38, 38, 32, 25, 20, 0, 0, 0],
-    // rank 7
-    [0, 0, 0, 30, 32, 40, 45, 45, 40, 32, 30, 0, 0, 0],
-    // rank 8: promotion rank for Red — max bonus (will promote, so rarely reached)
-    [0, 0, 0, 50, 50, 50, 50, 50, 50, 50, 50, 0, 0, 0],
+    [0, 0, 0,  2, 2, 3, 4, 4, 3, 2, 2, 0, 0, 0],
+    // rank 4: midboard
+    [0, 0, 0,  2, 3, 4, 5, 5, 4, 3, 2, 0, 0, 0],
+    // rank 5: center — slight plateau
+    [0, 0, 0,  3, 3, 5, 6, 6, 5, 3, 3, 0, 0, 0],
+    // rank 6: no increase — pushing further is risky without support
+    [0, 0, 0,  3, 4, 5, 6, 6, 5, 4, 3, 0, 0, 0],
+    // rank 7: near promotion
+    [0, 0, 0,  4, 4, 5, 7, 7, 5, 4, 4, 0, 0, 0],
+    // rank 8: promotion rank — slight bonus if you get here
+    [0, 0, 0,  5, 5, 6, 8, 8, 6, 5, 5, 0, 0, 0],
     // rank 9-13: beyond promotion, not relevant for Red pawns
-    [0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0],
-    [0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0],
+    [0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ];
 
-// Knight PST: 4-player symmetric center zone. Back-rank penalty at rank 0 only.
-// Peak at center 4×4 zone (+12cp). Ranks 10-13 taper toward neutral — deep
-// infiltration is not penalized (knights behind enemy lines fork pieces).
-// First development hop (rank 0 → rank 2) ≈ +10cp — competitive, not dominant.
+// Knight PST: gentle development nudge. Back rank = -3, center = +4.
+// First develop hop (rank 0 → rank 2) ≈ +5cp — a tiebreaker, not a demand.
+// Mobility already strongly rewards developed knights (2 moves → 8 moves).
 #[rustfmt::skip]
 const KNIGHT_GRID: [[i16; 14]; 14] = [
-    // rank 0: back-rank penalty — develop
-    [0, 0, 0, -8, -5, -3, -3, -3, -3, -5, -8, 0, 0, 0],
+    // rank 0: back-rank nudge — develop me
+    [0, 0, 0, -3, -2, -1, -1, -1, -1, -2, -3, 0, 0, 0],
     // rank 1: transitional
-    [0, 0, 0, -5, -2,  2,  3,  3,  2, -2, -5, 0, 0, 0],
-    // rank 2: active — supports central pawns
-    [0, 0, 0, -5,  2,  5,  8,  8,  5,  2, -5, 0, 0, 0],
-    // rank 3: outpost zone begins
-    [0, 0, 0, -3,  3,  8, 12, 12,  8,  3, -3, 0, 0, 0],
-    // rank 4: outpost — strong pressure in all directions
-    [-3,-2,-5, -3,  3,  8, 12, 12,  8,  3, -3,-5,-2,-3],
-    // rank 5: approaching center — full-width zone active
-    [-3, 2, 2,  3,  6,  8, 10, 10,  8,  6,  3, 2, 2,-3],
-    // rank 6: center — peak zone, knight controls maximum squares
-    [-3, 3, 5,  8,  8, 10, 12, 12, 10,  8,  8, 5, 3,-3],
-    // rank 7: center — peak zone
-    [-3, 3, 5,  8,  8, 10, 12, 12, 10,  8,  8, 5, 3,-3],
+    [0, 0, 0, -2, -1,  1,  1,  1,  1, -1, -2, 0, 0, 0],
+    // rank 2: active
+    [0, 0, 0, -2,  1,  2,  3,  3,  2,  1, -2, 0, 0, 0],
+    // rank 3: outpost zone
+    [0, 0, 0, -1,  1,  3,  4,  4,  3,  1, -1, 0, 0, 0],
+    // rank 4: outpost
+    [-1,-1,-2, -1,  1,  3,  4,  4,  3,  1, -1,-2,-1,-1],
+    // rank 5: approaching center
+    [-1, 1, 1,  1,  2,  3,  3,  3,  3,  2,  1, 1, 1,-1],
+    // rank 6: center — peak
+    [-1, 1, 2,  3,  3,  3,  4,  4,  3,  3,  3, 2, 1,-1],
+    // rank 7: center — peak
+    [-1, 1, 2,  3,  3,  3,  4,  4,  3,  3,  3, 2, 1,-1],
     // rank 8: mirror of rank 5
-    [-3, 2, 2,  3,  6,  8, 10, 10,  8,  6,  3, 2, 2,-3],
+    [-1, 1, 1,  1,  2,  3,  3,  3,  3,  2,  1, 1, 1,-1],
     // rank 9: mirror of rank 4
-    [-3,-2,-5, -3,  3,  8, 12, 12,  8,  3, -3,-5,-2,-3],
-    // rank 10: deep infiltration — still useful outpost behind enemy lines
-    [0, 0, 0, -3,  3,  8, 10, 10,  8,  3, -3, 0, 0, 0],
-    // rank 11: deep — limited mobility near edge but not penalized
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
+    [-1,-1,-2, -1,  1,  3,  4,  4,  3,  1, -1,-2,-1,-1],
+    // rank 10: deep infiltration — still useful
+    [0, 0, 0, -1,  1,  3,  3,  3,  3,  1, -1, 0, 0, 0],
+    // rank 11: deep
+    [0, 0, 0,  0,  0,  1,  2,  2,  1,  0,  0, 0, 0, 0],
     // rank 12: near enemy back rank — neutral
-    [0, 0, 0,  0,  0,  0,  3,  3,  0,  0,  0, 0, 0, 0],
-    // rank 13: enemy back rank — neutral (limited squares but not undeveloped)
+    [0, 0, 0,  0,  0,  0,  1,  1,  0,  0,  0, 0, 0, 0],
+    // rank 13: enemy back rank — neutral
     [0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0],
 ];
 
-// Bishop PST: 4-player symmetric center blob for diagonal coverage.
-// Back-rank penalty (rank 0) drives development — blocked by own pawns.
-// Center 4×4 zone peaks at 32cp — long diagonals cover entire 14×14 board.
-// Ranks 10-13 taper toward neutral — deep infiltration is not penalized.
-// A bishop behind enemy lines still controls long diagonals back to center.
+// Bishop PST: gentle development nudge. Back rank = -4, center = +8.
+// Mobility already massively rewards developed bishops (0 moves blocked → 10+ open).
+// PST just whispers "don't stay home."
 #[rustfmt::skip]
 const BISHOP_GRID: [[i16; 14]; 14] = [
-    // rank 0: back rank — blocked by pawns, strong penalty to develop
-    [0, 0, 0,-10,-12,-15,-15,-15,-15,-12,-10, 0, 0, 0],
-    // rank 1: first development step — fianchetto / diagonal activation
-    [0, 0, 0, -3,  5, 12, 15, 15, 12,  5, -3, 0, 0, 0],
-    // rank 2: developing — diagonals opening up
-    [0, 0, 0, -5,  5, 18, 22, 22, 18,  5, -5, 0, 0, 0],
+    // rank 0: back rank — blocked by pawns, gentle nudge to develop
+    [0, 0, 0, -3, -4, -4, -4, -4, -4, -4, -3, 0, 0, 0],
+    // rank 1: first development step
+    [0, 0, 0, -1,  2,  3,  4,  4,  3,  2, -1, 0, 0, 0],
+    // rank 2: developing
+    [0, 0, 0, -1,  2,  5,  6,  6,  5,  2, -1, 0, 0, 0],
     // rank 3: outpost — controls long diagonal
-    [0, 0, 0, -3,  8, 20, 25, 25, 20,  8, -3, 0, 0, 0],
-    // rank 4: deep development — full diagonal range emerging
-    [-3, 0, 0,  0, 10, 22, 28, 28, 22, 10,  0, 0, 0,-3],
-    // rank 5: approaching center — wide diagonal coverage
-    [-3, 5, 5,  8, 15, 25, 30, 30, 25, 15,  8, 5, 5,-3],
-    // rank 6: center — peak diagonal range, bishop is long-range sniper
-    [-3, 8,12, 18, 22, 28, 32, 32, 28, 22, 18,12, 8,-3],
+    [0, 0, 0, -1,  2,  5,  6,  6,  5,  2, -1, 0, 0, 0],
+    // rank 4: deep development
+    [-1, 0, 0,  0,  3,  6,  7,  7,  6,  3,  0, 0, 0,-1],
+    // rank 5: approaching center
+    [-1, 1, 1,  2,  4,  6,  8,  8,  6,  4,  2, 1, 1,-1],
+    // rank 6: center — peak diagonal range
+    [-1, 2, 3,  5,  6,  7,  8,  8,  7,  6,  5, 3, 2,-1],
     // rank 7: center — peak
-    [-3, 8,12, 18, 22, 28, 32, 32, 28, 22, 18,12, 8,-3],
+    [-1, 2, 3,  5,  6,  7,  8,  8,  7,  6,  5, 3, 2,-1],
     // rank 8: mirror of rank 5
-    [-3, 5, 5,  8, 15, 25, 30, 30, 25, 15,  8, 5, 5,-3],
+    [-1, 1, 1,  2,  4,  6,  8,  8,  6,  4,  2, 1, 1,-1],
     // rank 9: mirror of rank 4
-    [-3, 0, 0,  0, 10, 22, 28, 28, 22, 10,  0, 0, 0,-3],
-    // rank 10: deep infiltration — still controls long diagonals
-    [0, 0, 0,  0,  8, 18, 22, 22, 18,  8,  0, 0, 0, 0],
-    // rank 11: behind enemy lines — diagonal reach back to center
-    [0, 0, 0,  0,  5, 12, 15, 15, 12,  5,  0, 0, 0, 0],
-    // rank 12: near enemy back rank — still useful on diagonals
-    [0, 0, 0,  0,  3,  8, 10, 10,  8,  3,  0, 0, 0, 0],
-    // rank 13: enemy back rank — neutral (not penalized for infiltration)
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
+    [-1, 0, 0,  0,  3,  6,  7,  7,  6,  3,  0, 0, 0,-1],
+    // rank 10: deep infiltration — still controls diagonals
+    [0, 0, 0,  0,  2,  5,  6,  6,  5,  2,  0, 0, 0, 0],
+    // rank 11: behind enemy lines
+    [0, 0, 0,  0,  1,  3,  4,  4,  3,  1,  0, 0, 0, 0],
+    // rank 12: near enemy back rank
+    [0, 0, 0,  0,  1,  2,  3,  3,  2,  1,  0, 0, 0, 0],
+    // rank 13: enemy back rank — neutral
+    [0, 0, 0,  0,  0,  1,  1,  1,  1,  0,  0, 0, 0, 0],
 ];
 
-// Rook PST: 4 royal aisles (files g, h + ranks 7, 8) valued equally.
-// Center 4 squares (g7, g8, h7, h8) peak at 18cp — intersection of all aisles.
-// Aisle squares taper outward symmetrically in both axes.
-// No penalty for staying home — king needs back-rank defenders early.
+// Rook PST: very flat. Rook value comes from open files (dynamic, not static).
+// Royal aisle intersection (center) gets a small +6cp. Home rank is neutral.
 #[rustfmt::skip]
 const ROOK_GRID: [[i16; 14]; 14] = [
-    // rank 0: home rank — neutral. Center files worth slightly more (open-file prep).
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
-    // rank 1: still home territory, small center file preference
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
-    // rank 2: beginning to activate — aisle files start showing value
-    [0, 0, 0,  2,  3,  5,  8,  8,  5,  3,  2, 0, 0, 0],
-    // rank 3: active rook — controls open file into enemy half
-    [0, 0, 0,  3,  5,  8, 12, 12,  8,  5,  3, 0, 0, 0],
-    // rank 4: fully activated, rank aisle influence emerging
-    [0, 0, 0,  5,  5,  8, 12, 12,  8,  5,  5, 0, 0, 0],
-    // rank 5: rank aisle opens — full-width bonus (files a-n all contribute)
-    [3, 3, 5,  8,  8,  9, 15, 15,  9,  8,  8, 5, 3, 3],
-    // rank 6 (rank 7): royal rank aisle — rook aims at Blue Q/Green K
-    [5, 5, 8, 12, 12, 15, 18, 18, 15, 12, 12, 8, 5, 5],
-    // rank 7 (rank 8): royal rank aisle — rook aims at Blue K/Green Q
-    [5, 5, 8, 12, 12, 15, 18, 18, 15, 12, 12, 8, 5, 5],
+    // rank 0: home rank — neutral
+    [0, 0, 0,  0,  0,  1,  2,  2,  1,  0,  0, 0, 0, 0],
+    // rank 1: still home territory
+    [0, 0, 0,  0,  0,  1,  2,  2,  1,  0,  0, 0, 0, 0],
+    // rank 2: beginning to activate
+    [0, 0, 0,  1,  1,  2,  3,  3,  2,  1,  1, 0, 0, 0],
+    // rank 3: active rook
+    [0, 0, 0,  1,  2,  3,  4,  4,  3,  2,  1, 0, 0, 0],
+    // rank 4: fully activated
+    [0, 0, 0,  2,  2,  3,  4,  4,  3,  2,  2, 0, 0, 0],
+    // rank 5: rank aisle — full width
+    [1, 1, 2,  3,  3,  3,  5,  5,  3,  3,  3, 2, 1, 1],
+    // rank 6: royal rank aisle
+    [2, 2, 3,  4,  4,  5,  6,  6,  5,  4,  4, 3, 2, 2],
+    // rank 7: royal rank aisle
+    [2, 2, 3,  4,  4,  5,  6,  6,  5,  4,  4, 3, 2, 2],
     // rank 8: mirror of rank 5
-    [3, 3, 5,  8,  8,  9, 15, 15,  9,  8,  8, 5, 3, 3],
+    [1, 1, 2,  3,  3,  3,  5,  5,  3,  3,  3, 2, 1, 1],
     // rank 9: mirror of rank 4
-    [0, 0, 0,  5,  5,  8, 12, 12,  8,  5,  5, 0, 0, 0],
+    [0, 0, 0,  2,  2,  3,  4,  4,  3,  2,  2, 0, 0, 0],
     // rank 10: mirror of rank 3
-    [0, 0, 0,  3,  5,  8, 12, 12,  8,  5,  3, 0, 0, 0],
+    [0, 0, 0,  1,  2,  3,  4,  4,  3,  2,  1, 0, 0, 0],
     // rank 11: mirror of rank 2
-    [0, 0, 0,  2,  3,  5,  8,  8,  5,  3,  2, 0, 0, 0],
-    // rank 12: deep enemy territory — still useful on aisle files
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
+    [0, 0, 0,  1,  1,  2,  3,  3,  2,  1,  1, 0, 0, 0],
+    // rank 12: deep enemy territory
+    [0, 0, 0,  0,  0,  1,  2,  2,  1,  0,  0, 0, 0, 0],
     // rank 13: enemy back rank
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
+    [0, 0, 0,  0,  0,  1,  2,  2,  1,  0,  0, 0, 0, 0],
 ];
 
-// Queen PST: 4-player symmetric center blob — don't rush out early.
-// Back-rank penalty (rank 0) discourages premature queen development.
-// Center 4 squares peak at 8cp — queen is so mobile PST stays modest.
-// Ranks 10-13 taper toward neutral — queen infiltrating enemy territory
-// is aggressive and should not be penalized.
+// Queen PST: nearly flat, max ±3cp. Queen is so mobile PST is almost irrelevant.
+// Gentle nudge to not rush out (back rank -2) and mild center preference (+3).
 #[rustfmt::skip]
 const QUEEN_GRID: [[i16; 14]; 14] = [
-    // rank 0: don't move queen out immediately — gets chased by 3 opponents
-    [0, 0, 0, -5, -5, -5,  0,  0, -5, -5, -5, 0, 0, 0],
-    // rank 1: still early — slight penalty for edges
-    [0, 0, 0, -5,  0,  0,  0,  0,  0,  0, -5, 0, 0, 0],
+    // rank 0: don't rush out — gets chased by 3 opponents
+    [0, 0, 0, -2, -2, -2,  0,  0, -2, -2, -2, 0, 0, 0],
+    // rank 1: transitional
+    [0, 0, 0, -2,  0,  0,  0,  0,  0,  0, -2, 0, 0, 0],
     // rank 2: beginning to activate
-    [0, 0, 0, -5,  0,  3,  5,  5,  3,  0, -5, 0, 0, 0],
-    // rank 3: moderate center preference
-    [0, 0, 0,  0,  0,  5,  8,  8,  5,  0,  0, 0, 0, 0],
-    // rank 4: center zone widening
-    [-5, 0, 0,  0,  3,  5,  8,  8,  5,  3,  0, 0, 0,-5],
-    // rank 5: full-width center influence
-    [-5, 0, 0,  3,  5,  5,  8,  8,  5,  5,  3, 0, 0,-5],
-    // rank 6: center — peak, queen controls maximum lines
-    [ 0, 0, 3,  5,  5,  8,  8,  8,  8,  5,  5, 3, 0, 0],
+    [0, 0, 0, -1,  0,  1,  1,  1,  1,  0, -1, 0, 0, 0],
+    // rank 3
+    [0, 0, 0,  0,  0,  1,  2,  2,  1,  0,  0, 0, 0, 0],
+    // rank 4
+    [-1, 0, 0,  0,  1,  2,  3,  3,  2,  1,  0, 0, 0,-1],
+    // rank 5
+    [-1, 0, 0,  1,  1,  2,  3,  3,  2,  1,  1, 0, 0,-1],
+    // rank 6: center — peak
+    [ 0, 0, 1,  1,  2,  2,  3,  3,  2,  2,  1, 1, 0, 0],
     // rank 7: center — peak
-    [ 0, 0, 3,  5,  5,  8,  8,  8,  8,  5,  5, 3, 0, 0],
+    [ 0, 0, 1,  1,  2,  2,  3,  3,  2,  2,  1, 1, 0, 0],
     // rank 8: mirror of rank 5
-    [-5, 0, 0,  3,  5,  5,  8,  8,  5,  5,  3, 0, 0,-5],
+    [-1, 0, 0,  1,  1,  2,  3,  3,  2,  1,  1, 0, 0,-1],
     // rank 9: mirror of rank 4
-    [-5, 0, 0,  0,  3,  5,  8,  8,  5,  3,  0, 0, 0,-5],
-    // rank 10: deep infiltration — queen raiding enemy territory
-    [0, 0, 0,  0,  0,  5,  8,  8,  5,  0,  0, 0, 0, 0],
-    // rank 11: behind enemy lines — still strong on all axes
-    [0, 0, 0,  0,  0,  3,  5,  5,  3,  0,  0, 0, 0, 0],
-    // rank 12: near enemy back rank — neutral
-    [0, 0, 0,  0,  0,  0,  3,  3,  0,  0,  0, 0, 0, 0],
-    // rank 13: enemy back rank — neutral (not penalized for infiltration)
+    [-1, 0, 0,  0,  1,  2,  3,  3,  2,  1,  0, 0, 0,-1],
+    // rank 10: deep infiltration
+    [0, 0, 0,  0,  0,  1,  2,  2,  1,  0,  0, 0, 0, 0],
+    // rank 11: behind enemy lines
+    [0, 0, 0,  0,  0,  1,  1,  1,  1,  0,  0, 0, 0, 0],
+    // rank 12: near enemy back rank
+    [0, 0, 0,  0,  0,  0,  1,  1,  0,  0,  0, 0, 0, 0],
+    // rank 13: enemy back rank — neutral
     [0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0],
 ];
 
-// King PST: 4-player symmetric — stay on back rank, center is death.
-// Rank 0 bonus rewards home position. Penalty escalates equally in all
-// directions toward center. After rotation, every player's king wants
-// to stay home and is equally deterred from approaching any opponent.
+// King PST: stay home. Center is death. Halved from original values.
+// King safety eval component handles the detailed danger assessment.
+// PST provides baseline preference: back rank good, center bad.
 #[rustfmt::skip]
 const KING_GRID: [[i16; 14]; 14] = [
-    // rank 0 (back rank): strong bonus for home position, especially castled corners
-    [0, 0, 0, 20, 30, 15, 10, 10, 15, 30, 20, 0, 0, 0],
-    // rank 1: one step forward is dangerous in 4PC
-    [0, 0, 0, -5, -5,-10,-15,-15,-10, -5, -5, 0, 0, 0],
-    // rank 2: exposed — approaching center danger zone
-    [0, 0, 0, -5,-10,-15,-20,-20,-15,-10, -5, 0, 0, 0],
-    // rank 3: entering no-man's land
-    [0, 0, 0,-15,-20,-25,-30,-30,-25,-20,-15, 0, 0, 0],
-    // rank 4: center danger — attacked from all sides
-    [-5,-5,-5,-20,-30,-35,-40,-40,-35,-30,-20,-5,-5,-5],
-    // rank 5: center danger — full-width penalty
-    [-10,-10,-15,-25,-35,-40,-45,-45,-40,-35,-25,-15,-10,-10],
-    // rank 6: center — maximum exposure, 3 opponents can attack
-    [-15,-15,-20,-30,-35,-40,-50,-50,-40,-35,-30,-20,-15,-15],
+    // rank 0 (back rank): home — safe
+    [0, 0, 0, 10, 15,  8,  5,  5,  8, 15, 10, 0, 0, 0],
+    // rank 1: one step forward is risky in 4PC
+    [0, 0, 0, -3, -3, -5, -8, -8, -5, -3, -3, 0, 0, 0],
+    // rank 2: exposed
+    [0, 0, 0, -3, -5, -8,-10,-10, -8, -5, -3, 0, 0, 0],
+    // rank 3: entering danger zone
+    [0, 0, 0, -8,-10,-13,-15,-15,-13,-10, -8, 0, 0, 0],
+    // rank 4: center danger
+    [-3,-3,-3,-10,-15,-18,-20,-20,-18,-15,-10,-3,-3,-3],
+    // rank 5: center danger — full width
+    [-5,-5,-8,-13,-18,-20,-23,-23,-20,-18,-13,-8,-5,-5],
+    // rank 6: center — maximum exposure
+    [-8,-8,-10,-15,-18,-20,-25,-25,-20,-18,-15,-10,-8,-8],
     // rank 7: center — maximum exposure
-    [-15,-15,-20,-30,-35,-40,-50,-50,-40,-35,-30,-20,-15,-15],
+    [-8,-8,-10,-15,-18,-20,-25,-25,-20,-18,-15,-10,-8,-8],
     // rank 8: mirror of rank 5
-    [-10,-10,-15,-25,-35,-40,-45,-45,-40,-35,-25,-15,-10,-10],
+    [-5,-5,-8,-13,-18,-20,-23,-23,-20,-18,-13,-8,-5,-5],
     // rank 9: mirror of rank 4
-    [-5,-5,-5,-20,-30,-35,-40,-40,-35,-30,-20,-5,-5,-5],
+    [-3,-3,-3,-10,-15,-18,-20,-20,-18,-15,-10,-3,-3,-3],
     // rank 10: mirror of rank 3
-    [0, 0, 0,-15,-20,-25,-30,-30,-25,-20,-15, 0, 0, 0],
+    [0, 0, 0, -8,-10,-13,-15,-15,-13,-10, -8, 0, 0, 0],
     // rank 11: mirror of rank 2
-    [0, 0, 0, -5,-10,-15,-20,-20,-15,-10, -5, 0, 0, 0],
+    [0, 0, 0, -3, -5, -8,-10,-10, -8, -5, -3, 0, 0, 0],
     // rank 12: mirror of rank 1
-    [0, 0, 0, -5, -5,-10,-15,-15,-10, -5, -5, 0, 0, 0],
-    // rank 13: mirror of rank 0 (but no bonus — not our home)
-    [0, 0, 0,  0,  0,  0, -5, -5,  0,  0,  0, 0, 0, 0],
+    [0, 0, 0, -3, -3, -5, -8, -8, -5, -3, -3, 0, 0, 0],
+    // rank 13: mirror of rank 0 (not our home — no bonus)
+    [0, 0, 0,  0,  0,  0, -3, -3,  0,  0,  0, 0, 0, 0],
 ];
 
 /// PST values for Red's perspective, indexed by PieceType::index() then by square.
@@ -323,9 +324,9 @@ mod tests {
 
     #[test]
     fn test_rotation_red_identity() {
-        for sq in 0..TOTAL_SQUARES {
+        for (sq, &rot) in ROTATION[Player::Red.index()].iter().enumerate() {
             assert_eq!(
-                ROTATION[Player::Red.index()][sq],
+                rot,
                 sq as u8,
                 "Red rotation should be identity for square {sq}"
             );
@@ -335,8 +336,8 @@ mod tests {
     #[test]
     fn test_rotation_roundtrip_180() {
         // Applying Yellow rotation (180) twice returns to original.
-        for sq in 0..TOTAL_SQUARES {
-            let first = ROTATION[Player::Yellow.index()][sq] as usize;
+        for (sq, &rot) in ROTATION[Player::Yellow.index()].iter().enumerate() {
+            let first = rot as usize;
             let second = ROTATION[Player::Yellow.index()][first] as usize;
             assert_eq!(
                 second, sq,
@@ -347,14 +348,7 @@ mod tests {
 
     #[test]
     fn test_rotation_blue_green_complement() {
-        // Blue (90) followed by Green (270) should be identity (270+90=360=0).
-        // Actually, we need the reverse: Green's rotation table reverses Blue's.
-        // Blue maps (file, rank) -> (rank, file).
-        // Green maps (file, rank) -> (13-rank, 13-file).
-        // So Blue followed by Green:
-        //   Step 1: sq -> canonical_blue = file*14+rank
-        //   Step 2: canonical_blue -> canonical_green = ...
-        // These are not inverses. But Blue(Green(sq)) should equal Yellow(sq).
+        // Blue (90) followed by Green (270) should yield Yellow (180).
         for sq in 0..TOTAL_SQUARES {
             let blue_of_green =
                 ROTATION[Player::Blue.index()][ROTATION[Player::Green.index()][sq] as usize];
@@ -368,30 +362,18 @@ mod tests {
 
     #[test]
     fn test_rotation_known_squares() {
-        // Red's king starts at h1 = (file=7, rank=0) = index 7.
-        // Blue's king starts at a7 = (file=0, rank=6) = index 84.
-        // Yellow's king starts at g14 = (file=6, rank=13) = index 188.
-        // Green's king starts at n8 = (file=13, rank=7) = index 111.
-
         // Red's h1 -> canonical = 7 (identity)
         assert_eq!(ROTATION[Player::Red.index()][7], 7);
-
-        // Blue's a7 (index 84) -> canonical = (rank=6, file=0) -> file*14+rank = 0*14+6 = 6
-        // This is g1 in Red's frame — similar to Red's king position (h1=7).
+        // Blue's a7 (index 84) -> canonical = 6
         assert_eq!(ROTATION[Player::Blue.index()][84], 6);
-
-        // Yellow's g14 (index 188) -> canonical = (13-6, 13-13) = (7, 0) -> 0*14+7 = 7
-        // This maps to h1 — same as Red's king.
+        // Yellow's g14 (index 188) -> canonical = 7
         assert_eq!(ROTATION[Player::Yellow.index()][188], 7);
-
-        // Green's n8 (index 111) -> canonical = (13-7, 13-13) = (6, 0) -> 0*14+6 = 6
-        // This maps to g1 — same as Blue's king (Blue/Green have K/Q swapped vs Red/Yellow).
+        // Green's n8 (index 111) -> canonical = 6
         assert_eq!(ROTATION[Player::Green.index()][111], 6);
     }
 
     #[test]
     fn test_pst_knight_center_bonus() {
-        // Center square (file=7, rank=7) should have high knight value.
         let center = square_from(7, 7).unwrap();
         let edge = square_from(3, 0).unwrap();
         let center_val = pst_value(PieceType::Knight, center, Player::Red);
@@ -404,7 +386,6 @@ mod tests {
 
     #[test]
     fn test_pst_pawn_advancement_bonus() {
-        // Pawn further advanced should have higher PST value (from Red's perspective).
         let rank2 = square_from(6, 2).unwrap();
         let rank5 = square_from(6, 5).unwrap();
         let val2 = pst_value(PieceType::Pawn, rank2, Player::Red);
@@ -417,9 +398,8 @@ mod tests {
 
     #[test]
     fn test_pst_king_back_rank_preferred() {
-        // King on back rank should have higher value than in center.
-        let back = square_from(7, 0).unwrap(); // h1, Red's back rank
-        let center = square_from(7, 7).unwrap(); // h8, board center
+        let back = square_from(7, 0).unwrap();
+        let center = square_from(7, 7).unwrap();
         let back_val = pst_value(PieceType::King, back, Player::Red);
         let center_val = pst_value(PieceType::King, center, Player::Red);
         assert!(
@@ -430,11 +410,8 @@ mod tests {
 
     #[test]
     fn test_pst_symmetry_red_yellow() {
-        // Red's king at h1 should get the same PST value as Yellow's king at g14
-        // after rotation (both map to the canonical "king on back rank" position).
-        let red_king_sq = square_from(7, 0).unwrap(); // h1
-        let yellow_king_sq = square_from(6, 13).unwrap(); // g14
-
+        let red_king_sq = square_from(7, 0).unwrap();
+        let yellow_king_sq = square_from(6, 13).unwrap();
         let red_val = pst_value(PieceType::King, red_king_sq, Player::Red);
         let yellow_val = pst_value(PieceType::King, yellow_king_sq, Player::Yellow);
         assert_eq!(
@@ -446,15 +423,12 @@ mod tests {
     #[test]
     fn test_positional_score_starting_position_symmetric() {
         let board = Board::starting_position();
-        // Red and Yellow should have identical positional scores (same rotational position).
         let red_pos = positional_score(&board, Player::Red);
         let yellow_pos = positional_score(&board, Player::Yellow);
         assert_eq!(
             red_pos, yellow_pos,
             "Red ({red_pos}) and Yellow ({yellow_pos}) should have equal positional scores at start"
         );
-
-        // Blue and Green should have identical positional scores.
         let blue_pos = positional_score(&board, Player::Blue);
         let green_pos = positional_score(&board, Player::Green);
         assert_eq!(
@@ -465,13 +439,13 @@ mod tests {
 
     #[test]
     fn test_pst_values_bounded() {
-        // No PST value should be extreme enough to dominate material.
-        for pt_idx in 0..PIECE_TYPE_COUNT {
-            for sq in 0..TOTAL_SQUARES {
-                let val = RED_PST[pt_idx][sq];
+        // PSTs are now gentle: max ±10cp for pieces, ±25cp for king.
+        for (pt_idx, pst_table) in RED_PST.iter().enumerate() {
+            let bound = if pt_idx == PieceType::King.index() { 25 } else { 10 };
+            for (sq, &val) in pst_table.iter().enumerate() {
                 assert!(
-                    val.abs() <= 50,
-                    "PST[{pt_idx}][{sq}] = {val} exceeds ±50cp bound"
+                    val.abs() <= bound,
+                    "PST[{pt_idx}][{sq}] = {val} exceeds ±{bound}cp bound"
                 );
             }
         }

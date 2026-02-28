@@ -111,6 +111,17 @@ function parseInfoData(line: string): InfoData {
         data.values = [v1, v2, v3, v4];
         break;
       }
+      case 's1': {
+        const s1 = parseInt(tokens[++i], 10);
+        i++; // skip 's2'
+        const s2 = parseInt(tokens[++i], 10);
+        i++; // skip 's3'
+        const s3 = parseInt(tokens[++i], 10);
+        i++; // skip 's4'
+        const s4 = parseInt(tokens[++i], 10);
+        data.ffaScores = [s1, s2, s3, s4];
+        break;
+      }
       case 'nodes':
         data.nodes = parseInt(tokens[++i], 10);
         break;
@@ -151,7 +162,7 @@ function parseInfoData(line: string): InfoData {
 /** Check if a token is a known info keyword (used to terminate pv parsing). */
 function isInfoKeyword(token: string): boolean {
   return [
-    'depth', 'seldepth', 'score', 'v1', 'nodes', 'nps',
+    'depth', 'seldepth', 'score', 'v1', 's1', 'nodes', 'nps',
     'time', 'pv', 'phase', 'brs_surviving', 'mcts_sims',
   ].includes(token);
 }

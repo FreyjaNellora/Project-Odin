@@ -1,0 +1,112 @@
+{
+  "game": 96585003,
+  "source": "chess.com/4pc",
+  "type": "human-vs-human",
+  "time_control": "4+0",
+  "variant": "FFA",
+  "rule_variants": "Anonymous DeadKingWalking EnPassant PromoteTo=D",
+  "date": "2026-02-09",
+  "players": {
+    "Red":    { "name": "Chess_Taifun",      "elo": 2254 },
+    "Blue":   { "name": "Hamlet",            "elo": 3068 },
+    "Yellow": { "name": "Bidakterakhir",     "elo": 2072 },
+    "Green":  { "name": "visor_sarge",       "elo": 2594 }
+  },
+  "result": {
+    "Red": 9, "Blue": 64, "Yellow": 18, "Green": 47
+  },
+  "termination": "Blue +20",
+  "total_moves": 173,
+  "elo_category": "mixed-weak",
+  "notes": "Hamlet (3068) dominates a weak lobby (2072-2594). Good contrast game: strong player vs weak players. Red (2254) and Yellow (2072) show classic weak patterns. Green (2594) plays decently. Red gets 9 points — crushed.",
+  "moves": [
+    { "round": 1,  "Red": "h2-h3",      "Blue": "b7-c7",     "Yellow": "d13-d11",    "Green": "m6-l6" },
+    { "round": 2,  "Red": "k2-k4",      "Blue": "Qa8-c6",    "Yellow": "e13-e12",    "Green": "m7-k7" },
+    { "round": 3,  "Red": "f2-f3",      "Blue": "Na10-c9",   "Yellow": "Ne14-f12",   "Green": "Qn7-l7" },
+    { "round": 4,  "Red": "Qg1-h2",     "Blue": "b4-c4",     "Yellow": "g13-g12",    "Green": "Bn6xBf14" },
+    { "round": 5,  "Red": "Nj1-i3",     "Blue": "b10-d10",   "Yellow": "Rd14xBf14",  "Green": "Ql7-m7" },
+    { "round": 6,  "Red": "j2-j3",      "Blue": "Ba9xRf14",  "Yellow": "h13-h12",    "Green": "m4-l4" },
+    { "round": 7,  "Red": "Bi1-j2",     "Blue": "Bf14-b10",  "Yellow": "i13-i11",    "Green": "m11-k11" },
+    { "round": 8,  "Red": "O-O",        "Blue": "Na5-b7",    "Yellow": "Bi14-h13",   "Green": "Nn10-l9" },
+    { "round": 9,  "Red": "g2-g4",      "Blue": "O-O-O",     "Yellow": "Bh13-i12",   "Green": "m10-l10" },
+    { "round": 10, "Red": "Ri1-g1",     "Blue": "Qc6-f6",    "Yellow": "Nj14-h13",   "Green": "Bn9-m10" },
+    { "round": 11, "Red": "Ne1-g2",     "Blue": "Nb7-d8",    "Yellow": "Bi12-h11",   "Green": "O-O" },
+    { "round": 12, "Red": "Ng2-e3",     "Blue": "b6-c6",     "Yellow": "Qh14-g13",   "Green": "Qm7-k9" },
+    { "round": 13, "Red": "Ne3-f5",     "Blue": "Ba6-d9",    "Yellow": "O-O-O",      "Green": "Rn9-n8" },
+    { "round": 14, "Red": "d2-d4",      "Blue": "Bd9xj3",    "Yellow": "Nh13-j14",   "Green": "Qk9-j8" },
+    { "round": 15, "Red": "i2xBj3",     "Blue": "Nd8-e6",    "Yellow": "k13-k12",    "Green": "Qj8xj3" },
+    { "round": 16, "Red": "h3-h4",      "Blue": "Qf6-i6",    "Yellow": "Nf12-g10",   "Green": "Qj3-d9" },
+    { "round": 17, "Red": "h4-h5",      "Blue": "Qi6-j7",    "Yellow": "f13-f11",    "Green": "Nn5-m7" },
+    { "round": 18, "Red": "Bf1-h3",     "Blue": "Ne6-g5",    "Yellow": "e12-e11",    "Green": "m5-l5" },
+    { "round": 19, "Red": "Bh3-j5",     "Blue": "b11-c11",   "Yellow": "e11-e10",    "Green": "Qd9-g9" },
+    { "round": 20, "Red": "Nf5-h6",     "Blue": "Qj7-j6",    "Yellow": "Qg13-h13",   "Green": "l5xk4" }
+  ],
+  "opening_analysis": {
+    "Red": {
+      "first_20_moves": ["h2-h3", "k2-k4", "f2-f3", "Qg1-h2", "Nj1-i3", "j2-j3", "Bi1-j2", "O-O", "g2-g4", "Ri1-g1", "Ne1-g2", "Ng2-e3", "Ne3-f5", "d2-d4", "i2xBj3", "h3-h4", "h4-h5", "Bf1-h3", "Bh3-j5", "Nf5-h6"],
+      "pawn_moves_in_first_20": 10,
+      "piece_moves_in_first_20": 10,
+      "pawn_ratio": 0.50,
+      "castled": true,
+      "castle_round": 8,
+      "queen_active_round": 4,
+      "captures_in_first_20": 1,
+      "notes": "WEAK PATTERN: 50% pawn ratio. 6 pawn moves before developing 2nd knight (round 11). Pushes h3, k4, f3, j3, g4, d4, h4, h5 — scattered pawn pushes with no cohesive structure. Knight on g2 takes 3 moves to reach f5 (g2→e3→f5). Castles early (round 8) but then pushes all kingside pawns forward, weakening own king."
+    },
+    "Blue": {
+      "first_20_moves": ["b7-c7", "Qa8-c6", "Na10-c9", "b4-c4", "b10-d10", "Ba9xRf14", "Bf14-b10", "Na5-b7", "O-O-O", "Qc6-f6", "Nb7-d8", "b6-c6", "Ba6-d9", "Bd9xj3", "Nd8-e6", "Qf6-i6", "Qi6-j7", "Ne6-g5", "b11-c11", "Qj7-j6"],
+      "pawn_moves_in_first_20": 6,
+      "piece_moves_in_first_20": 14,
+      "pawn_ratio": 0.30,
+      "castled": true,
+      "castle_round": 9,
+      "queen_active_round": 2,
+      "captures_in_first_20": 2,
+      "notes": "STRONG PATTERN (Hamlet 3068): Queen active round 2, both knights developed, both bishops active with one capturing a rook (Ba9xRf14 — material win). Castled O-O-O round 9. Only 30% pawn ratio. Knights maneuvered into attacking positions (Nd8→e6→g5)."
+    },
+    "Yellow": {
+      "first_20_moves": ["d13-d11", "e13-e12", "Ne14-f12", "g13-g12", "Rd14xBf14", "h13-h12", "i13-i11", "Bi14-h13", "Bh13-i12", "Nj14-h13", "Bi12-h11", "Qh14-g13", "O-O-O", "Nh13-j14", "k13-k12", "Nf12-g10", "f13-f11", "e12-e11", "e11-e10", "Qg13-h13"],
+      "pawn_moves_in_first_20": 10,
+      "piece_moves_in_first_20": 10,
+      "pawn_ratio": 0.50,
+      "castled": true,
+      "castle_round": 13,
+      "queen_active_round": 12,
+      "captures_in_first_20": 1,
+      "notes": "WEAK PATTERN: 50% pawn ratio. Queen doesn't activate until round 12. Knight developed then UNDEVELOPS (Nh13→j14 at round 14 — retreats to starting area). Bishop shuffles (Bi14→h13→i12→h11 — 3 moves for one bishop). Pushes e-pawn 3 times (e12, e11, e10). Passive, slow development."
+    },
+    "Green": {
+      "first_20_moves": ["m6-l6", "m7-k7", "Qn7-l7", "Bn6xBf14", "Ql7-m7", "m4-l4", "m11-k11", "Nn10-l9", "m10-l10", "Bn9-m10", "O-O", "Qm7-k9", "Rn9-n8", "Qk9-j8", "Qj8xj3", "Qj3-d9", "Nn5-m7", "m5-l5", "Qd9-g9", "l5xk4"],
+      "pawn_moves_in_first_20": 8,
+      "piece_moves_in_first_20": 12,
+      "pawn_ratio": 0.40,
+      "castled": true,
+      "castle_round": 11,
+      "queen_active_round": 3,
+      "captures_in_first_20": 3,
+      "notes": "MID-LEVEL PATTERN (2594): 40% pawn ratio — between strong and weak. Queen active early (round 3), both bishops developed, castled round 11. More pawn pushes than strong players but still gets pieces out. Captures material (Bn6xBf14, Qj8xj3, l5xk4)."
+    }
+  },
+  "weak_player_patterns": {
+    "Red_2254": [
+      "50% pawn ratio in opening",
+      "Scattered pawn pushes (h3, k4, f3, j3, g4, d4, h4, h5) — no structure",
+      "Knight takes 3 tempo to reach useful square (Ne1→g2→e3→f5)",
+      "Pushes kingside pawns after castling — self-weakens king",
+      "Only 1 capture in 20 moves — passive play"
+    ],
+    "Yellow_2072": [
+      "50% pawn ratio in opening",
+      "Queen activation delayed until round 12",
+      "Knight undevelopment (Nh13→j14)",
+      "Bishop shuffling wastes 3 tempo (Bi14→h13→i12→h11)",
+      "Triple e-pawn push (e12→e11→e10) — aimless advancement",
+      "Only 1 capture in 20 moves"
+    ]
+  },
+  "benchmark_comparison": {
+    "strong_player_avg": { "pawn_ratio": 0.30, "queen_round": 2, "captures": 2, "knight_undevelop": 0 },
+    "mid_player": { "pawn_ratio": 0.40, "queen_round": 3, "captures": 3, "knight_undevelop": 0 },
+    "weak_player_avg": { "pawn_ratio": 0.50, "queen_round": 8, "captures": 1, "knight_undevelop": 1 }
+  }
+}

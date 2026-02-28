@@ -47,6 +47,7 @@ function App() {
             evalProfile={game.evalProfile}
             resolvedEvalProfile={game.resolvedEvalProfile}
             terrainMode={game.terrainMode}
+            maxRounds={game.maxRounds}
             onNewGame={game.newGame}
             onEngineMove={game.requestEngineMove}
             onSetPlayMode={game.setPlayMode}
@@ -55,6 +56,7 @@ function App() {
             onSetGameMode={game.setGameMode}
             onSetEvalProfile={game.setEvalProfile}
             onSetTerrainMode={game.setTerrainMode}
+            onSetMaxRounds={game.setMaxRounds}
             onTogglePause={game.togglePause}
           />
           <div className="board-options">

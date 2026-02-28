@@ -1,0 +1,120 @@
+{
+  "game": 96602063,
+  "source": "chess.com/4pc",
+  "type": "human-vs-human",
+  "time_control": "1+1",
+  "variant": "FFA",
+  "rule_variants": "Anonymous DeadKingWalking EnPassant PromoteTo=D",
+  "date": "2026-02-09",
+  "players": {
+    "Red":    { "name": "Hamlet",          "elo": 2709 },
+    "Blue":   { "name": "Chess_Taifun",    "elo": 1954 },
+    "Yellow": { "name": "AaryaBhatt0123",  "elo": 2139 },
+    "Green":  { "name": "basenowsky",      "elo": 2069 }
+  },
+  "result": {
+    "Red": 63, "Blue": 3, "Yellow": 30, "Green": 30
+  },
+  "termination": "Green +20",
+  "total_moves": 160,
+  "elo_category": "very-weak-lobby",
+  "notes": "Hamlet (2709) vs very weak opponents (1954-2139). Blue (Chess_Taifun 1954) gets 3 points — worst score in dataset. Blue checkmated round 14. All three weak players below 2150. Hamlet shows efficient domination: king walk (deliberate repositioning, not blunder), pawn storm + promotion, clinical mating attacks.",
+  "moves": [
+    { "round": 1,  "Red": "f2-f3",      "Blue": "b7-c7",     "Yellow": "i13-i12",    "Green": "m11-k11" },
+    { "round": 2,  "Red": "g2-g4",      "Blue": "b4-d4",     "Yellow": "h13-h11",    "Green": "m6-l6" },
+    { "round": 3,  "Red": "k2-k4",      "Blue": "b9-d9",     "Yellow": "d13-d11",    "Green": "m7-k7" },
+    { "round": 4,  "Red": "Nj1-i3",     "Blue": "Na5-c6",    "Yellow": "Ne14-f12",   "Green": "Nn10-l9" },
+    { "round": 5,  "Red": "Bf1-i4",     "Blue": "b11-c11",   "Yellow": "e13-e12",    "Green": "Nn5-l4" },
+    { "round": 6,  "Red": "Qg1-g2",     "Blue": "b8-c8",     "Yellow": "Bf14-e13",   "Green": "Qn7-m6" },
+    { "round": 7,  "Red": "j2-j3",      "Blue": "Na10-c9",   "Yellow": "O-O",        "Green": "Nl4-n5" },
+    { "round": 8,  "Red": "Bi1-j2",     "Blue": "Ba9-b8",    "Yellow": "Rf14-g14",   "Green": "m4-l4" },
+    { "round": 9,  "Red": "Ne1-d3",     "Blue": "b5-c5",     "Yellow": "h11-h10",    "Green": "Bn6-k9" },
+    { "round": 10, "Red": "Kh1-i1",     "Blue": "Ba6-b5",    "Yellow": "h10-h9",     "Green": "Qm6-m7" },
+    { "round": 11, "Red": "Ki1-j1",     "Blue": "O-O",       "Yellow": "Qh14-h10",   "Green": "Bk9-l8" },
+    { "round": 12, "Red": "Nd3xc5",     "Blue": "b6xNc5",    "Yellow": "Qh10xc5",    "Green": "Bl8xg13" },
+    { "round": 13, "Red": "e2-e3",      "Blue": "Nc9-d7",    "Yellow": "Qc5xBb5+",   "Green": "Bg13xNf12" },
+    { "round": 14, "Red": "Qg2-f1#",    "Blue": null,        "Yellow": "Be13xBf12",   "Green": "m10-l10" },
+    { "round": 15, "Red": "Qf1xQb5",    "Blue": null,        "Yellow": "h9-h8",       "Green": "Bn9-m10" },
+    { "round": 16, "Red": "Qb5-f1",     "Blue": null,        "Yellow": "h8-h7=D",     "Green": "O-O" },
+    { "round": 17, "Red": "Qf1-g2",     "Blue": null,        "Yellow": "Bf12-g13",    "Green": "Qm7-n7" },
+    { "round": 18, "Red": "Rd1-h1",     "Blue": null,        "Yellow": "Qh7-h12",     "Green": "Rn9-n8" },
+    { "round": 19, "Red": "g4-g5",      "Blue": null,        "Yellow": "j13-j11",     "Green": "Bm10xBi14" },
+    { "round": 20, "Red": "g5-g6",      "Blue": null,        "Yellow": "Rg14xBi14",   "Green": "m8-k8" }
+  ],
+  "opening_analysis": {
+    "Red": {
+      "first_20_moves": ["f2-f3", "g2-g4", "k2-k4", "Nj1-i3", "Bf1-i4", "Qg1-g2", "j2-j3", "Bi1-j2", "Ne1-d3", "Kh1-i1", "Ki1-j1", "Nd3xc5", "e2-e3", "Qg2-f1#", "Qf1xQb5", "Qb5-f1", "Qf1-g2", "Rd1-h1", "g4-g5", "g5-g6"],
+      "pawn_moves_in_first_20": 8,
+      "piece_moves_in_first_20": 12,
+      "pawn_ratio": 0.40,
+      "castled": false,
+      "queen_active_round": 6,
+      "captures_in_first_20": 3,
+      "notes": "STRONG BUT UNORTHODOX (Hamlet 2709): Higher pawn ratio than usual (40%) — deliberate pawn storm strategy (f3, g4, k4, j3 prepare g-file attack). King manually repositioned (Kh1→i1→j1) instead of castling — intentional, not blunder. Delivers checkmate round 14. Then promotes g-pawn for a second queen. Adapts style to exploit weak opponents."
+    },
+    "Blue": {
+      "first_13_moves": ["b7-c7", "b4-d4", "b9-d9", "Na5-c6", "b11-c11", "b8-c8", "Na10-c9", "Ba9-b8", "b5-c5", "Ba6-b5", "O-O", "b6xNc5", "Nc9-d7"],
+      "total_moves_before_elimination": 13,
+      "pawn_moves": 7,
+      "piece_moves": 6,
+      "pawn_ratio": 0.54,
+      "castled": true,
+      "castle_round": 11,
+      "queen_active_round": null,
+      "captures": 1,
+      "notes": "WEAKEST IN DATASET (1954): 54% pawn ratio. Queen NEVER activated — still on a8 when checkmated round 14. 7 pawn pushes in 13 moves. 5 of first 6 moves are pawn pushes (b7-c7, b4-d4, b9-d9, b11-c11, b8-c8). Castles round 11 but queen stays dormant. Only 1 capture (recapture b6xNc5). Gets 3 points — worst result in entire dataset. This is what sub-2000 Elo play looks like."
+    },
+    "Yellow": {
+      "first_20_moves": ["i13-i12", "h13-h11", "d13-d11", "Ne14-f12", "e13-e12", "Bf14-e13", "O-O", "Rf14-g14", "h11-h10", "h10-h9", "Qh14-h10", "Qh10xc5", "Qc5xBb5+", "Be13xBf12", "h9-h8", "h8-h7=D", "Bf12-g13", "Qh7-h12", "j13-j11", "Rg14xBi14"],
+      "pawn_moves_in_first_20": 9,
+      "piece_moves_in_first_20": 11,
+      "pawn_ratio": 0.45,
+      "castled": true,
+      "castle_round": 7,
+      "queen_active_round": 11,
+      "captures_in_first_20": 4,
+      "notes": "WEAK-BUT-CASTLES-EARLY (2139): Castles round 7 (earliest in this game). But 45% pawn ratio — 3 pawn pushes in first 3 rounds. Queen late (round 11). Pushes h-pawn 4 times (h13→h11→h10→h9→h8→h7=D) — promotes but at cost of 5 tempo on one pawn. Captures material but passively. 30 points."
+    },
+    "Green": {
+      "first_20_moves": ["m11-k11", "m6-l6", "m7-k7", "Nn10-l9", "Nn5-l4", "Qn7-m6", "Nl4-n5", "m4-l4", "Bn6-k9", "Qm6-m7", "Bk9-l8", "Bl8xg13", "Bg13xNf12", "m10-l10", "Bn9-m10", "O-O", "Qm7-n7", "Rn9-n8", "Bm10xBi14", "m8-k8"],
+      "pawn_moves_in_first_20": 8,
+      "piece_moves_in_first_20": 12,
+      "pawn_ratio": 0.40,
+      "castled": true,
+      "castle_round": 16,
+      "queen_active_round": 6,
+      "captures_in_first_20": 3,
+      "notes": "WEAK-BUT-ACTIVE-BISHOPS (2069): 40% pawn ratio. Both bishops developed and aggressively capture (Bl8xg13, Bg13xNf12, Bm10xBi14 — 3 bishop captures). Knight bounces (Nl4→n5 — retreats). Late castle (round 16). Queen active round 6 but mostly repositions. 30 points — ties Yellow."
+    }
+  },
+  "weak_player_patterns": {
+    "Blue_1954": [
+      "54% pawn ratio — highest in entire dataset",
+      "5 of first 6 moves are pawn pushes",
+      "Queen NEVER activated (still on a8 at checkmate)",
+      "Checkmated round 14 with 3 points — worst result in dataset",
+      "Only 1 capture (forced recapture)",
+      "This is what sub-2000 play looks like"
+    ],
+    "Yellow_2139": [
+      "3 pawn pushes in first 3 rounds",
+      "h-pawn pushed 5 times (h13→h11→h10→h9→h8→h7=D) — 5 tempo for 1 promotion",
+      "Queen activation round 11 — very late",
+      "45% pawn ratio"
+    ],
+    "Green_2069": [
+      "Knight bounces: Nl4→n5 (develops then retreats to near-starting square)",
+      "40% pawn ratio with front-loaded pawn pushes",
+      "Late castle (round 16)",
+      "Bishops active but uncoordinated"
+    ]
+  },
+  "strong_player_adaptation": {
+    "Hamlet_2709": "Hamlet adapts strategy to opponent strength. Against very weak players, uses pawn storm + king walk (not castling) to deliver fast checkmate (round 14). Higher pawn ratio than normal (40% vs usual 20-30%) because the pawn storm IS the attack plan. Key insight: strong players adjust their style. The engine should have one consistent style that works at all levels, not try to emulate Hamlet's adaptive play."
+  },
+  "benchmark_comparison": {
+    "sub_2000": { "pawn_ratio": 0.54, "queen_round": "never", "captures": 1, "result": 3 },
+    "weak_2100": { "pawn_ratio": 0.42, "queen_round": 8, "captures": 3, "result": 30 },
+    "strong_adapted": { "pawn_ratio": 0.40, "queen_round": 6, "captures": 3, "result": 63 }
+  }
+}

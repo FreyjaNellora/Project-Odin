@@ -19,7 +19,7 @@ export type PlayMode = 'manual' | 'semi-auto' | 'full-auto';
 
 export type GameMode = 'ffa' | 'lks';
 
-export type EvalProfileSetting = 'auto' | 'standard' | 'aggressive';
+export type EvalProfileSetting = 'standard' | 'aggressive';
 
 export type PromotionChoice = 'w' | 'r' | 'b' | 'n';
 
@@ -56,6 +56,7 @@ export interface UseGameStateResult {
   gameMode: GameMode;
   evalProfile: EvalProfileSetting;
   terrainMode: boolean;
+  maxRounds: number;
   resolvedEvalProfile: 'standard' | 'aggressive';
   pendingPromotion: PendingPromotion | null;
   handleSquareClick: (sq: number) => void;
@@ -68,6 +69,7 @@ export interface UseGameStateResult {
   setGameMode: (mode: GameMode) => void;
   setEvalProfile: (profile: EvalProfileSetting) => void;
   setTerrainMode: (on: boolean) => void;
+  setMaxRounds: (n: number) => void;
   togglePause: () => void;
   resolvePromotion: (piece: PromotionChoice) => void;
   cancelPromotion: () => void;
@@ -99,11 +101,13 @@ export function useGameState(
 
   // Game settings state (Stage 8)
   const [gameMode, setGameModeState] = useState<GameMode>('ffa');
-  const [evalProfile, setEvalProfileState] = useState<EvalProfileSetting>('auto');
+  const [evalProfile, setEvalProfileState] = useState<EvalProfileSetting>('standard');
   const [terrainMode, setTerrainModeState] = useState(false);
+  const [maxRounds, setMaxRoundsState] = useState(0); // 0 = unlimited
   const gameModeRef = useRef<GameMode>('ffa');
-  const evalProfileRef = useRef<EvalProfileSetting>('auto');
+  const evalProfileRef = useRef<EvalProfileSetting>('standard');
   const terrainModeRef = useRef(false);
+  const maxRoundsRef = useRef(0);
 
   // Track pending move validation state
   const pendingMoveRef = useRef<string | null>(null);
@@ -164,11 +168,13 @@ export function useGameState(
     terrainModeRef.current = on;
   }, []);
 
-  // Resolve "auto" eval profile based on current game mode
-  const resolvedEvalProfile: 'standard' | 'aggressive' =
-    evalProfile === 'auto'
-      ? (gameMode === 'ffa' ? 'aggressive' : 'standard')
-      : evalProfile;
+  const setMaxRounds = useCallback((n: number) => {
+    setMaxRoundsState(n);
+    maxRoundsRef.current = n;
+  }, []);
+
+  // Resolved eval profile (direct — no auto mode)
+  const resolvedEvalProfile: 'standard' | 'aggressive' = evalProfile;
 
   /** Advance to the next non-eliminated player in rotation. Returns the new player. */
   const advancePlayer = useCallback((): Player => {
@@ -219,6 +225,13 @@ export function useGameState(
   /** Schedule the engine to play the next turn if auto-play is active. */
   const maybeChainEngineMove = useCallback((nextPlayer: Player) => {
     if (autoPlayRef.current && shouldEnginePlay(nextPlayer)) {
+      // Round limit check: 1 round ≈ 4 ply. 0 = unlimited.
+      const limit = maxRoundsRef.current;
+      if (limit > 0 && moveListRef.current.length >= limit * 4) {
+        autoPlayRef.current = false;
+        setIsPaused(true);
+        return;
+      }
       setTimeout(() => {
         if (autoPlayRef.current) {
           sendGoFromRef();
@@ -520,7 +533,11 @@ export function useGameState(
         case 'info': {
           setLatestInfo(msg.data);
           latestInfoRef.current = msg.data;
-          if (msg.data.values) {
+          // Use FFA game scores for the scoreboard (capture points, checkmate bonuses).
+          // Falls back to eval values only if FFA scores aren't available yet.
+          if (msg.data.ffaScores) {
+            setScores(msg.data.ffaScores);
+          } else if (msg.data.values) {
             setScores(msg.data.values);
           }
           break;
@@ -645,6 +662,7 @@ export function useGameState(
     gameMode,
     evalProfile,
     terrainMode,
+    maxRounds,
     resolvedEvalProfile,
     pendingPromotion,
     handleSquareClick,
@@ -657,6 +675,7 @@ export function useGameState(
     setGameMode,
     setEvalProfile,
     setTerrainMode,
+    setMaxRounds,
     togglePause,
     resolvePromotion,
     cancelPromotion,

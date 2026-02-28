@@ -27,6 +27,10 @@ pub struct BoardContext {
     pub root_player: Player,
     /// The player with the lowest material (weakest, most vulnerable).
     pub weakest_player: Player,
+    /// The player with the highest combined strength (material + score).
+    pub leader_player: Player,
+    /// Material totals per player in centipawns (already computed in scan_board).
+    pub material: [i32; 4],
     /// Opponents sorted by danger to root: most dangerous first.
     pub most_dangerous: [Player; 3],
     /// How much danger the root player is in (0.0 = safe, 1.0 = critical).
@@ -79,8 +83,9 @@ pub fn scan_board(gs: &GameState, root_player: Player) -> BoardContext {
         }
     }
 
-    // 2. Weakest player (lowest material among active/DKW)
+    // 2. Weakest and strongest players
     let weakest_player = find_weakest(&material, gs);
+    let leader_player = find_leader(&material, gs);
 
     // 3. King safety: how many opponents attack squares around root's king
     let root_king_sq = board.king_square(root_player);
@@ -198,6 +203,8 @@ pub fn scan_board(gs: &GameState, root_player: Player) -> BoardContext {
         game_mode: gs.game_mode(),
         root_player,
         weakest_player,
+        leader_player,
+        material,
         most_dangerous,
         root_danger_level,
         high_value_targets,
@@ -219,6 +226,25 @@ fn opponents_of(root: Player, gs: &GameState) -> Vec<Player> {
         .copied()
         .filter(|&p| p != root && gs.player_status(p) == PlayerStatus::Active)
         .collect()
+}
+
+/// Find the strongest active player by material + FFA score.
+fn find_leader(material: &[i32; 4], gs: &GameState) -> Player {
+    let scores = gs.scores();
+    let mut leader = Player::Red;
+    let mut best_strength = i32::MIN;
+    for &p in &Player::ALL {
+        if gs.player_status(p) == PlayerStatus::Eliminated {
+            continue;
+        }
+        // Combined strength: raw material + FFA score contribution
+        let strength = material[p.index()] + scores[p.index()] * 50;
+        if strength > best_strength {
+            best_strength = strength;
+            leader = p;
+        }
+    }
+    leader
 }
 
 /// Find the player with the lowest material among non-eliminated players.
@@ -574,16 +600,88 @@ fn cheap_presort(moves: &mut [Move]) {
 // Hybrid Reply Scoring — Step 3
 // ---------------------------------------------------------------------------
 
-/// Base likelihood when a move targets the root player.
-const LIKELIHOOD_BASE_TARGETS_ROOT: f64 = 0.7;
-/// Bonus if root is this opponent's best target (from board context).
-const LIKELIHOOD_BEST_TARGET_BONUS: f64 = 0.2;
-/// Bonus if opponent is supporting another attacker against root.
-const LIKELIHOOD_SUPPORTING_BONUS: f64 = 0.1;
-/// Penalty if opponent is too exposed (high own vulnerability).
-const LIKELIHOOD_EXPOSED_PENALTY: f64 = 0.3;
-/// Base likelihood for moves that do NOT target root.
-const LIKELIHOOD_BASE_NON_ROOT: f64 = 0.2;
+/// Dynamic blend weights for multi-perspective opponent modeling.
+/// All weights are non-negative and sum to 1.0.
+#[derive(Debug, Clone)]
+struct BlendWeights {
+    /// Weight for harm-to-root (paranoid perspective).
+    w_paranoid: f64,
+    /// Weight for objective move strength (BRS/selfish perspective).
+    w_brs: f64,
+    /// Weight for harm-to-leader (anti-leader perspective).
+    w_anti_leader: f64,
+}
+
+/// Compute dynamic blend weights for a specific opponent at a MIN node.
+///
+/// Weights depend on:
+/// - Whether root is this opponent's best target
+/// - Whether this opponent is supporting an attack on root
+/// - Whether root is the leader (anti-leader folds into paranoid)
+/// - The leader's material gap over the opponent
+/// - The opponent's own vulnerability (exposed → more selfish/BRS)
+fn compute_blend_weights(opponent: Player, ctx: &BoardContext) -> BlendWeights {
+    let profile = ctx.per_opponent.iter().find(|p| p.player == opponent);
+
+    // --- Paranoid base ---
+    let mut w_paranoid = if profile.is_some_and(|p| p.best_target == ctx.root_player) {
+        0.35
+    } else {
+        0.15
+    };
+    if profile.is_some_and(|p| p.supporting_attack_on_root) {
+        w_paranoid += 0.10;
+    }
+
+    // --- BRS base ---
+    let mut w_brs = 0.25;
+
+    // --- Anti-leader ---
+    let w_anti_leader = if ctx.root_player == ctx.leader_player {
+        // Root IS the leader: anti-leader motivation folds into paranoid.
+        // Everyone targets the leader, so paranoid already models this.
+        w_paranoid += 0.15;
+        0.0
+    } else {
+        // Scale by leader's material gap over this opponent.
+        // Bigger gap = stronger anti-leader motivation.
+        let opp_mat = profile.map_or(0, |p| ctx.material[p.player.index()]);
+        let leader_mat = ctx.material[ctx.leader_player.index()];
+        let gap = (leader_mat - opp_mat).max(0) as f64;
+        // 300cp gap → ~0.15, 600cp+ gap → 0.25 (capped)
+        (gap / 2400.0).min(0.25)
+    };
+    let mut w_anti_leader = w_anti_leader;
+
+    // --- Exposed opponent modifier ---
+    // Highly vulnerable opponents play selfishly (defend themselves).
+    // Boost BRS, dampen paranoid and anti-leader.
+    if let Some(prof) = profile {
+        if prof.own_vulnerability > 0.5 {
+            let shift: f64 = 0.15;
+            w_brs += shift;
+            w_paranoid = (w_paranoid - shift * 0.5).max(0.05);
+            w_anti_leader = (w_anti_leader - shift * 0.5).max(0.0);
+        }
+    }
+
+    // --- Normalize to sum to 1.0 ---
+    let total = w_paranoid + w_brs + w_anti_leader;
+    if total > 0.0 {
+        BlendWeights {
+            w_paranoid: w_paranoid / total,
+            w_brs: w_brs / total,
+            w_anti_leader: w_anti_leader / total,
+        }
+    } else {
+        // Fallback: pure BRS
+        BlendWeights {
+            w_paranoid: 0.0,
+            w_brs: 1.0,
+            w_anti_leader: 0.0,
+        }
+    }
+}
 
 /// Scored opponent move for hybrid reply selection.
 #[derive(Debug, Clone)]
@@ -592,19 +690,19 @@ pub struct ScoredReply {
     pub hybrid_score: f64,
     pub objective_strength: f64,
     pub harm_to_root: f64,
-    pub likelihood: f64,
+    pub harm_to_leader: f64,
 }
 
-/// Score a relevant opponent move using the hybrid formula.
+/// Score a relevant opponent move using the 3-term multi-perspective formula.
 ///
-/// `score = harm_to_root * likelihood + objective_strength * (1 - likelihood)`
+/// `score = w_paranoid * harm_to_root + w_brs * objective_strength + w_anti_leader * harm_to_leader`
 ///
 /// - `objective_strength`: how good this move is objectively (static eval delta).
 ///   Normalized to [0, 1] where 1 = very strong move.
 /// - `harm_to_root`: how much this move specifically hurts the root player.
 ///   Based on capture value toward root, check threat, proximity.
-/// - `likelihood`: probability the opponent would realistically play this move.
-///   Higher if root is their best target, lower if opponent is too exposed.
+/// - `harm_to_leader`: how much this move hurts the current leader.
+///   Zero when root IS the leader (anti-leader folds into paranoid weight).
 pub fn score_reply(
     mv: Move,
     board: &Board,
@@ -614,64 +712,54 @@ pub fn score_reply(
     obj_eval_delta: i16,
     max_eval_delta: i16,
 ) -> ScoredReply {
-    // Find the opponent's profile from context
-    let profile = ctx.per_opponent.iter().find(|p| p.player == opponent);
-
     // Objective strength: normalized eval improvement (0.0 to 1.0)
     let max_delta = (max_eval_delta.abs() as f64).max(1.0);
     let objective_strength = ((obj_eval_delta.abs() as f64) / max_delta).clamp(0.0, 1.0);
 
-    // Harm to root: based on what this move does to root's pieces/king
+    // Harm terms
     let harm_to_root = compute_harm_to_root(mv, board, root_player);
-
-    // Likelihood: based on board context
-    let is_relevant = classify_move(mv, board, root_player) == MoveClass::Relevant;
-    let likelihood = if is_relevant {
-        let mut l = LIKELIHOOD_BASE_TARGETS_ROOT;
-        if let Some(prof) = profile {
-            if prof.best_target == root_player {
-                l += LIKELIHOOD_BEST_TARGET_BONUS;
-            }
-            if prof.supporting_attack_on_root {
-                l += LIKELIHOOD_SUPPORTING_BONUS;
-            }
-            if prof.own_vulnerability > 0.5 {
-                l -= LIKELIHOOD_EXPOSED_PENALTY;
-            }
-        }
-        l.clamp(0.1, 1.0)
+    let harm_to_leader = if ctx.root_player == ctx.leader_player {
+        // Root IS leader — anti-leader term already folded into paranoid weight.
+        // Set to 0 so it contributes nothing even if weight somehow > 0.
+        0.0
     } else {
-        LIKELIHOOD_BASE_NON_ROOT
+        compute_harm_to_player(mv, board, ctx.leader_player)
     };
 
-    let hybrid_score = harm_to_root * likelihood + objective_strength * (1.0 - likelihood);
+    // Dynamic blend weights
+    let weights = compute_blend_weights(opponent, ctx);
+
+    // 3-term multi-perspective score
+    let hybrid_score = weights.w_paranoid * harm_to_root
+        + weights.w_brs * objective_strength
+        + weights.w_anti_leader * harm_to_leader;
 
     ScoredReply {
         mv,
         hybrid_score,
         objective_strength,
         harm_to_root,
-        likelihood,
+        harm_to_leader,
     }
 }
 
-/// Compute how much a move harms the root player specifically.
+/// Compute how much a move harms a specific player.
 /// Returns 0.0 (harmless) to 1.0 (very harmful).
-fn compute_harm_to_root(mv: Move, board: &Board, root_player: Player) -> f64 {
+fn compute_harm_to_player(mv: Move, board: &Board, target_player: Player) -> f64 {
     let to = mv.to_sq();
     let mut harm = 0.0;
 
-    // Capturing root's piece: harm proportional to piece value
+    // Capturing target's piece: harm proportional to piece value
     if let Some(captured_pt) = mv.captured() {
         if let Some(piece) = board.piece_at(to) {
-            if piece.owner == root_player {
+            if piece.owner == target_player {
                 harm += (PIECE_EVAL_VALUES[captured_pt.index()] as f64 / 900.0).min(1.0);
             }
         }
     }
 
-    // Proximity to root's king
-    let king_sq = board.king_square(root_player);
+    // Proximity to target's king
+    let king_sq = board.king_square(target_player);
     let king_file = file_of(king_sq) as i8;
     let king_rank = rank_of(king_sq) as i8;
     let to_file = file_of(to) as i8;
@@ -685,6 +773,40 @@ fn compute_harm_to_root(mv: Move, board: &Board, root_player: Player) -> f64 {
     }
 
     harm.clamp(0.0, 1.0)
+}
+
+/// Convenience wrapper: compute harm to root player.
+#[inline]
+fn compute_harm_to_root(mv: Move, board: &Board, root_player: Player) -> f64 {
+    compute_harm_to_player(mv, board, root_player)
+}
+
+/// Pick the opponent move that most harms the root player by static eval delta.
+///
+/// Plain BRS fallback: for each candidate move, make it, evaluate from root's
+/// perspective, unmake. Return the move that produces the lowest root eval
+/// (i.e. objectively strongest reply against root).
+fn pick_objectively_strongest(
+    gs: &mut GameState,
+    evaluator: &dyn crate::eval::Evaluator,
+    root_player: Player,
+    moves: &[Move],
+) -> Option<Move> {
+    let mut best_move = None;
+    let mut best_score = i16::MAX;
+
+    for &mv in moves {
+        let undo = crate::movegen::make_move(gs.board_mut(), mv);
+        let score = evaluator.eval_scalar(gs, root_player);
+        crate::movegen::unmake_move(gs.board_mut(), mv, undo);
+
+        if score < best_score {
+            best_score = score;
+            best_move = Some(mv);
+        }
+    }
+
+    best_move
 }
 
 /// Select the best opponent reply using hybrid scoring with progressive narrowing.
@@ -708,11 +830,13 @@ pub fn select_hybrid_reply(
     }
 
     let board = gs.board();
-    let (mut relevant, best_bg) = classify_moves(moves, board, root_player);
+    let (mut relevant, _best_bg) = classify_moves(moves, board, root_player);
 
-    // If no relevant moves, fall back to plain best reply
+    // If no relevant moves, fall back to plain BRS: pick the move that
+    // objectively hurts root most (minimizes root's static eval). This is
+    // better than best_bg (capture-value only) or moves.first() (arbitrary).
     if relevant.is_empty() {
-        return best_bg.or_else(|| moves.first().copied());
+        return pick_objectively_strongest(gs, evaluator, root_player, moves);
     }
 
     // Progressive narrowing: limit candidates based on search depth.
@@ -1078,6 +1202,220 @@ mod tests {
             class,
             MoveClass::Relevant,
             "move adjacent to root king must be relevant"
+        );
+    }
+
+    // --- Multi-perspective scoring tests ---
+
+    #[test]
+    fn test_find_leader_starting_position() {
+        // All players have equal material at start; leader tie-breaks by index (Red first).
+        let gs = GameState::new_standard_ffa();
+        let mut material = [0i32; 4];
+        for &p in &Player::ALL {
+            for &(pt, _sq) in gs.board().piece_list(p) {
+                material[p.index()] += PIECE_EVAL_VALUES[pt.index()] as i32;
+            }
+        }
+        let leader = find_leader(&material, &gs);
+        assert_eq!(leader, Player::Red, "tie should break to Red (first by index)");
+    }
+
+    #[test]
+    fn test_find_leader_material_gap() {
+        // Remove a piece from Red to create a material gap.
+        let mut gs = GameState::new_standard_ffa();
+        let board = gs.board_mut();
+        // Find and remove Red's queen to create a clear gap.
+        let mut queen_sq = None;
+        for &(pt, sq) in board.piece_list(Player::Red) {
+            if pt == crate::board::PieceType::Queen {
+                queen_sq = Some(sq);
+                break;
+            }
+        }
+        if let Some(sq) = queen_sq {
+            board.remove_piece(sq);
+        }
+        // Recompute material
+        let mut material = [0i32; 4];
+        for &p in &Player::ALL {
+            for &(pt, _sq) in gs.board().piece_list(p) {
+                material[p.index()] += PIECE_EVAL_VALUES[pt.index()] as i32;
+            }
+        }
+        let leader = find_leader(&material, &gs);
+        // Red lost a queen, so leader should be one of the others (Blue, Yellow, or Green).
+        assert_ne!(leader, Player::Red, "Red lost queen — should not be leader");
+    }
+
+    #[test]
+    fn test_compute_harm_to_player_capture() {
+        // A move capturing Blue's queen should have high harm_to_player(Blue),
+        // low harm_to_player(Red).
+        let mut gs = GameState::new_standard_ffa();
+        let board = gs.board_mut();
+
+        // Find Blue's queen square
+        let mut blue_queen_sq = None;
+        for &(pt, sq) in board.piece_list(Player::Blue) {
+            if pt == crate::board::PieceType::Queen {
+                blue_queen_sq = Some(sq);
+                break;
+            }
+        }
+        let blue_queen_sq = blue_queen_sq.expect("Blue should have a queen");
+
+        // Place a Red knight where it can capture (on the queen's square, conceptually)
+        let from_sq = crate::board::square_from(3, 3).unwrap();
+        let mv = Move::new_capture(
+            from_sq,
+            blue_queen_sq,
+            crate::board::PieceType::Knight,
+            crate::board::PieceType::Queen,
+        );
+
+        let harm_blue = compute_harm_to_player(mv, board, Player::Blue);
+        let harm_red = compute_harm_to_player(mv, board, Player::Red);
+
+        assert!(
+            harm_blue > 0.5,
+            "capturing Blue's queen should highly harm Blue, got {}",
+            harm_blue
+        );
+        assert!(
+            harm_red < harm_blue,
+            "harm to Red ({}) should be less than harm to Blue ({})",
+            harm_red,
+            harm_blue
+        );
+    }
+
+    #[test]
+    fn test_blend_weights_normalize() {
+        // For any opponent + context, verify w_paranoid + w_brs + w_anti_leader ≈ 1.0
+        let gs = GameState::new_standard_ffa();
+        let ctx = scan_board(&gs, Player::Red);
+
+        for profile in &ctx.per_opponent {
+            let weights = compute_blend_weights(profile.player, &ctx);
+            let total = weights.w_paranoid + weights.w_brs + weights.w_anti_leader;
+            assert!(
+                (total - 1.0).abs() < 1e-10,
+                "weights for {:?} sum to {} (expected 1.0)",
+                profile.player,
+                total
+            );
+        }
+    }
+
+    #[test]
+    fn test_blend_weights_root_is_leader() {
+        // When root IS the leader, w_anti_leader == 0.0 and paranoid gets the boost.
+        let gs = GameState::new_standard_ffa();
+        // At starting position with equal material, Red is leader (tie-break by index).
+        let ctx = scan_board(&gs, Player::Red);
+        assert_eq!(
+            ctx.leader_player,
+            Player::Red,
+            "Red should be leader at start (tie-break)"
+        );
+
+        for profile in &ctx.per_opponent {
+            let weights = compute_blend_weights(profile.player, &ctx);
+            assert!(
+                weights.w_anti_leader.abs() < 1e-10,
+                "w_anti_leader should be 0 when root is leader, got {} for {:?}",
+                weights.w_anti_leader,
+                profile.player
+            );
+        }
+    }
+
+    #[test]
+    fn test_blend_weights_exposed_opponent() {
+        // Opponent with high vulnerability should have higher BRS weight.
+        let gs = GameState::new_standard_ffa();
+        let mut ctx = scan_board(&gs, Player::Red);
+
+        // Manually set one opponent as highly exposed
+        let normal_weights = compute_blend_weights(ctx.per_opponent[0].player, &ctx);
+
+        ctx.per_opponent[0].own_vulnerability = 0.9; // very exposed
+        let exposed_weights = compute_blend_weights(ctx.per_opponent[0].player, &ctx);
+
+        assert!(
+            exposed_weights.w_brs > normal_weights.w_brs,
+            "exposed opponent BRS weight {} should be > normal {}",
+            exposed_weights.w_brs,
+            normal_weights.w_brs
+        );
+    }
+
+    #[test]
+    fn test_score_reply_uses_blend() {
+        // A move that harms the leader but not root should still get a positive
+        // hybrid_score from the anti-leader term.
+        let mut gs = GameState::new_standard_ffa();
+        let board = gs.board_mut();
+
+        // Remove Red's queen to make Red NOT the leader.
+        let mut red_queen_sq = None;
+        for &(pt, sq) in board.piece_list(Player::Red) {
+            if pt == crate::board::PieceType::Queen {
+                red_queen_sq = Some(sq);
+                break;
+            }
+        }
+        if let Some(sq) = red_queen_sq {
+            board.remove_piece(sq);
+        }
+
+        let ctx = scan_board(&gs, Player::Red);
+        // Red is not the leader now (lost queen).
+        assert_ne!(
+            ctx.leader_player,
+            Player::Red,
+            "Red should not be leader after losing queen"
+        );
+
+        // Find the leader's queen square for a capture move.
+        let leader = ctx.leader_player;
+        let mut leader_queen_sq = None;
+        for &(pt, sq) in gs.board().piece_list(leader) {
+            if pt == crate::board::PieceType::Queen {
+                leader_queen_sq = Some(sq);
+                break;
+            }
+        }
+        let leader_queen_sq = leader_queen_sq.expect("leader should have a queen");
+
+        // Pick an opponent that is NOT Red and NOT the leader
+        let opponent = Player::ALL
+            .iter()
+            .copied()
+            .find(|&p| p != Player::Red && p != leader)
+            .expect("should find a third player");
+
+        // Create a move that captures the leader's queen (harms leader, not root)
+        let from_sq = crate::board::square_from(3, 3).unwrap();
+        let mv = Move::new_capture(
+            from_sq,
+            leader_queen_sq,
+            crate::board::PieceType::Knight,
+            crate::board::PieceType::Queen,
+        );
+
+        let scored = score_reply(mv, gs.board(), Player::Red, opponent, &ctx, 500, 500);
+        assert!(
+            scored.hybrid_score > 0.0,
+            "hybrid_score should be > 0 from anti-leader term, got {}",
+            scored.hybrid_score
+        );
+        assert!(
+            scored.harm_to_leader > 0.5,
+            "harm_to_leader should be high for queen capture, got {}",
+            scored.harm_to_leader
         );
     }
 }

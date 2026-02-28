@@ -7,8 +7,9 @@ use super::square::{is_valid_square, square_from, Square, TOTAL_SQUARES};
 use super::types::{Piece, PieceType, Player, PLAYER_COUNT};
 use super::zobrist::ZobristKeys;
 
-/// Maximum number of pieces a single player can have (16 in starting position).
-pub const MAX_PIECES_PER_PLAYER: usize = 16;
+/// Maximum number of pieces a single player can have.
+/// 16 in starting position; 20 provides safety margin for test setups.
+pub const MAX_PIECES_PER_PLAYER: usize = 20;
 
 /// Castling rights bitmask constants.
 /// Each player has 2 bits: kingside (lower) and queenside (upper).
@@ -27,8 +28,11 @@ pub const CASTLE_GREEN_QUEEN: u8 = 0x80;
 pub struct Board {
     /// 196-element flat array. `None` = empty or invalid corner.
     squares: [Option<Piece>; TOTAL_SQUARES],
-    /// Per-player piece lists: (PieceType, Square) pairs.
-    piece_lists: [Vec<(PieceType, Square)>; PLAYER_COUNT],
+    /// Per-player piece lists: (PieceType, Square) pairs, fixed-size arrays.
+    /// Active pieces are packed into slots [0..piece_counts[player]].
+    piece_lists: [[(PieceType, Square); MAX_PIECES_PER_PLAYER]; PLAYER_COUNT],
+    /// Active piece count per player (bounds iteration on piece_lists).
+    piece_counts: [u8; PLAYER_COUNT],
     /// Per-player king square (updated on every king move).
     king_squares: [Square; PLAYER_COUNT],
     /// Incrementally-maintained Zobrist hash.
@@ -62,7 +66,8 @@ impl Board {
         let keys = global_zobrist_keys();
         let mut board = Self {
             squares: [None; TOTAL_SQUARES],
-            piece_lists: [vec![], vec![], vec![], vec![]],
+            piece_lists: [[(PieceType::Pawn, 0); MAX_PIECES_PER_PLAYER]; PLAYER_COUNT],
+            piece_counts: [0; PLAYER_COUNT],
             king_squares: [0; PLAYER_COUNT],
             zobrist: 0,
             castling_rights: 0,
@@ -189,8 +194,10 @@ impl Board {
     }
 
     /// Get the piece list for a player: (PieceType, Square) pairs.
+    /// Returns a slice of length `piece_counts[player]` — only active entries.
     pub fn piece_list(&self, player: Player) -> &[(PieceType, Square)] {
-        &self.piece_lists[player.index()]
+        let count = self.piece_counts[player.index()] as usize;
+        &self.piece_lists[player.index()][..count]
     }
 
     /// Get the king square for a player.
@@ -274,7 +281,11 @@ impl Board {
         self.zobrist ^= key;
 
         // Update piece list
-        self.piece_lists[piece.owner.index()].push((piece.piece_type, sq));
+        let idx = piece.owner.index();
+        let count = self.piece_counts[idx] as usize;
+        debug_assert!(count < MAX_PIECES_PER_PLAYER, "piece list overflow");
+        self.piece_lists[idx][count] = (piece.piece_type, sq);
+        self.piece_counts[idx] += 1;
 
         // Track king square
         if piece.piece_type == PieceType::King {
@@ -295,13 +306,16 @@ impl Board {
             .piece_key(sq, piece.piece_type.index(), piece.owner.index());
         self.zobrist ^= key;
 
-        // Update piece list — find and remove the entry
-        let list = &mut self.piece_lists[piece.owner.index()];
-        if let Some(pos) = list
+        // Update piece list — find and swap-remove the entry
+        let idx = piece.owner.index();
+        let count = self.piece_counts[idx] as usize;
+        if let Some(pos) = self.piece_lists[idx][..count]
             .iter()
             .position(|&(pt, s)| pt == piece.piece_type && s == sq)
         {
-            list.swap_remove(pos);
+            self.piece_counts[idx] -= 1;
+            let last = self.piece_counts[idx] as usize;
+            self.piece_lists[idx][pos] = self.piece_lists[idx][last];
         }
 
         piece
@@ -394,7 +408,7 @@ impl Board {
     /// Verify piece list sync: array and piece lists agree.
     pub fn verify_piece_lists(&self) -> bool {
         for &player in &Player::ALL {
-            let list = &self.piece_lists[player.index()];
+            let list = self.piece_list(player);
 
             // Every piece in the list must exist on the board
             for &(pt, sq) in list {
@@ -431,7 +445,7 @@ impl Board {
 
     /// Count total pieces on the board.
     pub fn piece_count(&self) -> usize {
-        self.piece_lists.iter().map(|l| l.len()).sum()
+        self.piece_counts.iter().map(|&c| c as usize).sum()
     }
 }
 

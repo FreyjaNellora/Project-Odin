@@ -1,0 +1,95 @@
+{
+  "game": 96085550,
+  "source": "chess.com/4pc",
+  "type": "human-vs-human",
+  "time_control": "1+7",
+  "variant": "FFA",
+  "rule_variants": "Anonymous DeadKingWalking EnPassant PromoteTo=D",
+  "date": "2026-01-31",
+  "players": {
+    "Red":    { "name": "Hamlet",        "elo": 3438 },
+    "Blue":   { "name": "Froggychess2",  "elo": 2732 },
+    "Yellow": { "name": "MillzGambit",   "elo": 3083 },
+    "Green":  { "name": "Yunikra",       "elo": 2541 }
+  },
+  "result": {
+    "Red": 32, "Blue": 87, "Yellow": 33, "Green": 65
+  },
+  "termination": "Checkmate",
+  "total_moves": 286,
+  "notes": "Wide Elo spread (2541-3438). Hamlet (3438) plays Red. Blue (Froggychess2, 2732) wins with 87 points — lower Elo player wins. Checkmate finish. Good example of 4PC dynamics where lower-rated player can win by positioning.",
+  "moves": [
+    { "round": 1,  "Red": "h2-h3",      "Blue": "b7-c7",     "Yellow": "g13-g12",    "Green": "m8-l8" },
+    { "round": 2,  "Red": "Ne1-f3",     "Blue": "Qa8-b7",    "Yellow": "Nj14-i12",   "Green": "m6-l6" },
+    { "round": 3,  "Red": "Qg1-h2",     "Blue": "b11-d11",   "Yellow": "Qh14-e11",   "Green": "Nn10-l9" },
+    { "round": 4,  "Red": "e2-e4",      "Blue": "b4-c4",     "Yellow": "j13-j12",    "Green": "m11-l11" },
+    { "round": 5,  "Red": "Nj1-i3",     "Blue": "Na10-c9",   "Yellow": "k13-k11",    "Green": "m5-k5" },
+    { "round": 6,  "Red": "k2-k3",      "Blue": "Na5-c6",    "Yellow": "Bi14-j13",   "Green": "Bn9-m8" },
+    { "round": 7,  "Red": "Qh2-f4",     "Blue": "b10-c10",   "Yellow": "Ne14-f12",   "Green": "Qn7-m6" },
+    { "round": 8,  "Red": "Bi1-h2",     "Blue": "Qb7-d9",    "Yellow": "O-O-O",      "Green": "Bm8-n7" },
+    { "round": 9,  "Red": "j2-j3",      "Blue": "Qd9-d8",    "Yellow": "Bf14-h12",   "Green": "m4-k4" },
+    { "round": 10, "Red": "j3-j4",      "Blue": "Qd8-d7",    "Yellow": "d13-d12",    "Green": "k5xj4" },
+    { "round": 11, "Red": "Qf4xj4",     "Blue": "Ba9-b10",   "Yellow": "Qe11-g9",    "Green": "m7-l7" },
+    { "round": 12, "Red": "Bf1-e2",     "Blue": "Nc9-e8",    "Yellow": "Qg9-h10",    "Green": "Rn11-n10" },
+    { "round": 13, "Red": "O-O-O",      "Blue": "Bb10-e7",   "Yellow": "Qh10-g10",   "Green": "Bn6-m7" },
+    { "round": 14, "Red": "Qj4-g4",     "Blue": "Qd7xQg4",  "Yellow": "Qg10xNe8",   "Green": "Bn7-m8" },
+    { "round": 15, "Red": "Ni3xQg4",    "Blue": "Be7-c9",    "Yellow": "Nf12-d13",   "Green": "l7-k7" },
+    { "round": 16, "Red": "Rk1-j1",     "Blue": "Ba6-d9",    "Yellow": "Qe8-h8",     "Green": "l6-k6" },
+    { "round": 17, "Red": "Bh2xBm7+",  "Blue": "O-O-O",     "Yellow": "Nd13-c11",   "Green": "Qm6xBm7" },
+    { "round": 18, "Red": "Rj1-j9",     "Blue": "Bd9-c8",    "Yellow": "Qh8xBc8",   "Green": "Qm7xRg1+" },
+    { "round": 19, "Red": "Nf3xQg1",    "Blue": "b9xQc8",    "Yellow": "e13-e12",    "Green": "Nn5-m7" },
+    { "round": 20, "Red": "Rj9-g9",     "Blue": "Ka9-b10",   "Yellow": "e12xd11",    "Green": "k6-j6" }
+  ],
+  "opening_analysis": {
+    "Red": {
+      "first_20_moves": ["h2-h3", "Ne1-f3", "Qg1-h2", "e2-e4", "Nj1-i3", "k2-k3", "Qh2-f4", "Bi1-h2", "j2-j3", "j3-j4", "Qf4xj4", "Bf1-e2", "O-O-O", "Qj4-g4", "Ni3xQg4", "Rk1-j1", "Bh2xBm7+", "Rj1-j9", "Nf3xQg1", "Rj9-g9"],
+      "pawn_moves_in_first_20": 6,
+      "piece_moves_in_first_20": 14,
+      "pawn_ratio": 0.30,
+      "castled": true,
+      "castle_round": 13,
+      "queen_active_round": 3,
+      "captures_in_first_20": 4,
+      "notes": "Hamlet (3438 Elo). Knight out round 2, queen active round 3, both bishops developed, castled O-O-O round 13. 4 captures in 20 moves — aggressive."
+    },
+    "Blue": {
+      "first_20_moves": ["b7-c7", "Qa8-b7", "b11-d11", "b4-c4", "Na10-c9", "Na5-c6", "b10-c10", "Qb7-d9", "Qd9-d8", "Qd8-d7", "Ba9-b10", "Nc9-e8", "Bb10-e7", "Qd7xQg4", "Be7-c9", "Ba6-d9", "O-O-O", "Bd9-c8", "b9xQc8", "Ka9-b10"],
+      "pawn_moves_in_first_20": 5,
+      "piece_moves_in_first_20": 15,
+      "pawn_ratio": 0.25,
+      "castled": true,
+      "castle_round": 17,
+      "queen_active_round": 2,
+      "captures_in_first_20": 2,
+      "notes": "Lowest Elo (2732) but wins! Queen active round 2, both knights developed by round 6, both bishops active. Only 25% pawn ratio — piece-heavy opening."
+    },
+    "Yellow": {
+      "first_20_moves": ["g13-g12", "Nj14-i12", "Qh14-e11", "j13-j12", "k13-k11", "Bi14-j13", "Ne14-f12", "O-O-O", "Bf14-h12", "d13-d12", "Qe11-g9", "Qg9-h10", "Qh10-g10", "Qg10xNe8", "Nf12-d13", "Qe8-h8", "Nd13-c11", "Qh8xBc8", "e13-e12", "e12xd11"],
+      "pawn_moves_in_first_20": 6,
+      "piece_moves_in_first_20": 14,
+      "pawn_ratio": 0.30,
+      "castled": true,
+      "castle_round": 8,
+      "queen_active_round": 3,
+      "captures_in_first_20": 3,
+      "notes": "Earliest castle (round 8, O-O-O). Queen very active from round 3. Both knights and bishops developed. 3 captures."
+    },
+    "Green": {
+      "first_20_moves": ["m8-l8", "m6-l6", "Nn10-l9", "m11-l11", "m5-k5", "Bn9-m8", "Qn7-m6", "Bm8-n7", "m4-k4", "k5xj4", "m7-l7", "Rn11-n10", "Bn6-m7", "Bn7-m8", "l7-k7", "l6-k6", "Qm6xBm7", "Qm7xRg1+", "Nn5-m7", "k6-j6"],
+      "pawn_moves_in_first_20": 10,
+      "piece_moves_in_first_20": 10,
+      "pawn_ratio": 0.50,
+      "castled": false,
+      "queen_active_round": 7,
+      "captures_in_first_20": 3,
+      "notes": "Lowest Elo feel — 50% pawn ratio, no castle, bishop shuffling (Bm8→n7→m8). But still captures material. Finishes 2nd with 65 points."
+    }
+  },
+  "benchmark_targets": {
+    "pawn_ratio_opening_20": { "target": "<=0.35", "human_avg": 0.34 },
+    "queen_activation": { "target": "by round 10", "human_avg_round": 4 },
+    "castle_timing": { "target": "by round 18", "human_note": "3 of 4 castled" },
+    "knight_undevelopment": { "target": 0, "human_value": 0 },
+    "captures_in_first_20": { "target": ">=2", "human_avg": 3 }
+  }
+}

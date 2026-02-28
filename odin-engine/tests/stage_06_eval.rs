@@ -82,10 +82,9 @@ fn test_eval_performance_under_10us() {
     let elapsed = start.elapsed();
     let per_eval = elapsed / iterations;
 
-    // Target: < 10us per eval in release. Debug builds are ~5-7x slower due to
-    // no inlining and bounds checking, so allow 80us in debug.
-    // (Raised from 50 after adding hanging-piece-penalty attack queries.)
-    let threshold = if cfg!(debug_assertions) { 80 } else { 10 };
+    // Target: < 10us per eval in release. Debug builds are ~2-3x slower due to
+    // no inlining and bounds checking, so allow 50us in debug.
+    let threshold = if cfg!(debug_assertions) { 50 } else { 10 };
     assert!(
         per_eval < std::time::Duration::from_micros(threshold),
         "Eval took {per_eval:?} per call, exceeds {threshold}us target"
@@ -108,7 +107,7 @@ fn test_evaluator_trait_compiles() {
 
     assert!(scalar > -30_000 && scalar < 30_000);
     for &v in &vec {
-        assert!(v >= 0.0 && v <= 1.0);
+        assert!((0.0..=1.0).contains(&v));
     }
 }
 
@@ -211,7 +210,7 @@ fn test_4vec_bounded_01() {
     let vec = evaluator.eval_4vec(&gs);
 
     for (i, &v) in vec.iter().enumerate() {
-        assert!(v >= 0.0 && v <= 1.0, "4vec[{i}] = {v} is not in [0, 1]");
+        assert!((0.0..=1.0).contains(&v), "4vec[{i}] = {v} is not in [0, 1]");
     }
 }
 
@@ -230,14 +229,14 @@ fn test_eval_during_random_games_no_panic() {
             // Evaluate at every position — must not panic.
             let scalar = evaluator.eval_scalar(&gs, gs.current_player());
             assert!(
-                scalar >= -30_000 && scalar <= 30_000,
+                (-30_000..=30_000).contains(&scalar),
                 "Scalar {scalar} out of range at game {seed}, ply {ply}"
             );
 
             let vec = evaluator.eval_4vec(&gs);
             for (i, &v) in vec.iter().enumerate() {
                 assert!(
-                    v >= 0.0 && v <= 1.0,
+                    (0.0..=1.0).contains(&v),
                     "4vec[{i}] = {v} out of range at game {seed}, ply {ply}"
                 );
             }
@@ -280,5 +279,5 @@ fn test_eval_values_sanity() {
     );
 
     // Basic ordering.
-    assert!(PAWN_EVAL_VALUE < QUEEN_EVAL_VALUE);
+    const { assert!(PAWN_EVAL_VALUE < QUEEN_EVAL_VALUE) };
 }

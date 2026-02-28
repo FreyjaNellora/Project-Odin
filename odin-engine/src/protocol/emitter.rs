@@ -5,7 +5,7 @@
 
 /// Engine identification.
 pub const ENGINE_NAME: &str = "Odin";
-pub const ENGINE_VERSION: &str = "v0.4.3-hanging";
+pub const ENGINE_VERSION: &str = "v0.5.0-multi-perspective";
 
 /// Format the `id` response lines + `odinok`.
 pub fn format_id() -> Vec<String> {
@@ -45,6 +45,8 @@ pub struct SearchInfo {
     pub score_cp: Option<i32>,
     /// Per-player values [Red, Blue, Yellow, Green].
     pub values: Option<[i32; 4]>,
+    /// FFA game scores [Red, Blue, Yellow, Green].
+    pub ffa_scores: Option<[i32; 4]>,
     pub nodes: Option<u64>,
     pub nps: Option<u64>,
     pub time_ms: Option<u64>,
@@ -75,6 +77,12 @@ pub fn format_info(info: &SearchInfo) -> String {
         parts.push(format!(
             "v1 {} v2 {} v3 {} v4 {}",
             vals[0], vals[1], vals[2], vals[3]
+        ));
+    }
+    if let Some(s) = info.ffa_scores {
+        parts.push(format!(
+            "s1 {} s2 {} s3 {} s4 {}",
+            s[0], s[1], s[2], s[3]
         ));
     }
     if let Some(n) = info.nodes {
@@ -148,6 +156,7 @@ mod tests {
             seldepth: Some(12),
             score_cp: Some(150),
             values: Some([150, -50, -30, -70]),
+            ffa_scores: Some([5, 3, 0, 1]),
             nodes: Some(523847),
             nps: Some(262000),
             time_ms: Some(2000),
@@ -162,6 +171,7 @@ mod tests {
         assert!(s.contains("seldepth 12"));
         assert!(s.contains("score cp 150"));
         assert!(s.contains("v1 150 v2 -50 v3 -30 v4 -70"));
+        assert!(s.contains("s1 5 s2 3 s3 0 s4 1"));
         assert!(s.contains("nodes 523847"));
         assert!(s.contains("nps 262000"));
         assert!(s.contains("time 2000"));

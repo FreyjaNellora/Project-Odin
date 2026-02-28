@@ -20,7 +20,7 @@
 //
 // ADR-012: Natural turn order chosen over the MASTERPLAN's alternating
 // MAX-MIN-MAX-MIN model because unmake_move() derives the previous player from
-// prev_player(side_to_move) without storing it in MoveUndo. Manual
+// Player::prev() on side_to_move without storing it in MoveUndo. Manual
 // set_side_to_move() between make and unmake corrupts restoration.
 
 use std::time::Instant;
@@ -81,6 +81,12 @@ const NEG_INF: i16 = -30_000;
 /// Upper bound for beta (used as +infinity).
 const POS_INF: i16 = 30_000;
 
+/// Maximum displayable score from BRS search. Raw mate-range scores are clamped
+/// to this value in info lines and SearchResult to prevent false mate display.
+/// BRS single-reply model produces phantom mates that wouldn't survive full
+/// multi-reply search. Internal alpha-beta uses unclamped scores for correctness.
+const BRS_SCORE_CAP: i16 = 9_999;
+
 /// Check time/node budget every this many nodes.
 const TIME_CHECK_INTERVAL: u64 = 1_024;
 
@@ -117,6 +123,13 @@ impl BrsSearcher {
             info_cb: Some(cb),
             tt: TranspositionTable::new(TT_DEFAULT_ENTRIES),
         }
+    }
+
+    /// Replace the info callback. Called before each `search()` when the
+    /// searcher is persisted across `go` commands, so each search gets its
+    /// own output buffer.
+    pub fn set_info_callback(&mut self, cb: Box<dyn FnMut(String)>) {
+        self.info_cb = Some(cb);
     }
 }
 
@@ -319,11 +332,17 @@ impl<'a> BrsContext<'a> {
                 self.evaluator.eval_scalar(&self.gs, Player::Yellow) as i32,
                 self.evaluator.eval_scalar(&self.gs, Player::Green) as i32,
             ];
+            // FFA game scores (capture points, checkmate bonuses, etc.)
+            let s = self.gs.scores();
+            // Clamp displayed score to prevent BRS phantom mates (19995cp etc.)
+            // from showing as mate in the UI. Internal search keeps raw scores.
+            let display_score = score.clamp(-BRS_SCORE_CAP, BRS_SCORE_CAP);
             let info_line = format!(
-                "info depth {} score cp {} v1 {} v2 {} v3 {} v4 {} nodes {} nps {} time {} pv {} phase brs",
+                "info depth {} score cp {} v1 {} v2 {} v3 {} v4 {} s1 {} s2 {} s3 {} s4 {} nodes {} nps {} time {} pv {} phase brs",
                 depth,
-                score,
+                display_score,
                 v[0], v[1], v[2], v[3],
+                s[0], s[1], s[2], s[3],
                 self.nodes,
                 nps,
                 elapsed,
@@ -345,7 +364,10 @@ impl<'a> BrsContext<'a> {
             }
 
             // Mate found — no point searching deeper.
-            if score.abs() >= MATE_SCORE - MAX_DEPTH as i16 {
+            // In 4PC, depths below 8 (2 full rotations) can produce false mates
+            // because BRS single-reply model leaves the last player without a
+            // second response. Only trust mate-break at depth >= 8.
+            if score.abs() >= MATE_SCORE - MAX_DEPTH as i16 && depth >= 8 {
                 break;
             }
         }
@@ -354,7 +376,7 @@ impl<'a> BrsContext<'a> {
 
         SearchResult {
             best_move,
-            score: self.best_score,
+            score: self.best_score.clamp(-BRS_SCORE_CAP, BRS_SCORE_CAP),
             depth: self.best_depth,
             nodes: self.nodes,
             pv: self.best_pv.clone(),
@@ -383,8 +405,17 @@ impl<'a> BrsContext<'a> {
             return 0;
         }
 
-        // Compute Zobrist hash once — used for both repetition detection and TT.
+        // Compute Zobrist hash once — used for repetition detection (base hash)
+        // and TT (player-aware hash).
         let hash = self.gs.board().zobrist();
+        // TT hash includes the root player so entries from different root-player
+        // searches never collide. Repetition detection uses the raw board hash.
+        let tt_hash = hash
+            ^ self
+                .gs
+                .board()
+                .zobrist_keys()
+                .root_player_key(self.root_player.index());
 
         // In-search repetition detection.
         // rep_stack contains hashes pushed by ancestor nodes on the current path.
@@ -405,11 +436,23 @@ impl<'a> BrsContext<'a> {
         let mut beta = beta;
         let mut compressed_tt_move: Option<u16> = None;
         if depth > 0 {
-            let probe = self.tt.probe(hash, depth, &mut alpha, &mut beta, ply as u8);
-            if let Some(score) = probe.score {
-                return score;
+            if ply == 0 {
+                // At the root, only use TT for move ordering hint — never for
+                // score cutoffs or alpha/beta tightening. Aspiration re-searches
+                // at the same depth would otherwise pick up TT_LOWER/TT_UPPER
+                // entries from the initial narrow-window search, tightening alpha
+                // to a value no move can beat and leaving the PV empty.
+                let mut dummy_a = NEG_INF;
+                let mut dummy_b = POS_INF;
+                let probe = self.tt.probe(tt_hash, depth, &mut dummy_a, &mut dummy_b, 0);
+                compressed_tt_move = probe.best_move;
+            } else {
+                let probe = self.tt.probe(tt_hash, depth, &mut alpha, &mut beta, ply as u8);
+                if let Some(score) = probe.score {
+                    return score;
+                }
+                compressed_tt_move = probe.best_move;
             }
-            compressed_tt_move = probe.best_move;
         }
 
         // Leaf node: quiescence search.
@@ -450,7 +493,7 @@ impl<'a> BrsContext<'a> {
                 0
             };
             // Terminal nodes are always exact scores.
-            self.tt.store(hash, None, score, depth, TT_EXACT, ply as u8);
+            self.tt.store(tt_hash, None, score, depth, TT_EXACT, ply as u8);
             return score;
         }
 
@@ -481,7 +524,7 @@ impl<'a> BrsContext<'a> {
                 None
             };
             self.tt
-                .store(hash, best_move_compressed, score, depth, flag, ply as u8);
+                .store(tt_hash, best_move_compressed, score, depth, flag, ply as u8);
         }
 
         score

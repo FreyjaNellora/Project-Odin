@@ -83,9 +83,9 @@ mod tests {
 
     #[test]
     fn test_piece_ordering() {
-        assert!(PAWN_EVAL_VALUE < KNIGHT_EVAL_VALUE);
-        assert!(KNIGHT_EVAL_VALUE < BISHOP_EVAL_VALUE);
-        assert!(BISHOP_EVAL_VALUE <= ROOK_EVAL_VALUE);
-        assert!(ROOK_EVAL_VALUE < QUEEN_EVAL_VALUE);
+        const { assert!(PAWN_EVAL_VALUE < KNIGHT_EVAL_VALUE) };
+        const { assert!(KNIGHT_EVAL_VALUE < BISHOP_EVAL_VALUE) };
+        const { assert!(BISHOP_EVAL_VALUE <= ROOK_EVAL_VALUE) };
+        const { assert!(ROOK_EVAL_VALUE < QUEEN_EVAL_VALUE) };
     }
 }

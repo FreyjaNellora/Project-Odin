@@ -9,6 +9,7 @@
 
 pub mod board_scanner;
 pub mod brs;
+pub mod mcts;
 pub mod tt;
 
 use crate::gamestate::GameState;

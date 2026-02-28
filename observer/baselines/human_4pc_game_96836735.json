@@ -1,0 +1,116 @@
+{
+  "game": 96836735,
+  "source": "chess.com/4pc",
+  "type": "human-vs-human",
+  "time_control": "4+0",
+  "variant": "FFA",
+  "rule_variants": "Anonymous DeadKingWalking EnPassant PromoteTo=D",
+  "date": "2026-02-12",
+  "players": {
+    "Red":    { "name": "Chess_Taifun",  "elo": 2266 },
+    "Blue":   { "name": "lipeih1",       "elo": 2104 },
+    "Yellow": { "name": "martinaxo",     "elo": 2252 },
+    "Green":  { "name": "Hamlet",        "elo": 3077 }
+  },
+  "result": {
+    "Red": 15, "Blue": 34, "Yellow": 36, "Green": 77
+  },
+  "termination": "insuff. material; Blue +10, Green +30",
+  "total_moves": 270,
+  "elo_category": "weak-lobby-hamlet-dominates",
+  "notes": "All three opponents are weak (2104-2266). Hamlet (3077) as Green dominates with 77 points. Interesting: Red gets checkmated early (round 17) after blundering multiple pieces. Blue and Yellow play passive pawn-heavy openings. Green shows clinical strong-player exploitation of weak opponents.",
+  "moves": [
+    { "round": 1,  "Red": "h2-h3",      "Blue": "b4-d4",     "Yellow": "g13-g12",    "Green": "m8-l8" },
+    { "round": 2,  "Red": "k2-k4",      "Blue": "b9-c9",     "Yellow": "d13-d11",    "Green": "Qn7-m8" },
+    { "round": 3,  "Red": "f2-f3",      "Blue": "b8-d8",     "Yellow": "i13-i12",    "Green": "Nn10-l9" },
+    { "round": 4,  "Red": "g2-g3",      "Blue": "Na5-c6",    "Yellow": "k13-k11",    "Green": "Nn5-l6" },
+    { "round": 5,  "Red": "Nj1-i3",     "Blue": "Qa8-b9",    "Yellow": "Qh14-f12",   "Green": "m11-l11" },
+    { "round": 6,  "Red": "Ne1-g2",     "Blue": "Ba9-d6",    "Yellow": "Qf12-f6",    "Green": "m5-k5" },
+    { "round": 7,  "Red": "e2-e4",      "Blue": "Bd6-e7",    "Yellow": "Qf6-f12",    "Green": "Bn6-m5" },
+    { "round": 8,  "Red": "Ng2-f4",     "Blue": "Be7xNi3",   "Yellow": "Qf12-f10",   "Green": "Bm5xj2" },
+    { "round": 9,  "Red": "Qg1-f2",     "Blue": "Na10-b8",   "Yellow": "Ne14-f12",   "Green": "Bj2xRk1" },
+    { "round": 10, "Red": "Bi1-m5",     "Blue": "Ra11-a10",  "Yellow": "Qf10-i10",   "Green": "Nl6xk4" },
+    { "round": 11, "Red": "Bm5xRn4",   "Blue": "Bi3-g1",    "Yellow": "Qi10xm6",    "Green": "Qm8-n7" },
+    { "round": 12, "Red": "Kh1xBg1",   "Blue": "Qb9-d7",    "Yellow": "Qm6xm4",    "Green": "Bk1-i3+" },
+    { "round": 13, "Red": "Kg1-g2",     "Blue": "Qd7-h7",    "Yellow": "h13-h11",    "Green": "Nk4-j2" },
+    { "round": 14, "Red": "Bf1-e2",     "Blue": "Nc6-e5",    "Yellow": "Nj14-h13",   "Green": "Bn9-l7" },
+    { "round": 15, "Red": "Kg2-f1",     "Blue": "Qh7-k4",    "Yellow": "Qm4-j7",    "Green": "Bl7xh3+" },
+    { "round": 16, "Red": "Nf4xBh3",   "Blue": "Qk4-k1+",   "Yellow": "k11-k10",    "Green": "Qn7xi2" },
+    { "round": 17, "Red": "Nh3-g1",     "Blue": "Qk1xNg1+",  "Yellow": "k10xNl9",    "Green": "Qi2-h3+#" },
+    { "round": 18, "Red": null,          "Blue": "Qg1xQf2",   "Yellow": "e13-e12",    "Green": "O-O" },
+    { "round": 19, "Red": null,          "Blue": "b11-c11",   "Yellow": "Bf14-e13",   "Green": "Nj2-k4" },
+    { "round": 20, "Red": null,          "Blue": "b7-c7",     "Yellow": "O-O",        "Green": "Nk4-l6" }
+  ],
+  "opening_analysis": {
+    "Red": {
+      "first_moves": ["h2-h3", "k2-k4", "f2-f3", "g2-g3", "Nj1-i3", "Ne1-g2", "e2-e4", "Ng2-f4", "Qg1-f2", "Bi1-m5", "Bm5xRn4", "Kh1xBg1", "Kg1-g2", "Bf1-e2", "Kg2-f1", "Nf4xBh3", "Nh3-g1"],
+      "total_moves_before_elimination": 17,
+      "pawn_moves": 5,
+      "piece_moves": 12,
+      "pawn_ratio": 0.29,
+      "castled": false,
+      "queen_active_round": 9,
+      "captures": 3,
+      "notes": "CATASTROPHIC PLAY despite decent pawn ratio. Red pushes 4 pawns in first 4 moves (h3, k4, f3, g3) before developing anything. Both knights develop but king is left exposed. Blunders: allows bishop captures (Be7xNi3, Bm5xj2→Bj2xRk1), forces king march (Kh1→g1→g2→f1), gets checkmated round 17. Never castled — king wandered from h1 to f1 before dying. Result: 15 points, eliminated first."
+    },
+    "Blue": {
+      "first_20_moves": ["b4-d4", "b9-c9", "b8-d8", "Na5-c6", "Qa8-b9", "Ba9-d6", "Bd6-e7", "Be7xNi3", "Na10-b8", "Ra11-a10", "Bi3-g1", "Qb9-d7", "Qd7-h7", "Nc6-e5", "Qh7-k4", "Qk4-k1+", "Qk1xNg1+", "Qg1xQf2", "b11-c11", "b7-c7"],
+      "pawn_moves_in_first_20": 7,
+      "piece_moves_in_first_20": 13,
+      "pawn_ratio": 0.35,
+      "castled": false,
+      "castle_round": null,
+      "queen_active_round": 5,
+      "captures_in_first_20": 4,
+      "notes": "WEAK-BUT-OPPORTUNISTIC (2104): 35% pawn ratio is decent. Early pawn pushes (b4-d4, b9-c9, b8-d8 — 3 pawns in first 3 moves). But then pieces develop and aggressively captures Red's pieces. Bishop captures knight (Be7xNi3), queen captures knight and queen (Qk1xNg1+, Qg1xQf2). Scores 34 points — survivable but not competitive. Never castles."
+    },
+    "Yellow": {
+      "first_20_moves": ["g13-g12", "d13-d11", "i13-i12", "k13-k11", "Qh14-f12", "Qf12-f6", "Qf6-f12", "Qf12-f10", "Ne14-f12", "Qf10-i10", "Qi10xm6", "Qm6xm4", "h13-h11", "Nj14-h13", "Qm4-j7", "k11-k10", "k10xNl9", "e13-e12", "Bf14-e13", "O-O"],
+      "pawn_moves_in_first_20": 8,
+      "piece_moves_in_first_20": 12,
+      "pawn_ratio": 0.40,
+      "castled": true,
+      "castle_round": 20,
+      "queen_active_round": 5,
+      "captures_in_first_20": 3,
+      "notes": "WEAK-BUT-QUEEN-HEAVY (2252): Queen out early (round 5) but shuffles aimlessly (Qf12→f6→f12→f10→i10 — 4 queen moves in first 10 rounds). 40% pawn ratio. 4 pawn pushes in first 4 rounds before any piece development. Castles late (round 20). Knight Nj14-h13 is on round 14 — very late 2nd knight development."
+    },
+    "Green": {
+      "first_20_moves": ["m8-l8", "Qn7-m8", "Nn10-l9", "Nn5-l6", "m11-l11", "m5-k5", "Bn6-m5", "Bm5xj2", "Bj2xRk1", "Nl6xk4", "Qm8-n7", "Bk1-i3+", "Nk4-j2", "Bn9-l7", "Bl7xh3+", "Qn7xi2", "Qi2-h3+#", "O-O", "Nj2-k4", "Nk4-l6"],
+      "pawn_moves_in_first_20": 4,
+      "piece_moves_in_first_20": 16,
+      "pawn_ratio": 0.20,
+      "castled": true,
+      "castle_round": 18,
+      "queen_active_round": 2,
+      "captures_in_first_20": 5,
+      "notes": "STRONG PATTERN (Hamlet 3077): Only 20% pawn ratio — lowest seen. Both knights developed by round 4. Queen active round 2 (Qn7-m8, repositioning). Bishops aggressively capture material (Bm5xj2→Bj2xRk1 wins a rook, Bl7xh3+ wins a piece). Delivers checkmate on Red at round 17. 5 captures in first 17 moves. Clinical destruction of weak opponents."
+    }
+  },
+  "weak_player_patterns": {
+    "Red_2266": [
+      "4 pawn pushes in first 4 moves (h3, k4, f3, g3) before developing any piece",
+      "Never castled — king walked from h1→g1→g2→f1",
+      "Allowed bishop to capture knight (Be7xNi3) then rook (Bj2xRk1)",
+      "Checkmated round 17 — earliest elimination in dataset",
+      "King exposed on open board with no pawn shelter"
+    ],
+    "Blue_2104": [
+      "3 pawn pushes in first 3 moves (b4-d4, b9-c9, b8-d8)",
+      "Never castles despite surviving to endgame",
+      "Queen captures are opportunistic not strategic",
+      "Pawn ratio 35% is deceptively decent — front-loaded pawn pushes"
+    ],
+    "Yellow_2252": [
+      "4 pawn pushes in first 4 rounds",
+      "Queen shuffles: Qf12→f6→f12→f10 (4 moves accomplishing nothing)",
+      "40% pawn ratio",
+      "Late castling (round 20)",
+      "Late 2nd knight development (round 14)"
+    ]
+  },
+  "benchmark_comparison": {
+    "strong_player": { "pawn_ratio": 0.20, "queen_round": 2, "captures_first_17": 5, "knight_undevelop": 0, "result": 77 },
+    "weak_player_avg": { "pawn_ratio": 0.35, "queen_round": 6, "captures_first_17": 3, "knight_undevelop": 0, "result": 28 }
+  }
+}

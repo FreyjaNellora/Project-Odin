@@ -2,7 +2,7 @@
 type: moc
 tags:
   - type/moc
-last_updated: 2026-02-25
+last_updated: 2026-02-27
 ---
 
 # Active Issues
@@ -15,9 +15,9 @@ _None._
 
 ## Warning
 
-- [[Issue-GameLog-Player-Label-React-Batching]] -- Game log labeled every move with the *next* player (React 18 batching — deferred updater reads wrong ref). Fixed `b98c087`; pending user verification.
+- [[Issue-Pawn-Push-Preference-King-Walk]] -- MITIGATED — eval-side fixes applied (dev bonuses increased, pawn advance gate, king displacement penalty). Full fix requires MCTS (Stage 10). (2026-02-27)
+- ~~[[Issue-GameLog-Player-Label-React-Batching]]~~ -- Game log player labels fixed. User verified 2026-02-27. Scores display correctly, no info duplication.
 - [[Issue-Perft-Values-Unverified]] -- Stage 2 perft values self-consistent but no external reference exists to cross-check
-- [[Issue-Vec-Clone-Cost-Pre-MCTS]] -- Board.piece_lists (Vec) and GameState.position_history (Vec) cause heap allocation on every clone; must retrofit to fixed-size/Arc before Stage 10 (MCTS)
 
 ## Notes
 
@@ -27,6 +27,11 @@ _None._
 
 ## Recently Resolved
 
+- [[Issue-Vec-Clone-Cost-Pre-MCTS]] -- RESOLVED — piece_lists to fixed-size arrays, position_history to Arc<Vec<u64>>. Zero heap alloc on Board/GameState clone. (2026-02-27)
+- [[Issue-BRS-Paranoid-Opponent-Modeling]] -- Hybrid scoring 80/20 paranoid blend too aggressive; tuned likelihood constants to 50/50 (0.7→0.5 base, 0.3→0.5 exposed penalty, 0.2→0.3 non-root). (2026-02-27)
+- [[Issue-TT-Not-Player-Aware]] -- TT hash missing root_player; added root_player Zobrist keys XOR'd into tt_hash for TT probe/store. (2026-02-27)
+- [[Issue-TT-Fresh-Per-Search]] -- TT discarded between moves; BrsSearcher now persisted in OdinEngine state. (2026-02-27)
+- [[Issue-Hanging-Piece-Eval-Double-Count]] -- Eval-side hanging piece penalty double-counted capture threats handled by search; caused Nf3→e1 retreat regression. Reverted immediately; correct approach is search-side narrowing protection. (2026-02-26)
 - [[Issue-PostElim-BRS-Crash]] -- Engine panicked after any player elimination: BRS alphabeta/quiescence called generate_legal on a kingless board. Four-layer fix (alphabeta skip, quiescence skip, board scanner Active filter, king square sentinel). User verified 2026-02-25.
 - [[Issue-Huginn-Gates-Unwired]] -- Huginn telemetry system retired in Stage 8; replaced with `tracing` crate (ADR-015). Gates no longer needed. (2026-02-23)
 - [[Issue-Promotion-Wrong-Ranks-No-UI]] -- UI used wrong promotion ranks (board edges instead of midline), no piece selection dialog, and wrong suffix (`q` instead of `w` for PromotedQueen). Fixed: correct ranks, PromotionDialog component, `w` suffix. (2026-02-22)

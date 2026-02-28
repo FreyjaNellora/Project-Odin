@@ -676,8 +676,8 @@ fn depth_progression_analysis() {
 
     println!("\n=== Depth Progression: Starting Position (Red to move) ===");
     println!(
-        "{:<6} {:<12} {:<8} {:<12} {:<12} {}",
-        "depth", "best_move", "score", "nodes", "elapsed_ms", "stability"
+        "{:<6} {:<12} {:<8} {:<12} {:<12} stability",
+        "depth", "best_move", "score", "nodes", "elapsed_ms"
     );
     println!("{}", "-".repeat(72));
 

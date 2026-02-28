@@ -26,6 +26,8 @@ export interface InfoData {
   scoreCp?: number;
   /** Per-player values [Red, Blue, Yellow, Green]. */
   values?: [number, number, number, number];
+  /** FFA game scores [Red, Blue, Yellow, Green] (capture points, checkmate bonuses). */
+  ffaScores?: [number, number, number, number];
   nodes?: number;
   nps?: number;
   timeMs?: number;

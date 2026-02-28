@@ -19,6 +19,7 @@ interface GameControlsProps {
   evalProfile: EvalProfileSetting;
   resolvedEvalProfile: 'standard' | 'aggressive';
   terrainMode: boolean;
+  maxRounds: number;
   onNewGame: () => void;
   onEngineMove: () => void;
   onSetPlayMode: (mode: PlayMode) => void;
@@ -27,6 +28,7 @@ interface GameControlsProps {
   onSetGameMode: (mode: GameMode) => void;
   onSetEvalProfile: (profile: EvalProfileSetting) => void;
   onSetTerrainMode: (on: boolean) => void;
+  onSetMaxRounds: (n: number) => void;
   onTogglePause: () => void;
 }
 
@@ -36,11 +38,6 @@ const MODE_LABELS: Record<PlayMode, string> = {
   'full-auto': 'Full Auto',
 };
 
-/** Display label for the Auto eval profile option (shows resolved value). */
-function autoLabel(resolved: 'standard' | 'aggressive'): string {
-  const inner = resolved === 'aggressive' ? 'Aggro' : 'Std';
-  return `Auto (${inner})`;
-}
 
 export default function GameControls({
   currentPlayer,
@@ -55,6 +52,7 @@ export default function GameControls({
   evalProfile,
   resolvedEvalProfile,
   terrainMode,
+  maxRounds,
   onNewGame,
   onEngineMove,
   onSetPlayMode,
@@ -63,6 +61,7 @@ export default function GameControls({
   onSetGameMode,
   onSetEvalProfile,
   onSetTerrainMode,
+  onSetMaxRounds,
   onTogglePause,
 }: GameControlsProps) {
   return (
@@ -78,8 +77,9 @@ export default function GameControls({
         </span>
       </div>
 
-      {/* Scores */}
+      {/* FFA Game Scores (capture points, checkmate bonuses) */}
       <div className="scores">
+        <div className="scores-header">Score</div>
         {PLAYERS.map((player, i) => (
           <div
             key={player}
@@ -139,12 +139,6 @@ export default function GameControls({
         <span className="section-label">Eval Profile</span>
         <div className="mode-selector">
           <button
-            className={`btn-mode ${evalProfile === 'auto' ? 'active' : ''}`}
-            onClick={() => onSetEvalProfile('auto')}
-          >
-            {autoLabel(resolvedEvalProfile)}
-          </button>
-          <button
             className={`btn-mode ${evalProfile === 'standard' ? 'active' : ''}`}
             onClick={() => onSetEvalProfile('standard')}
           >
@@ -176,6 +170,22 @@ export default function GameControls({
             On
           </button>
         </div>
+      </div>
+
+      {/* Max Rounds (0 = unlimited, auto-stop for diagnostic use) */}
+      <div className="control-section">
+        <span className="section-label">
+          Max Rounds: {maxRounds === 0 ? '∞' : maxRounds}
+        </span>
+        <input
+          type="range"
+          className="speed-slider"
+          min={0}
+          max={50}
+          step={1}
+          value={maxRounds}
+          onChange={(e) => onSetMaxRounds(Number(e.target.value))}
+        />
       </div>
 
       {/* Play mode selector */}

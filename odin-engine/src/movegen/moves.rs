@@ -352,7 +352,7 @@ pub fn make_move(board: &mut Board, mv: Move) -> MoveUndo {
         FLAG_EN_PASSANT => {
             // Remove the captured pawn (not on the target square).
             // The pushing player is the one who just moved (before us).
-            let pushing_player = prev_player(player);
+            let pushing_player = player.prev();
             let captured_pawn_sq = en_passant_captured_sq(to, pushing_player);
             captured_piece = Some(board.remove_piece(captured_pawn_sq));
             board.move_piece(from, to);
@@ -424,7 +424,7 @@ pub fn unmake_move(board: &mut Board, mv: Move, undo: MoveUndo) {
     // Restore side to move first (need to know who moved)
     let next_player = board.side_to_move();
     // The player who made this move is the one before the current side to move
-    let player = prev_player(next_player);
+    let player = next_player.prev();
     board.set_side_to_move(player);
 
     // Restore fullmove number
@@ -437,7 +437,7 @@ pub fn unmake_move(board: &mut Board, mv: Move, undo: MoveUndo) {
             // Move pawn back
             board.move_piece(to, from);
             // Restore captured pawn at the pushing player's landing square
-            let pushing_player = prev_player(player);
+            let pushing_player = player.prev();
             let captured_pawn_sq = en_passant_captured_sq(to, pushing_player);
             if let Some(cap) = undo.captured_piece {
                 board.place_piece(captured_pawn_sq, cap);
@@ -535,16 +535,6 @@ fn update_castling_rights(board: &mut Board, from: Square, to: Square) {
     }
 
     board.set_castling_rights(rights);
-}
-
-/// Previous player in turn order (inverse of next).
-fn prev_player(player: Player) -> Player {
-    match player {
-        Player::Red => Player::Green,
-        Player::Blue => Player::Red,
-        Player::Yellow => Player::Blue,
-        Player::Green => Player::Yellow,
-    }
 }
 
 /// Get the castling configuration (public for use by move generation).

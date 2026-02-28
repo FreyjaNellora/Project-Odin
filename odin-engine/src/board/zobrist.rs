@@ -32,6 +32,11 @@ pub struct ZobristKeys {
     castling: [u64; CASTLING_KEYS],
     en_passant: [u64; EN_PASSANT_KEYS],
     side_to_move: [u64; SIDE_TO_MOVE_KEYS],
+    /// Root player keys: one per player. XOR'd into the TT hash (not the
+    /// board Zobrist used for repetition detection) so that TT entries are
+    /// player-aware. Without this, a TT entry stored when searching for Red
+    /// could be incorrectly reused when searching for Blue.
+    root_player: [u64; PLAYER_COUNT],
 }
 
 impl Default for ZobristKeys {
@@ -66,11 +71,17 @@ impl ZobristKeys {
             *key = rng.next();
         }
 
+        let mut root_player = [0u64; PLAYER_COUNT];
+        for key in root_player.iter_mut() {
+            *key = rng.next();
+        }
+
         Self {
             piece_square,
             castling,
             en_passant,
             side_to_move,
+            root_player,
         }
     }
 
@@ -100,6 +111,13 @@ impl ZobristKeys {
     #[inline]
     pub fn side_to_move_key(&self, player_idx: usize) -> u64 {
         self.side_to_move[player_idx]
+    }
+
+    /// Key for the root (searching) player. XOR'd into TT hashes only —
+    /// NOT into the board Zobrist used for repetition detection.
+    #[inline]
+    pub fn root_player_key(&self, player_idx: usize) -> u64 {
+        self.root_player[player_idx]
     }
 }
 

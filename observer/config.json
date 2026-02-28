@@ -1,0 +1,12 @@
+{
+  "engine": "../target/release/odin-engine.exe",
+  "games": 1,
+  "depth": 8,
+  "game_mode": "ffa",
+  "eval_profile": "standard",
+  "stop_at": {
+    "max_ply": 80,
+    "on_gameover": true
+  },
+  "output_dir": "./reports"
+}

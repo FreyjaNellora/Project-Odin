@@ -1,0 +1,94 @@
+{
+  "game": 95992584,
+  "source": "chess.com/4pc",
+  "type": "human-vs-human",
+  "time_control": "1+10",
+  "variant": "FFA",
+  "rule_variants": "Anonymous DeadKingWalking EnPassant PromoteTo=D",
+  "date": "2026-01-30",
+  "players": {
+    "Red":    { "name": "SeadraCheeseChess", "elo": 3293 },
+    "Blue":   { "name": "neoserbian",        "elo": 3054 },
+    "Yellow": { "name": "Hamlet",            "elo": 3434 },
+    "Green":  { "name": "sakthi09",          "elo": 3289 }
+  },
+  "result": {
+    "Red": 73, "Blue": 20, "Yellow": 73, "Green": 47
+  },
+  "termination": "Yellow +20",
+  "total_moves": 319,
+  "notes": "High-level 4PC FFA game. Use as behavioral reference for opening patterns, piece development, queen activity, pawn structure, and endgame play. Engine should aspire to match these patterns.",
+  "moves": [
+    { "round": 1,  "Red": "g2-g4",      "Blue": "b7-c7+",    "Yellow": "g13-g12",    "Green": "m6-l6" },
+    { "round": 2,  "Red": "f2-f3",      "Blue": "b9-c9",     "Yellow": "Qh14-f12",   "Green": "m7-k7" },
+    { "round": 3,  "Red": "k2-k4",      "Blue": "b4-d4",     "Yellow": "i13-i11",    "Green": "Nn10-l9" },
+    { "round": 4,  "Red": "Ne1-d3",     "Blue": "Ra4-c4",    "Yellow": "Qf12-f6",    "Green": "Qn7-m6" },
+    { "round": 5,  "Red": "Nd3-e5",     "Blue": "Na5-c6",    "Yellow": "d13-d11",    "Green": "Nn5-l4" },
+    { "round": 6,  "Red": "Ne5xRc4",    "Blue": "b5xNc4",    "Yellow": "Nj14-i12",   "Green": "m11-k11" },
+    { "round": 7,  "Red": "Qg1-g3",     "Blue": "Qa8-b7",    "Yellow": "Ne14-f12",   "Green": "Qm6-k8" },
+    { "round": 8,  "Red": "j2-j3",      "Blue": "Na10-c11",  "Yellow": "Rd14-d12",   "Green": "Nl4-n5" },
+    { "round": 9,  "Red": "Qg3-i5",     "Blue": "Nc11-b9",   "Yellow": "Rd12-e12",   "Green": "Qk8-m6" },
+    { "round": 10, "Red": "Bf1-i4",     "Blue": "Nb9-d8",    "Yellow": "Ni12-h10",   "Green": "Nn5-m7" },
+    { "round": 11, "Red": "Nj1-i3",     "Blue": "b8-c8",     "Yellow": "Qf6-h8",     "Green": "Nl9-j8" },
+    { "round": 12, "Red": "Qi5-i9",     "Blue": "c7-d7",     "Yellow": "Re12-e9",    "Green": "Nm7-l9" },
+    { "round": 13, "Red": "Ni3-g2",     "Blue": "Ba9-b8",    "Yellow": "h13-h11",    "Green": "m4-l4" },
+    { "round": 14, "Red": "f3-f4",      "Blue": "Nc6-b4",    "Yellow": "Qh8-h5",     "Green": "m10-l10" },
+    { "round": 15, "Red": "Bi1-j2",     "Blue": "Nb4-c6",    "Yellow": "k13-k12",    "Green": "Bn6-k9" },
+    { "round": 16, "Red": "Qi9-i5",     "Blue": "Nd8-b9",    "Yellow": "Bi14-h13",   "Green": "Rn4-n5" },
+    { "round": 17, "Red": "O-O",        "Blue": "Qb7-c7",    "Yellow": "Bf14-h12",   "Green": "Bn9-m10" },
+    { "round": 18, "Red": "Qi5-g7",     "Blue": "Qc7-b7",    "Yellow": "Re9-e10",    "Green": "O-O" },
+    { "round": 19, "Red": "Qg7-f6",     "Blue": "Ra11-a10",  "Yellow": "Qh5-g6",     "Green": "Qm6-k8" },
+    { "round": 20, "Red": "Qf6xNc6",   "Blue": "Qb7xQc6",   "Yellow": "Qg6xQc6",   "Green": "Qk8xg4" }
+  ],
+  "opening_analysis": {
+    "Red": {
+      "first_20_moves": ["g2-g4", "f2-f3", "k2-k4", "Ne1-d3", "Nd3-e5", "Ne5xRc4", "Qg1-g3", "j2-j3", "Qg3-i5", "Bf1-i4", "Nj1-i3", "Qi5-i9", "Ni3-g2", "f3-f4", "Bi1-j2", "Qi9-i5", "O-O", "Qi5-g7", "Qg7-f6", "Qf6xNc6"],
+      "pawn_moves_in_first_20": 6,
+      "piece_moves_in_first_20": 14,
+      "pawn_ratio": 0.30,
+      "castled": true,
+      "castle_round": 17,
+      "queen_active_round": 7,
+      "captures_in_first_20": 2,
+      "notes": "Aggressive knight development → exchange on c4, early queen activity (round 7), castle by round 17. Well-balanced pawn/piece ratio."
+    },
+    "Blue": {
+      "first_20_moves": ["b7-c7+", "b9-c9", "b4-d4", "Ra4-c4", "Na5-c6", "b5xNc4", "Qa8-b7", "Na10-c11", "Nc11-b9", "Nb9-d8", "b8-c8", "c7-d7", "Ba9-b8", "Nc6-b4", "Nb4-c6", "Nd8-b9", "Qb7-c7", "Qc7-b7", "Ra11-a10", "Qb7xQc6"],
+      "pawn_moves_in_first_20": 7,
+      "piece_moves_in_first_20": 13,
+      "pawn_ratio": 0.35,
+      "castled": false,
+      "queen_active_round": 7,
+      "captures_in_first_20": 2,
+      "notes": "Early rook sortie (Ra4-c4), double knight development, lots of knight maneuvering. Queen stays back until round 7. Pawn ratio ~35%."
+    },
+    "Yellow": {
+      "first_20_moves": ["g13-g12", "Qh14-f12", "i13-i11", "Qf12-f6", "d13-d11", "Nj14-i12", "Ne14-f12", "Rd14-d12", "Rd12-e12", "Ni12-h10", "Qf6-h8", "Re12-e9", "h13-h11", "Qh8-h5", "k13-k12", "Bi14-h13", "Bf14-h12", "Re9-e10", "Qh5-g6", "Qg6xQc6"],
+      "pawn_moves_in_first_20": 6,
+      "piece_moves_in_first_20": 14,
+      "pawn_ratio": 0.30,
+      "castled": false,
+      "queen_active_round": 2,
+      "captures_in_first_20": 1,
+      "notes": "Very early queen (round 2!), both knights developed, both bishops fianchettoed, rook active by round 8. Strong development. 30% pawn ratio."
+    },
+    "Green": {
+      "first_20_moves": ["m6-l6", "m7-k7", "Nn10-l9", "Qn7-m6", "Nn5-l4", "m11-k11", "Qm6-k8", "Nl4-n5", "Qk8-m6", "Nn5-m7", "Nl9-j8", "Nm7-l9", "m4-l4", "m10-l10", "Bn6-k9", "Rn4-n5", "Bn9-m10", "O-O", "Qm6-k8", "Qk8xg4"],
+      "pawn_moves_in_first_20": 6,
+      "piece_moves_in_first_20": 14,
+      "pawn_ratio": 0.30,
+      "castled": true,
+      "castle_round": 18,
+      "queen_active_round": 4,
+      "captures_in_first_20": 1,
+      "notes": "Both knights active early, queen active by round 4, both bishops developed, castled round 18. Very balanced 30% pawn ratio."
+    }
+  },
+  "benchmark_targets": {
+    "pawn_ratio_opening_20": { "target": "<=0.35", "human_avg": 0.31 },
+    "queen_activation": { "target": "by round 10", "human_avg_round": 5 },
+    "castle_timing": { "target": "by round 20", "human_note": "2 of 4 castled by round 18" },
+    "knight_undevelopment": { "target": 0, "human_value": 0 },
+    "piece_development_by_r10": { "target": ">=3 pieces", "human_avg": 4 }
+  }
+}

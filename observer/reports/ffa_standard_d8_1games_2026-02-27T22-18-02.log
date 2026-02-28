@@ -1,0 +1,966 @@
+# Odin protocol log
+# > = incoming command, < = engine response
+# LogFile opened
+> setoption name gamemode value ffa
+> setoption name evalprofile value standard
+> position startpos
+> go depth 8
+< info depth 1 score cp 4492 v1 4443 v2 4443 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 40 nps 0 time 0 pv j1i3 phase brs
+< info depth 2 score cp 4467 v1 4443 v2 4443 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 100 nps 100000 time 1 pv j1i3 phase brs
+< info depth 3 score cp 4467 v1 4443 v2 4443 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 130 nps 130000 time 1 pv j1i3 phase brs
+< info depth 4 score cp 4442 v1 4443 v2 4443 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 230 nps 115000 time 2 pv j1i3 phase brs
+< info depth 5 score cp 4446 v1 4443 v2 4443 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 922 nps 92200 time 10 pv h2h4 phase brs
+< info depth 6 score cp 4317 v1 4443 v2 4443 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 5316 nps 96654 time 55 pv j1i3 phase brs
+< info depth 7 score cp 4267 v1 4443 v2 4443 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 11104 nps 91016 time 122 pv j1i3 phase brs
+< info depth 8 score cp 4317 v1 4443 v2 4443 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 13820 nps 89161 time 155 pv f2f4 phase brs
+< info string nextturn Blue
+< bestmove f2f4
+> position startpos moves f2f4
+> go depth 8
+< info depth 1 score cp 4467 v1 4446 v2 4418 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 36 nps 0 time 0 pv a10c9 phase brs
+< info depth 2 score cp 4442 v1 4446 v2 4418 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 90 nps 0 time 0 pv a10c9 phase brs
+< info depth 3 score cp 4268 v1 4446 v2 4418 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 516 nps 86000 time 6 pv b4d4 phase brs
+< info depth 4 score cp 4268 v1 4446 v2 4418 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 567 nps 81000 time 7 pv b4d4 phase brs
+< info depth 5 score cp 4218 v1 4446 v2 4418 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 895 nps 89500 time 10 pv none phase brs
+< info depth 6 score cp 4127 v1 4446 v2 4418 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 2328 nps 86222 time 27 pv b4d4 phase brs
+< info depth 7 score cp 4134 v1 4446 v2 4418 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 3042 nps 86914 time 35 pv b5c5 phase brs
+< info depth 8 score cp 4282 v1 4446 v2 4418 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 3655 nps 83068 time 44 pv b8d8 phase brs
+< info string nextturn Yellow
+< bestmove b8d8
+> position startpos moves f2f4 b8d8
+> go depth 8
+< info depth 1 score cp 4492 v1 4446 v2 4372 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 40 nps 0 time 0 pv j14i12 phase brs
+< info depth 2 score cp 4467 v1 4446 v2 4372 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 156 nps 156000 time 1 pv j14i12 phase brs
+< info depth 3 score cp 4467 v1 4446 v2 4372 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 197 nps 197000 time 1 pv j14i12 phase brs
+< info depth 4 score cp 4442 v1 4446 v2 4372 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 368 nps 92000 time 4 pv j14i12 phase brs
+< info depth 5 score cp 4443 v1 4446 v2 4372 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 4644 nps 78711 time 59 pv k13k12 phase brs
+< info depth 6 score cp 4317 v1 4446 v2 4372 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 7365 nps 75927 time 97 pv e14f12 phase brs
+< info depth 7 score cp 4258 v1 4446 v2 4372 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 16131 nps 84900 time 190 pv e13e12 phase brs
+< info depth 8 score cp 4406 v1 4446 v2 4372 v3 4443 v4 4443 s1 0 s2 0 s3 0 s4 0 nodes 20573 nps 85012 time 242 pv i13i12 phase brs
+< info string nextturn Green
+< bestmove i13i12
+> position startpos moves f2f4 b8d8 i13i12
+> go depth 8
+< info depth 1 score cp 4445 v1 4446 v2 4372 v3 4445 v4 4418 s1 0 s2 0 s3 0 s4 0 nodes 111 nps 0 time 0 pv m11k11 phase brs
+< info depth 2 score cp 4277 v1 4446 v2 4372 v3 4445 v4 4418 s1 0 s2 0 s3 0 s4 0 nodes 397 nps 99250 time 4 pv m11k11 phase brs
+< info depth 3 score cp 4268 v1 4446 v2 4372 v3 4445 v4 4418 s1 0 s2 0 s3 0 s4 0 nodes 549 nps 91500 time 6 pv m11k11 phase brs
+< info depth 4 score cp 4268 v1 4446 v2 4372 v3 4445 v4 4418 s1 0 s2 0 s3 0 s4 0 nodes 697 nps 87125 time 8 pv m11k11 phase brs
+< info depth 5 score cp 4089 v1 4446 v2 4372 v3 4445 v4 4418 s1 0 s2 0 s3 0 s4 0 nodes 2150 nps 86000 time 25 pv m11k11 phase brs
+< info depth 6 score cp 4089 v1 4446 v2 4372 v3 4445 v4 4418 s1 0 s2 0 s3 0 s4 0 nodes 2391 nps 85392 time 28 pv m11k11 phase brs
+< info depth 7 score cp 4064 v1 4446 v2 4372 v3 4445 v4 4418 s1 0 s2 0 s3 0 s4 0 nodes 2760 nps 83636 time 33 pv m11k11 phase brs
+< info depth 8 score cp 4142 v1 4446 v2 4372 v3 4445 v4 4418 s1 0 s2 0 s3 0 s4 0 nodes 3597 nps 79933 time 45 pv m11k11 phase brs
+< info string nextturn Red
+< bestmove m11k11
+> position startpos moves f2f4 b8d8 i13i12 m11k11
+> go depth 8
+< info depth 1 score cp 4343 v1 4446 v2 4372 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 208 nps 208000 time 1 pv g1f2 phase brs
+< info depth 2 score cp 4343 v1 4446 v2 4372 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 368 nps 184000 time 2 pv g1f2 phase brs
+< info depth 3 score cp 4343 v1 4446 v2 4372 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 415 nps 138333 time 3 pv g1f2 phase brs
+< info depth 4 score cp 4385 v1 4446 v2 4372 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 568 nps 113600 time 5 pv g1f2 phase brs
+< info depth 5 score cp 4385 v1 4446 v2 4372 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 3115 nps 97343 time 32 pv g1f2 phase brs
+< info depth 6 score cp 4385 v1 4446 v2 4372 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 24661 nps 92710 time 266 pv g1e3 phase brs
+< info depth 7 score cp 4221 v1 4446 v2 4372 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 40428 nps 91673 time 441 pv j1i3 phase brs
+< info depth 8 score cp 4093 v1 4446 v2 4372 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 61853 nps 88487 time 699 pv g1d4 phase brs
+< info string nextturn Blue
+< bestmove g1d4
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4
+> go depth 8
+< info depth 1 score cp 4398 v1 4496 v2 4372 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 150 nps 150000 time 1 pv b5c5 phase brs
+< info depth 2 score cp 4397 v1 4496 v2 4372 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 225 nps 112500 time 2 pv a8b8 phase brs
+< info depth 3 score cp 4153 v1 4496 v2 4372 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 604 nps 86285 time 7 pv b7c7 phase brs
+< info depth 4 score cp 4153 v1 4496 v2 4372 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 655 nps 93571 time 7 pv b7c7 phase brs
+< info depth 5 score cp 4153 v1 4496 v2 4372 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 871 nps 79181 time 11 pv b7c7 phase brs
+< info depth 6 score cp 4123 v1 4496 v2 4372 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 1317 nps 77470 time 17 pv a8c8 phase brs
+< info depth 7 score cp 4043 v1 4496 v2 4372 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 1866 nps 77750 time 24 pv b7c7 phase brs
+< info depth 8 score cp 4354 v1 4496 v2 4372 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 2575 nps 73571 time 35 pv a10c11 phase brs
+< info string nextturn Yellow
+< bestmove a10c11
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11
+> go depth 8
+< info depth 1 score cp 4495 v1 4496 v2 4417 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 142 nps 142000 time 1 pv h14i13 phase brs
+< info depth 2 score cp 4405 v1 4496 v2 4417 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 676 nps 96571 time 7 pv d13d11 phase brs
+< info depth 3 score cp 4397 v1 4496 v2 4417 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 734 nps 104857 time 7 pv d13d11 phase brs
+< info depth 4 score cp 4352 v1 4496 v2 4417 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 1060 nps 88333 time 12 pv d13d11 phase brs
+< info depth 5 score cp 4298 v1 4496 v2 4417 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 3449 nps 84121 time 41 pv h13h12 phase brs
+< info depth 6 score cp 4090 v1 4496 v2 4417 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 5696 nps 86303 time 66 pv e14f12 phase brs
+< info depth 7 score cp 4090 v1 4496 v2 4417 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 8767 nps 76234 time 115 pv e14f12 phase brs
+< info depth 8 score cp 4320 v1 4496 v2 4417 v3 4445 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 10703 nps 79281 time 135 pv e14f12 phase brs
+< info string nextturn Green
+< bestmove e14f12
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12
+> go depth 8
+< info depth 1 score cp 4342 v1 4496 v2 4417 v3 4494 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 187 nps 187000 time 1 pv n10l9 phase brs
+< info depth 2 score cp 4342 v1 4496 v2 4417 v3 4494 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 378 nps 126000 time 3 pv n10l9 phase brs
+< info depth 3 score cp 4342 v1 4496 v2 4417 v3 4494 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 417 nps 139000 time 3 pv n10l9 phase brs
+< info depth 4 score cp 4443 v1 4496 v2 4417 v3 4494 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 628 nps 104666 time 6 pv n10l9 phase brs
+< info depth 5 score cp 4443 v1 4496 v2 4417 v3 4494 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 1318 nps 87866 time 15 pv n10l9 phase brs
+< info depth 6 score cp 4088 v1 4496 v2 4417 v3 4494 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 12995 nps 84383 time 154 pv m10l10 phase brs
+< info depth 7 score cp 4038 v1 4496 v2 4417 v3 4494 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 14954 nps 84965 time 176 pv none phase brs
+< info depth 8 score cp 4080 v1 4496 v2 4417 v3 4494 v4 4445 s1 0 s2 0 s3 0 s4 0 nodes 20485 nps 83612 time 245 pv m10l10 phase brs
+< info string nextturn Red
+< bestmove m10l10
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10
+> go depth 8
+< info depth 1 score cp 4392 v1 4496 v2 4417 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 1232 nps 123200 time 10 pv j1i3 phase brs
+< info depth 2 score cp 4392 v1 4496 v2 4417 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 2863 nps 102250 time 28 pv j1i3 phase brs
+< info depth 3 score cp 4392 v1 4496 v2 4417 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 3088 nps 102933 time 30 pv j1i3 phase brs
+< info depth 4 score cp 4367 v1 4496 v2 4417 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 4197 nps 95386 time 44 pv j1i3 phase brs
+< info depth 5 score cp 4344 v1 4496 v2 4417 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 22207 nps 92145 time 241 pv d4f6 phase brs
+< info depth 6 score cp 4133 v1 4496 v2 4417 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 85563 nps 89128 time 960 pv k2k3 phase brs
+< info depth 7 score cp 4145 v1 4496 v2 4417 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 118205 nps 87365 time 1353 pv e1f3 phase brs
+< info depth 8 score cp 4145 v1 4496 v2 4417 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 165354 nps 84278 time 1962 pv e1f3 phase brs
+< info string nextturn Blue
+< bestmove e1f3
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3
+> go depth 8
+< info depth 1 score cp 4226 v1 4545 v2 4417 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 241 nps 120500 time 2 pv b5c5 phase brs
+< info depth 2 score cp 4193 v1 4545 v2 4417 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 490 nps 81666 time 6 pv b5c5 phase brs
+< info depth 3 score cp 4184 v1 4545 v2 4417 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 758 nps 75800 time 10 pv b5c5 phase brs
+< info depth 4 score cp 4184 v1 4545 v2 4417 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 1095 nps 78214 time 14 pv b5c5 phase brs
+< info depth 5 score cp 4161 v1 4545 v2 4417 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 2596 nps 81125 time 32 pv a8c8 phase brs
+< info depth 6 score cp 4141 v1 4545 v2 4417 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 5041 nps 80015 time 63 pv b5c5 phase brs
+< info depth 7 score cp 4141 v1 4545 v2 4417 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 9047 nps 82245 time 110 pv b5c5 phase brs
+< info depth 8 score cp 4240 v1 4545 v2 4417 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 12429 nps 79165 time 157 pv b5c5 phase brs
+< info string nextturn Yellow
+< bestmove b5c5
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5
+> go depth 8
+< info depth 1 score cp 4355 v1 4545 v2 4443 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 449 nps 89800 time 5 pv h14i13 phase brs
+< info depth 2 score cp 4355 v1 4545 v2 4443 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 947 nps 86090 time 11 pv h14i13 phase brs
+< info depth 3 score cp 4346 v1 4545 v2 4443 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 1258 nps 89857 time 14 pv d13d11 phase brs
+< info depth 4 score cp 4378 v1 4545 v2 4443 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 1710 nps 81428 time 21 pv d13d11 phase brs
+< info depth 5 score cp 4378 v1 4545 v2 4443 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 2960 nps 82222 time 36 pv d13d11 phase brs
+< info depth 6 score cp 3799 v1 4545 v2 4443 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 10586 nps 86065 time 123 pv k13k12 phase brs
+< info depth 7 score cp 3799 v1 4545 v2 4443 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 11548 nps 86179 time 134 pv k13k12 phase brs
+< info depth 8 score cp 3774 v1 4545 v2 4443 v3 4494 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 13909 nps 88031 time 158 pv k13k12 phase brs
+< info string nextturn Green
+< bestmove k13k12
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12
+> go depth 8
+< info depth 1 score cp 4368 v1 4545 v2 4443 v3 4495 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 411 nps 137000 time 3 pv n10l9 phase brs
+< info depth 2 score cp 4368 v1 4545 v2 4443 v3 4495 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 761 nps 108714 time 7 pv n10l9 phase brs
+< info depth 3 score cp 4368 v1 4545 v2 4443 v3 4495 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 829 nps 103625 time 8 pv n10l9 phase brs
+< info depth 4 score cp 4444 v1 4545 v2 4443 v3 4495 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 1187 nps 91307 time 13 pv n10l9 phase brs
+< info depth 5 score cp 4444 v1 4545 v2 4443 v3 4495 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 3557 nps 84690 time 42 pv n10l9 phase brs
+< info depth 6 score cp 4371 v1 4545 v2 4443 v3 4495 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 30424 nps 83353 time 365 pv m4l4 phase brs
+< info depth 7 score cp 4168 v1 4545 v2 4443 v3 4495 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 54947 nps 83001 time 662 pv m8l8 phase brs
+< info depth 8 score cp 4218 v1 4545 v2 4443 v3 4495 v4 4454 s1 0 s2 0 s3 0 s4 0 nodes 67693 nps 81656 time 829 pv m8l8 phase brs
+< info string nextturn Red
+< bestmove m8l8
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8
+> go depth 8
+< info depth 1 score cp 4114 v1 4520 v2 4443 v3 4495 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 835 nps 104375 time 8 pv d4g7 phase brs
+< info depth 2 score cp 4114 v1 4520 v2 4443 v3 4495 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 1933 nps 87863 time 22 pv d4g7 phase brs
+< info depth 3 score cp 4105 v1 4520 v2 4443 v3 4495 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 2694 nps 86903 time 31 pv d4g7 phase brs
+< info depth 4 score cp 4105 v1 4520 v2 4443 v3 4495 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 3494 nps 81255 time 43 pv d4g7 phase brs
+< info depth 5 score cp 4024 v1 4520 v2 4443 v3 4495 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 7404 nps 78765 time 94 pv d4f6 phase brs
+< info depth 6 score cp 4024 v1 4520 v2 4443 v3 4495 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 11556 nps 80250 time 144 pv d4f6 phase brs
+< info depth 7 score cp 4024 v1 4520 v2 4443 v3 4495 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 17980 nps 78859 time 228 pv d4f6 phase brs
+< info depth 8 score cp 4023 v1 4520 v2 4443 v3 4495 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 23737 nps 75355 time 315 pv d4f6 phase brs
+< info string nextturn Blue
+< bestmove d4f6
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6
+> go depth 8
+< info depth 1 score cp 4482 v1 4522 v2 4418 v3 4495 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 553 nps 79000 time 7 pv a9d6 phase brs
+< info depth 2 score cp 4467 v1 4522 v2 4418 v3 4495 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 1249 nps 83266 time 15 pv a5c6 phase brs
+< info depth 3 score cp 4264 v1 4522 v2 4418 v3 4495 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 2253 nps 80464 time 28 pv a8c8 phase brs
+< info depth 4 score cp 4214 v1 4522 v2 4418 v3 4495 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 2835 nps 78750 time 36 pv none phase brs
+< info depth 5 score cp 4187 v1 4522 v2 4418 v3 4495 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 5482 nps 84338 time 65 pv b9d9 phase brs
+< info depth 6 score cp 4324 v1 4522 v2 4418 v3 4495 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 13800 nps 90789 time 152 pv a8c8 phase brs
+< info depth 7 score cp 4191 v1 4522 v2 4418 v3 4495 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 22174 nps 86617 time 256 pv b9d9 phase brs
+< info depth 8 score cp 4174 v1 4522 v2 4418 v3 4495 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 33309 nps 82858 time 402 pv a8c8 phase brs
+< info string nextturn Yellow
+< bestmove a8c8
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8
+> go depth 8
+< info depth 1 score cp 3901 v1 4497 v2 4469 v3 4470 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 120 nps 120000 time 1 pv h14i13 phase brs
+< info depth 2 score cp 3901 v1 4497 v2 4469 v3 4470 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 248 nps 82666 time 3 pv h14i13 phase brs
+< info depth 3 score cp 3901 v1 4497 v2 4469 v3 4470 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 284 nps 94666 time 3 pv h14i13 phase brs
+< info depth 4 score cp 3901 v1 4497 v2 4469 v3 4470 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 529 nps 88166 time 6 pv h14i13 phase brs
+< info depth 5 score cp 3627 v1 4497 v2 4469 v3 4470 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 2848 nps 74947 time 38 pv j13j11 phase brs
+< info depth 6 score cp 3627 v1 4497 v2 4469 v3 4470 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 3500 nps 76086 time 46 pv j13j11 phase brs
+< info depth 7 score cp 3322 v1 4497 v2 4469 v3 4470 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 6285 nps 75722 time 83 pv j13j11 phase brs
+< info depth 8 score cp 3322 v1 4497 v2 4469 v3 4470 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 7892 nps 74452 time 106 pv j13j11 phase brs
+< info string nextturn Green
+< bestmove j13j11
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11
+> go depth 8
+< info depth 1 score cp 4288 v1 4497 v2 4469 v3 4480 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 803 nps 89222 time 9 pv n7l9 phase brs
+< info depth 2 score cp 4287 v1 4497 v2 4469 v3 4480 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 1747 nps 79409 time 22 pv n7m8 phase brs
+< info depth 3 score cp 4260 v1 4497 v2 4469 v3 4480 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 2566 nps 77757 time 33 pv n10m8 phase brs
+< info depth 4 score cp 4295 v1 4497 v2 4469 v3 4480 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 3511 nps 74702 time 47 pv n10m8 phase brs
+< info depth 5 score cp 4295 v1 4497 v2 4469 v3 4480 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 5948 nps 74350 time 80 pv n10m8 phase brs
+< info depth 6 score cp 3699 v1 4497 v2 4469 v3 4480 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 19086 nps 76650 time 249 pv n9k12 phase brs
+< info depth 7 score cp 3631 v1 4497 v2 4469 v3 4480 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 21032 nps 77608 time 271 pv n9l11 phase brs
+< info depth 8 score cp 3774 v1 4497 v2 4469 v3 4480 v4 4407 s1 0 s2 0 s3 0 s4 0 nodes 24503 nps 79041 time 310 pv n9l11 phase brs
+< info string nextturn Red
+< bestmove n9l11
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11
+> go depth 8
+< info depth 1 score cp 4546 v1 4522 v2 4469 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 796 nps 88444 time 9 pv f6f12 phase brs
+< info depth 2 score cp 4327 v1 4522 v2 4469 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 1717 nps 81761 time 21 pv h1g1 phase brs
+< info depth 3 score cp 4327 v1 4522 v2 4469 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 1958 nps 81583 time 24 pv h1g1 phase brs
+< info depth 4 score cp 4326 v1 4522 v2 4469 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 3035 nps 74024 time 41 pv h1g1 phase brs
+< info depth 5 score cp 4301 v1 4522 v2 4469 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 6450 nps 72471 time 89 pv h1g1 phase brs
+< info depth 6 score cp 3868 v1 4522 v2 4469 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 18022 nps 73860 time 244 pv k2k4 phase brs
+< info depth 7 score cp 3923 v1 4522 v2 4469 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 25039 nps 72576 time 345 pv f3g1 phase brs
+< info depth 8 score cp 3923 v1 4522 v2 4469 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 33524 nps 71632 time 468 pv f3g1 phase brs
+< info string nextturn Blue
+< bestmove f3g1
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1
+> go depth 8
+< info depth 1 score cp 4410 v1 4474 v2 4469 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 736 nps 81777 time 9 pv a5c4 phase brs
+< info depth 2 score cp 4399 v1 4474 v2 4469 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 1666 nps 79333 time 21 pv a9c7 phase brs
+< info depth 3 score cp 4299 v1 4474 v2 4469 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 3582 nps 76212 time 47 pv a7a8 phase brs
+< info depth 4 score cp 4320 v1 4474 v2 4469 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 4819 nps 75296 time 64 pv b7c7 phase brs
+< info depth 5 score cp 4320 v1 4474 v2 4469 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 10020 nps 80806 time 124 pv b7c7 phase brs
+< info depth 6 score cp 4238 v1 4474 v2 4469 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 27706 nps 84469 time 328 pv b7d7 phase brs
+< info depth 7 score cp 4238 v1 4474 v2 4469 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 42983 nps 81253 time 529 pv b7d7 phase brs
+< info depth 8 score cp 4188 v1 4474 v2 4469 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 55535 nps 79109 time 702 pv b7d7 phase brs
+< info string nextturn Yellow
+< bestmove b7d7
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7
+> go depth 8
+< info depth 1 score cp 3928 v1 4499 v2 4423 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 120 nps 120000 time 1 pv h14i13 phase brs
+< info depth 2 score cp 3928 v1 4499 v2 4423 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 244 nps 122000 time 2 pv h14i13 phase brs
+< info depth 3 score cp 3928 v1 4499 v2 4423 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 281 nps 93666 time 3 pv h14i13 phase brs
+< info depth 4 score cp 3928 v1 4499 v2 4423 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 497 nps 82833 time 6 pv h14i13 phase brs
+< info depth 5 score cp 3677 v1 4499 v2 4423 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 3312 nps 77023 time 43 pv h14i13 phase brs
+< info depth 6 score cp 3677 v1 4499 v2 4423 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 3935 nps 77156 time 51 pv h14i13 phase brs
+< info depth 7 score cp 3640 v1 4499 v2 4423 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 6740 nps 74888 time 90 pv i12i11 phase brs
+< info depth 8 score cp 3590 v1 4499 v2 4423 v3 4480 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 9717 nps 75325 time 129 pv i12i11 phase brs
+< info string nextturn Green
+< bestmove i12i11
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11
+> go depth 8
+< info depth 1 score cp 4329 v1 4499 v2 4423 v3 4481 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 658 nps 94000 time 7 pv n7j11 phase brs
+< info depth 2 score cp 4329 v1 4499 v2 4423 v3 4481 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 1410 nps 82941 time 17 pv n7j11 phase brs
+< info depth 3 score cp 4277 v1 4499 v2 4423 v3 4481 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 2601 nps 78818 time 33 pv l11j9 phase brs
+< info depth 4 score cp 4312 v1 4499 v2 4423 v3 4481 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 3067 nps 76675 time 40 pv l11j9 phase brs
+< info depth 5 score cp 4312 v1 4499 v2 4423 v3 4481 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 5071 nps 75686 time 67 pv l11j9 phase brs
+< info depth 6 score cp 4214 v1 4499 v2 4423 v3 4481 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 14288 nps 77652 time 184 pv l11j9 phase brs
+< info depth 7 score cp 3731 v1 4499 v2 4423 v3 4481 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 21525 nps 78272 time 275 pv n10l9 phase brs
+< info depth 8 score cp 3731 v1 4499 v2 4423 v3 4481 v4 4440 s1 0 s2 0 s3 0 s4 0 nodes 25520 nps 78765 time 324 pv n10l9 phase brs
+< info string nextturn Red
+< bestmove n10l9
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9
+> go depth 8
+< info depth 1 score cp 4523 v1 4499 v2 4423 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 1562 nps 104133 time 15 pv f6f12 phase brs
+< info depth 2 score cp 4395 v1 4499 v2 4423 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 3818 nps 86772 time 44 pv g1h3 phase brs
+< info depth 3 score cp 4395 v1 4499 v2 4423 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 4374 nps 87480 time 50 pv g1h3 phase brs
+< info depth 4 score cp 4394 v1 4499 v2 4423 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 6554 nps 80913 time 81 pv g1h3 phase brs
+< info depth 5 score cp 4394 v1 4499 v2 4423 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 14097 nps 77883 time 181 pv g1h3 phase brs
+< info depth 6 score cp 4215 v1 4499 v2 4423 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 115739 nps 77005 time 1503 pv d2d3 phase brs
+< info depth 7 score cp 4165 v1 4499 v2 4423 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 165143 nps 74321 time 2222 pv none phase brs
+< info depth 8 score cp 4162 v1 4499 v2 4423 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 224898 nps 72594 time 3098 pv d2d3 phase brs
+< info string nextturn Blue
+< bestmove d2d3
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3
+> go depth 8
+< info depth 1 score cp 4255 v1 4500 v2 4423 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 821 nps 68416 time 12 pv a7a8 phase brs
+< info depth 2 score cp 4261 v1 4500 v2 4423 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 1775 nps 57258 time 31 pv b4c4 phase brs
+< info depth 3 score cp 4264 v1 4500 v2 4423 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 1995 nps 60454 time 33 pv b4c4 phase brs
+< info depth 4 score cp 4305 v1 4500 v2 4423 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 3051 nps 62265 time 49 pv b6d6 phase brs
+< info depth 5 score cp 4305 v1 4500 v2 4423 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 5732 nps 69902 time 82 pv b6d6 phase brs
+< info depth 6 score cp 4301 v1 4500 v2 4423 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 13502 nps 77154 time 175 pv a9b8 phase brs
+< info depth 7 score cp 4274 v1 4500 v2 4423 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 19684 nps 77802 time 253 pv a6b5 phase brs
+< info depth 8 score cp 4320 v1 4500 v2 4423 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 29191 nps 77429 time 377 pv a9c7 phase brs
+< info string nextturn Yellow
+< bestmove a9c7
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7
+> go depth 8
+< info depth 1 score cp 3930 v1 4500 v2 4463 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 124 nps 124000 time 1 pv h14i13 phase brs
+< info depth 2 score cp 3930 v1 4500 v2 4463 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 252 nps 126000 time 2 pv h14i13 phase brs
+< info depth 3 score cp 3930 v1 4500 v2 4463 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 290 nps 145000 time 2 pv h14i13 phase brs
+< info depth 4 score cp 4043 v1 4500 v2 4463 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 486 nps 97200 time 5 pv k12l11 phase brs
+< info depth 5 score cp 4043 v1 4500 v2 4463 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 1416 nps 88500 time 16 pv k12l11 phase brs
+< info depth 6 score cp 4043 v1 4500 v2 4463 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 4363 nps 87260 time 50 pv k12l11 phase brs
+< info depth 7 score cp 3719 v1 4500 v2 4463 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 8386 nps 84707 time 99 pv k12l11 phase brs
+< info depth 8 score cp 3953 v1 4500 v2 4463 v3 4481 v4 4489 s1 0 s2 0 s3 0 s4 0 nodes 11712 nps 83063 time 141 pv k12l11 phase brs
+< info string nextturn Green
+< bestmove k12l11
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11
+> go depth 8
+< info depth 1 score cp 3710 v1 4541 v2 4504 v3 4701 v4 3835 s1 0 s2 0 s3 5 s4 0 nodes 503 nps 100600 time 5 pv n5l4 phase brs
+< info depth 2 score cp 3710 v1 4541 v2 4504 v3 4701 v4 3835 s1 0 s2 0 s3 5 s4 0 nodes 1088 nps 90666 time 12 pv n5l4 phase brs
+< info depth 3 score cp 3710 v1 4541 v2 4504 v3 4701 v4 3835 s1 0 s2 0 s3 5 s4 0 nodes 1194 nps 91846 time 13 pv n5l4 phase brs
+< info depth 4 score cp 3745 v1 4541 v2 4504 v3 4701 v4 3835 s1 0 s2 0 s3 5 s4 0 nodes 1891 nps 82217 time 23 pv n5l4 phase brs
+< info depth 5 score cp 3745 v1 4541 v2 4504 v3 4701 v4 3835 s1 0 s2 0 s3 5 s4 0 nodes 3170 nps 79250 time 40 pv n5l4 phase brs
+< info depth 6 score cp 3680 v1 4541 v2 4504 v3 4701 v4 3835 s1 0 s2 0 s3 5 s4 0 nodes 14144 nps 82232 time 172 pv n11m11 phase brs
+< info depth 7 score cp 3653 v1 4541 v2 4504 v3 4701 v4 3835 s1 0 s2 0 s3 5 s4 0 nodes 17610 nps 82289 time 214 pv m7l7 phase brs
+< info depth 8 score cp 3700 v1 4541 v2 4504 v3 4701 v4 3835 s1 0 s2 0 s3 5 s4 0 nodes 23987 nps 80764 time 297 pv m5l5 phase brs
+< info string nextturn Red
+< bestmove m5l5
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5
+> go depth 8
+< info depth 1 score cp 4565 v1 4541 v2 4504 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 2268 nps 119368 time 19 pv f6f12 phase brs
+< info depth 2 score cp 4320 v1 4541 v2 4504 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 8533 nps 87969 time 97 pv j1i3 phase brs
+< info depth 3 score cp 4311 v1 4541 v2 4504 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 11403 nps 85736 time 133 pv g1h3 phase brs
+< info depth 4 score cp 4311 v1 4541 v2 4504 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 15127 nps 83115 time 182 pv g1h3 phase brs
+< info depth 5 score cp 4311 v1 4541 v2 4504 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 25862 nps 81072 time 319 pv g1h3 phase brs
+< info depth 6 score cp 4155 v1 4541 v2 4504 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 197875 nps 85734 time 2308 pv g1h3 phase brs
+< info depth 7 score cp 4155 v1 4541 v2 4504 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 230868 nps 83708 time 2758 pv g1h3 phase brs
+< info depth 8 score cp 4164 v1 4541 v2 4504 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 300909 nps 82103 time 3665 pv g1h3 phase brs
+< info string nextturn Blue
+< bestmove g1h3
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3
+> go depth 8
+< info depth 1 score cp 4493 v1 4590 v2 4504 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 932 nps 93200 time 10 pv a7a8 phase brs
+< info depth 2 score cp 4419 v1 4590 v2 4504 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 2952 nps 84342 time 35 pv a6b5 phase brs
+< info depth 3 score cp 4425 v1 4590 v2 4504 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 3163 nps 83236 time 38 pv a6b5 phase brs
+< info depth 4 score cp 4434 v1 4590 v2 4504 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 4527 nps 80839 time 56 pv a5b7 phase brs
+< info depth 5 score cp 4434 v1 4590 v2 4504 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 7611 nps 82728 time 92 pv a5b7 phase brs
+< info depth 6 score cp 4476 v1 4590 v2 4504 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 17680 nps 83791 time 211 pv a7a8 phase brs
+< info depth 7 score cp 4476 v1 4590 v2 4504 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 27776 nps 80510 time 345 pv a7a8 phase brs
+< info depth 8 score cp 4451 v1 4590 v2 4504 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 40180 nps 78476 time 512 pv a7a8 phase brs
+< info string nextturn Yellow
+< bestmove a7a8
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8
+> go depth 8
+< info depth 1 score cp 3986 v1 4590 v2 4529 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 479 nps 95800 time 5 pv f12h11 phase brs
+< info depth 2 score cp 3986 v1 4590 v2 4529 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 1036 nps 86333 time 12 pv f12h11 phase brs
+< info depth 3 score cp 3986 v1 4590 v2 4529 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 1205 nps 86071 time 14 pv f12h11 phase brs
+< info depth 4 score cp 3986 v1 4590 v2 4529 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 1782 nps 84857 time 21 pv f12h11 phase brs
+< info depth 5 score cp 3725 v1 4590 v2 4529 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 3442 nps 81952 time 42 pv f12e10 phase brs
+< info depth 6 score cp 3762 v1 4590 v2 4529 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 3611 nps 82068 time 44 pv f12e10 phase brs
+< info depth 7 score cp 3527 v1 4590 v2 4529 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 5501 nps 78585 time 70 pv f12e10 phase brs
+< info depth 8 score cp 3527 v1 4590 v2 4529 v3 4701 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 6132 nps 78615 time 78 pv f12e10 phase brs
+< info string nextturn Green
+< bestmove f12e10
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10
+> go depth 8
+< info depth 1 score cp 3699 v1 4590 v2 4529 v3 4700 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 826 nps 91777 time 9 pv n6l4 phase brs
+< info depth 2 score cp 3702 v1 4590 v2 4529 v3 4700 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 1835 nps 83409 time 22 pv n6m5 phase brs
+< info depth 3 score cp 3702 v1 4590 v2 4529 v3 4700 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 2037 nps 84875 time 24 pv n6m5 phase brs
+< info depth 4 score cp 3737 v1 4590 v2 4529 v3 4700 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 2900 nps 78378 time 37 pv n6m5 phase brs
+< info depth 5 score cp 3746 v1 4590 v2 4529 v3 4700 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 5607 nps 77875 time 72 pv n5l4 phase brs
+< info depth 6 score cp 3726 v1 4590 v2 4529 v3 4700 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 15844 nps 79220 time 200 pv n11m11 phase brs
+< info depth 7 score cp 3706 v1 4590 v2 4529 v3 4700 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 24125 nps 78583 time 307 pv n11m11 phase brs
+< info depth 8 score cp 3746 v1 4590 v2 4529 v3 4700 v4 3836 s1 0 s2 0 s3 5 s4 0 nodes 34012 nps 77830 time 437 pv m4l4 phase brs
+< info string nextturn Red
+< bestmove m4l4
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4
+> go depth 8
+< info depth 1 score cp 4486 v1 4590 v2 4529 v3 4700 v4 3837 s1 0 s2 0 s3 5 s4 0 nodes 2620 nps 131000 time 20 pv j1i3 phase brs
+< info depth 2 score cp 4486 v1 4590 v2 4529 v3 4700 v4 3837 s1 0 s2 0 s3 5 s4 0 nodes 6591 nps 104619 time 63 pv j1i3 phase brs
+< info depth 3 score cp 4486 v1 4590 v2 4529 v3 4700 v4 3837 s1 0 s2 0 s3 5 s4 0 nodes 7369 nps 102347 time 72 pv j1i3 phase brs
+< info depth 4 score cp 4486 v1 4590 v2 4529 v3 4700 v4 3837 s1 0 s2 0 s3 5 s4 0 nodes 11589 nps 94219 time 123 pv j1i3 phase brs
+< info depth 5 score cp 4436 v1 4590 v2 4529 v3 4700 v4 3837 s1 0 s2 0 s3 5 s4 0 nodes 81257 nps 102081 time 796 pv f6i6 phase brs
+< info depth 6 score cp 4435 v1 4590 v2 4529 v3 4700 v4 3837 s1 0 s2 0 s3 5 s4 0 nodes 153143 nps 97605 time 1569 pv f6f7 phase brs
+< info depth 7 score cp 4435 v1 4590 v2 4529 v3 4700 v4 3837 s1 0 s2 0 s3 5 s4 0 nodes 272031 nps 90828 time 2995 pv f6f7 phase brs
+< info depth 8 score cp 4436 v1 4590 v2 4529 v3 4700 v4 3837 s1 0 s2 0 s3 5 s4 0 nodes 425610 nps 86912 time 4897 pv f6f5 phase brs
+< info string nextturn Blue
+< bestmove f6f5
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5
+> go depth 8
+< info depth 1 score cp 4414 v1 4590 v2 4529 v3 4700 v4 3837 s1 0 s2 0 s3 5 s4 0 nodes 1041 nps 104100 time 10 pv c11e10 phase brs
+< info depth 2 score cp 4353 v1 4590 v2 4529 v3 4700 v4 3837 s1 0 s2 0 s3 5 s4 0 nodes 2438 nps 106000 time 23 pv c11e10 phase brs
+< info depth 3 score cp 4357 v1 4590 v2 4529 v3 4700 v4 3837 s1 0 s2 0 s3 5 s4 0 nodes 2854 nps 101928 time 28 pv c11e10 phase brs
+< info depth 4 score cp 4357 v1 4590 v2 4529 v3 4700 v4 3837 s1 0 s2 0 s3 5 s4 0 nodes 5352 nps 92275 time 58 pv c11e10 phase brs
+< info depth 5 score cp 4357 v1 4590 v2 4529 v3 4700 v4 3837 s1 0 s2 0 s3 5 s4 0 nodes 14476 nps 93393 time 155 pv c11e10 phase brs
+< info depth 6 score cp 4309 v1 4590 v2 4529 v3 4700 v4 3837 s1 0 s2 0 s3 5 s4 0 nodes 26990 nps 96049 time 281 pv c11e10 phase brs
+< info depth 7 score cp 4309 v1 4590 v2 4529 v3 4700 v4 3837 s1 0 s2 0 s3 5 s4 0 nodes 37186 nps 96336 time 386 pv c11e10 phase brs
+< info depth 8 score cp 4421 v1 4590 v2 4529 v3 4700 v4 3837 s1 0 s2 0 s3 5 s4 0 nodes 68787 nps 88987 time 773 pv c11e10 phase brs
+< info string nextturn Yellow
+< bestmove c11e10
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10
+> go depth 8
+< info depth 1 score cp 3962 v1 4615 v2 4670 v3 4342 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 184 nps 184000 time 1 pv h14i13 phase brs
+< info depth 2 score cp 3962 v1 4615 v2 4670 v3 4342 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 365 nps 121666 time 3 pv h14i13 phase brs
+< info depth 3 score cp 3962 v1 4615 v2 4670 v3 4342 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 452 nps 113000 time 4 pv h14i13 phase brs
+< info depth 4 score cp 4143 v1 4615 v2 4670 v3 4342 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 680 nps 113333 time 6 pv f13f12 phase brs
+< info depth 5 score cp 4143 v1 4615 v2 4670 v3 4342 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 775 nps 110714 time 7 pv f13f12 phase brs
+< info depth 6 score cp 4143 v1 4615 v2 4670 v3 4342 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 937 nps 104111 time 9 pv f13f12 phase brs
+< info depth 7 score cp 4016 v1 4615 v2 4670 v3 4342 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 1955 nps 88863 time 22 pv f13f12 phase brs
+< info depth 8 score cp 3966 v1 4615 v2 4670 v3 4342 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 2816 nps 82823 time 34 pv f13f12 phase brs
+< info string nextturn Green
+< bestmove f13f12
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12
+> go depth 8
+< info depth 1 score cp 3786 v1 4615 v2 4670 v3 4319 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 459 nps 114750 time 4 pv n7m8 phase brs
+< info depth 2 score cp 3786 v1 4615 v2 4670 v3 4319 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 1217 nps 101416 time 12 pv n7m8 phase brs
+< info depth 3 score cp 3727 v1 4615 v2 4670 v3 4319 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 2275 nps 94791 time 24 pv n7m8 phase brs
+< info depth 4 score cp 3727 v1 4615 v2 4670 v3 4319 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 2985 nps 87794 time 34 pv n7m8 phase brs
+< info depth 5 score cp 3729 v1 4615 v2 4670 v3 4319 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 6535 nps 90763 time 72 pv m6k6 phase brs
+< info depth 6 score cp 3728 v1 4615 v2 4670 v3 4319 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 16116 nps 90033 time 179 pv m6l6 phase brs
+< info depth 7 score cp 3702 v1 4615 v2 4670 v3 4319 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 27340 nps 90231 time 303 pv n4m4 phase brs
+< info depth 8 score cp 3746 v1 4615 v2 4670 v3 4319 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 38634 nps 88407 time 437 pv n4m4 phase brs
+< info string nextturn Red
+< bestmove n4m4
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4
+> go depth 8
+< info depth 1 score cp 4613 v1 4615 v2 4670 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 2236 nps 139750 time 16 pv f5e4 phase brs
+< info depth 2 score cp 4613 v1 4615 v2 4670 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 5547 nps 113204 time 49 pv f5e4 phase brs
+< info depth 3 score cp 4613 v1 4615 v2 4670 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 6148 nps 111781 time 55 pv f5e4 phase brs
+< info depth 4 score cp 4613 v1 4615 v2 4670 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 9478 nps 103021 time 92 pv f5e4 phase brs
+< info depth 5 score cp 4622 v1 4615 v2 4670 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 22439 nps 100623 time 223 pv f5e4 phase brs
+< info depth 6 score cp 4509 v1 4615 v2 4670 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 114188 nps 107826 time 1059 pv f5e4 phase brs
+< info depth 7 score cp 4509 v1 4615 v2 4670 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 228210 nps 97028 time 2352 pv f5e4 phase brs
+< info depth 8 score cp 4494 v1 4615 v2 4670 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 359911 nps 92832 time 3877 pv d1d2 phase brs
+< info string nextturn Blue
+< bestmove d1d2
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2
+> go depth 8
+< info depth 1 score cp 4669 v1 4640 v2 4670 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 1227 nps 111545 time 11 pv c8c10 phase brs
+< info depth 2 score cp 4605 v1 4640 v2 4670 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 3147 nps 95363 time 33 pv a5c6 phase brs
+< info depth 3 score cp 4594 v1 4640 v2 4670 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 3855 nps 91785 time 42 pv a8a9 phase brs
+< info depth 4 score cp 4594 v1 4640 v2 4670 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 5363 nps 87918 time 61 pv a8a9 phase brs
+< info depth 5 score cp 4591 v1 4640 v2 4670 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 12890 nps 89513 time 144 pv b6c6 phase brs
+< info depth 6 score cp 4643 v1 4640 v2 4670 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 40944 nps 89202 time 459 pv a5c6 phase brs
+< info depth 7 score cp 4638 v1 4640 v2 4670 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 66285 nps 86988 time 762 pv a5c6 phase brs
+< info depth 8 score cp 4638 v1 4640 v2 4670 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 101698 nps 85102 time 1195 pv a5c6 phase brs
+< info string nextturn Yellow
+< bestmove a5c6
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6
+> go depth 8
+< info depth 1 score cp 4012 v1 4640 v2 4719 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 460 nps 115000 time 4 pv h14i13 phase brs
+< info depth 2 score cp 4012 v1 4640 v2 4719 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 838 nps 93111 time 9 pv h14i13 phase brs
+< info depth 3 score cp 4012 v1 4640 v2 4719 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 939 nps 93900 time 10 pv h14i13 phase brs
+< info depth 4 score cp 4193 v1 4640 v2 4719 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 1394 nps 92933 time 15 pv h14i13 phase brs
+< info depth 5 score cp 4193 v1 4640 v2 4719 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 1676 nps 98588 time 17 pv h14i13 phase brs
+< info depth 6 score cp 4193 v1 4640 v2 4719 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 2038 nps 101900 time 20 pv h14i13 phase brs
+< info depth 7 score cp 4064 v1 4640 v2 4719 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 4351 nps 88795 time 49 pv h14i13 phase brs
+< info depth 8 score cp 4065 v1 4640 v2 4719 v3 4319 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 6315 nps 85337 time 74 pv j14i12 phase brs
+< info string nextturn Green
+< bestmove j14i12
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12
+> go depth 8
+< info depth 1 score cp 3811 v1 4640 v2 4719 v3 4368 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 540 nps 108000 time 5 pv n7m8 phase brs
+< info depth 2 score cp 3811 v1 4640 v2 4719 v3 4368 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 1165 nps 97083 time 12 pv n7m8 phase brs
+< info depth 3 score cp 3752 v1 4640 v2 4719 v3 4368 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 2232 nps 89280 time 25 pv n7m8 phase brs
+< info depth 4 score cp 3752 v1 4640 v2 4719 v3 4368 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 2869 nps 86939 time 33 pv n7m8 phase brs
+< info depth 5 score cp 3754 v1 4640 v2 4719 v3 4368 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 6049 nps 87666 time 69 pv m6k6 phase brs
+< info depth 6 score cp 3753 v1 4640 v2 4719 v3 4368 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 15235 nps 84171 time 181 pv m6l6 phase brs
+< info depth 7 score cp 3727 v1 4640 v2 4719 v3 4368 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 26414 nps 85482 time 309 pv n11m11 phase brs
+< info depth 8 score cp 3721 v1 4640 v2 4719 v3 4368 v4 3887 s1 0 s2 3 s3 5 s4 0 nodes 40219 nps 83964 time 479 pv m4n4 phase brs
+< info string nextturn Red
+< bestmove m4n4
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4
+> go depth 8
+< info depth 1 score cp 4536 v1 4640 v2 4719 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 2069 nps 129312 time 16 pv j1i3 phase brs
+< info depth 2 score cp 4536 v1 4640 v2 4719 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 4957 nps 110155 time 45 pv j1i3 phase brs
+< info depth 3 score cp 4536 v1 4640 v2 4719 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 5531 nps 108450 time 51 pv j1i3 phase brs
+< info depth 4 score cp 4536 v1 4640 v2 4719 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 8479 nps 99752 time 85 pv j1i3 phase brs
+< info depth 5 score cp 4477 v1 4640 v2 4719 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 52905 nps 105388 time 502 pv j1i3 phase brs
+< info depth 6 score cp 4477 v1 4640 v2 4719 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 84861 nps 105679 time 803 pv j1i3 phase brs
+< info depth 7 score cp 4477 v1 4640 v2 4719 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 164610 nps 97517 time 1688 pv j1i3 phase brs
+< info depth 8 score cp 4506 v1 4640 v2 4719 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 261620 nps 92379 time 2832 pv e2e3 phase brs
+< info string nextturn Blue
+< bestmove e2e3
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3
+> go depth 8
+< info depth 1 score cp 4718 v1 4649 v2 4719 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 1349 nps 112416 time 12 pv c8c10 phase brs
+< info depth 2 score cp 4652 v1 4649 v2 4719 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 3512 nps 92421 time 38 pv a8a9 phase brs
+< info depth 3 score cp 4643 v1 4649 v2 4719 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 4178 nps 90826 time 46 pv a8a9 phase brs
+< info depth 4 score cp 4643 v1 4649 v2 4719 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 5902 nps 86794 time 68 pv a8a9 phase brs
+< info depth 5 score cp 4599 v1 4649 v2 4719 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 16249 nps 89773 time 181 pv c6e7 phase brs
+< info depth 6 score cp 4624 v1 4649 v2 4719 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 49402 nps 90812 time 544 pv c6e7 phase brs
+< info depth 7 score cp 4624 v1 4649 v2 4719 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 88882 nps 86377 time 1029 pv c6e7 phase brs
+< info depth 8 score cp 4658 v1 4649 v2 4719 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 127679 nps 83778 time 1524 pv a6b5 phase brs
+< info string nextturn Yellow
+< bestmove a6b5
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5
+> go depth 8
+< info depth 1 score cp 4061 v1 4649 v2 4755 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 693 nps 99000 time 7 pv h14i13 phase brs
+< info depth 2 score cp 4061 v1 4649 v2 4755 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 1273 nps 90928 time 14 pv h14i13 phase brs
+< info depth 3 score cp 4061 v1 4649 v2 4755 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 1473 nps 92062 time 16 pv h14i13 phase brs
+< info depth 4 score cp 4242 v1 4649 v2 4755 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 2145 nps 93260 time 23 pv h14i13 phase brs
+< info depth 5 score cp 4242 v1 4649 v2 4755 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 2456 nps 90962 time 27 pv h14i13 phase brs
+< info depth 6 score cp 4242 v1 4649 v2 4755 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 3167 nps 95969 time 33 pv h14i13 phase brs
+< info depth 7 score cp 4126 v1 4649 v2 4755 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 6060 nps 86571 time 70 pv i14j13 phase brs
+< info depth 8 score cp 4128 v1 4649 v2 4755 v3 4368 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 8063 nps 82275 time 98 pv h14i13 phase brs
+< info string nextturn Green
+< bestmove h14i13
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13
+> go depth 8
+< info depth 1 score cp 3786 v1 4649 v2 4755 v3 4418 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 660 nps 110000 time 6 pv n7m8 phase brs
+< info depth 2 score cp 3786 v1 4649 v2 4755 v3 4418 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 1245 nps 95769 time 13 pv n7m8 phase brs
+< info depth 3 score cp 3727 v1 4649 v2 4755 v3 4418 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 2341 nps 86703 time 27 pv n7m8 phase brs
+< info depth 4 score cp 3727 v1 4649 v2 4755 v3 4418 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 3003 nps 83416 time 36 pv n7m8 phase brs
+< info depth 5 score cp 3729 v1 4649 v2 4755 v3 4418 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 6660 nps 85384 time 78 pv m6k6 phase brs
+< info depth 6 score cp 3726 v1 4649 v2 4755 v3 4418 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 17646 nps 86926 time 203 pv n5l6 phase brs
+< info depth 7 score cp 3702 v1 4649 v2 4755 v3 4418 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 30746 nps 84005 time 366 pv n11m11 phase brs
+< info depth 8 score cp 3652 v1 4649 v2 4755 v3 4418 v4 3862 s1 0 s2 3 s3 5 s4 0 nodes 44139 nps 80988 time 545 pv n6m5 phase brs
+< info string nextturn Red
+< bestmove n6m5
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5
+> go depth 8
+< info depth 1 score cp 4537 v1 4649 v2 4755 v3 4418 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 2916 nps 132545 time 22 pv j1i3 phase brs
+< info depth 2 score cp 4537 v1 4649 v2 4755 v3 4418 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 7276 nps 107000 time 68 pv j1i3 phase brs
+< info depth 3 score cp 4512 v1 4649 v2 4755 v3 4418 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 8056 nps 103282 time 78 pv j1i3 phase brs
+< info depth 4 score cp 4512 v1 4649 v2 4755 v3 4418 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 12284 nps 90992 time 135 pv j1i3 phase brs
+< info depth 5 score cp 4322 v1 4649 v2 4755 v3 4418 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 99433 nps 103360 time 962 pv j1i3 phase brs
+< info depth 6 score cp 4272 v1 4649 v2 4755 v3 4418 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 133782 nps 100136 time 1336 pv none phase brs
+< info depth 7 score cp 4322 v1 4649 v2 4755 v3 4418 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 222692 nps 93293 time 2387 pv j1i3 phase brs
+< info depth 8 score cp 4358 v1 4649 v2 4755 v3 4418 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 276346 nps 90843 time 3042 pv j1i3 phase brs
+< info string nextturn Blue
+< bestmove j1i3
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3
+> go depth 8
+< info depth 1 score cp 4754 v1 4698 v2 4755 v3 4418 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 1839 nps 91950 time 20 pv c8c10 phase brs
+< info depth 2 score cp 4549 v1 4698 v2 4755 v3 4418 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 6033 nps 83791 time 72 pv c8c10 phase brs
+< info depth 3 score cp 4549 v1 4698 v2 4755 v3 4418 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 6502 nps 83358 time 78 pv c8c10 phase brs
+< info depth 4 score cp 4549 v1 4698 v2 4755 v3 4418 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 9355 nps 81347 time 115 pv c8c10 phase brs
+< info depth 5 score cp 4440 v1 4698 v2 4755 v3 4418 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 22468 nps 76421 time 294 pv a8a9 phase brs
+< info depth 6 score cp 4253 v1 4698 v2 4755 v3 4418 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 53249 nps 75745 time 703 pv e10g11 phase brs
+< info depth 7 score cp 4253 v1 4698 v2 4755 v3 4418 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 67821 nps 75947 time 893 pv e10g11 phase brs
+< info depth 8 score cp 4253 v1 4698 v2 4755 v3 4418 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 84937 nps 76588 time 1109 pv e10g11 phase brs
+< info string nextturn Yellow
+< bestmove e10g11
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11
+> go depth 8
+< info depth 1 score cp 3720 v1 4698 v2 4757 v3 4373 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 804 nps 89333 time 9 pv g14h14 phase brs
+< info depth 2 score cp 3720 v1 4698 v2 4757 v3 4373 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 1739 nps 86950 time 20 pv g14h14 phase brs
+< info depth 3 score cp 3720 v1 4698 v2 4757 v3 4373 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 1977 nps 89863 time 22 pv g14h14 phase brs
+< info depth 4 score cp 3720 v1 4698 v2 4757 v3 4373 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 3034 nps 84277 time 36 pv g14h14 phase brs
+< info depth 5 score cp 3720 v1 4698 v2 4757 v3 4373 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 4663 nps 83267 time 56 pv g14h14 phase brs
+< info depth 6 score cp 3600 v1 4698 v2 4757 v3 4373 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 14669 nps 82410 time 178 pv i14j13 phase brs
+< info depth 7 score cp 3550 v1 4698 v2 4757 v3 4373 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 18737 nps 82907 time 226 pv none phase brs
+< info depth 8 score cp 3464 v1 4698 v2 4757 v3 4373 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 30308 nps 79757 time 380 pv g13g12 phase brs
+< info string nextturn Green
+< bestmove g13g12
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12
+> go depth 8
+< info depth 1 score cp 3822 v1 4698 v2 4757 v3 4326 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 901 nps 100111 time 9 pv n7m8 phase brs
+< info depth 2 score cp 3822 v1 4698 v2 4757 v3 4326 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 1925 nps 87500 time 22 pv n7m8 phase brs
+< info depth 3 score cp 3763 v1 4698 v2 4757 v3 4326 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 3844 nps 83565 time 46 pv n7m8 phase brs
+< info depth 4 score cp 3763 v1 4698 v2 4757 v3 4326 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 5103 nps 79734 time 64 pv n7m8 phase brs
+< info depth 5 score cp 3765 v1 4698 v2 4757 v3 4326 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 10017 nps 80136 time 125 pv m6k6 phase brs
+< info depth 6 score cp 3764 v1 4698 v2 4757 v3 4326 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 25402 nps 80386 time 316 pv m6l6 phase brs
+< info depth 7 score cp 3738 v1 4698 v2 4757 v3 4326 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 45797 nps 79508 time 576 pv n4m4 phase brs
+< info depth 8 score cp 3688 v1 4698 v2 4757 v3 4326 v4 3898 s1 0 s2 3 s3 5 s4 0 nodes 66564 nps 77310 time 861 pv n4m4 phase brs
+< info string nextturn Red
+< bestmove n4m4
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4
+> go depth 8
+< info depth 1 score cp 4570 v1 4698 v2 4757 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 2635 nps 109791 time 24 pv f1e2 phase brs
+< info depth 2 score cp 4570 v1 4698 v2 4757 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 6440 nps 93333 time 69 pv f1e2 phase brs
+< info depth 3 score cp 4573 v1 4698 v2 4757 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 7126 nps 92545 time 77 pv f1e2 phase brs
+< info depth 4 score cp 4573 v1 4698 v2 4757 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 11899 nps 85604 time 139 pv f1e2 phase brs
+< info depth 5 score cp 4516 v1 4698 v2 4757 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 73497 nps 91300 time 805 pv f1e2 phase brs
+< info depth 6 score cp 4516 v1 4698 v2 4757 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 131539 nps 91219 time 1442 pv f1e2 phase brs
+< info depth 7 score cp 4516 v1 4698 v2 4757 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 276869 nps 85111 time 3253 pv f1e2 phase brs
+< info depth 8 score cp 4491 v1 4698 v2 4757 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 404733 nps 82971 time 4878 pv f1e2 phase brs
+< info string nextturn Blue
+< bestmove f1e2
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2
+> go depth 8
+< info depth 1 score cp 4756 v1 4734 v2 4757 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 1517 nps 94812 time 16 pv c8c10 phase brs
+< info depth 2 score cp 4420 v1 4734 v2 4757 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 4739 nps 84625 time 56 pv g11h9 phase brs
+< info depth 3 score cp 4420 v1 4734 v2 4757 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 5071 nps 84516 time 60 pv g11h9 phase brs
+< info depth 4 score cp 4420 v1 4734 v2 4757 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 7602 nps 81741 time 93 pv g11h9 phase brs
+< info depth 5 score cp 4368 v1 4734 v2 4757 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 21693 nps 79753 time 272 pv a8a9 phase brs
+< info depth 6 score cp 4346 v1 4734 v2 4757 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 61452 nps 84412 time 728 pv a8a9 phase brs
+< info depth 7 score cp 4238 v1 4734 v2 4757 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 131712 nps 79153 time 1664 pv b9c9 phase brs
+< info depth 8 score cp 4258 v1 4734 v2 4757 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 179070 nps 77118 time 2322 pv c5d5 phase brs
+< info string nextturn Yellow
+< bestmove c5d5
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5
+> go depth 8
+< info depth 1 score cp 3861 v1 4734 v2 4758 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 1201 nps 100083 time 12 pv i12g13 phase brs
+< info depth 2 score cp 3861 v1 4734 v2 4758 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 2726 nps 94000 time 29 pv i12g13 phase brs
+< info depth 3 score cp 3861 v1 4734 v2 4758 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 3052 nps 95375 time 32 pv i12g13 phase brs
+< info depth 4 score cp 3861 v1 4734 v2 4758 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 4999 nps 90890 time 55 pv i12g13 phase brs
+< info depth 5 score cp 3861 v1 4734 v2 4758 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 9285 nps 85972 time 108 pv i12g13 phase brs
+< info depth 6 score cp 3444 v1 4734 v2 4758 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 36527 nps 85343 time 428 pv i12k13 phase brs
+< info depth 7 score cp 3444 v1 4734 v2 4758 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 40585 nps 84728 time 479 pv i12k13 phase brs
+< info depth 8 score cp 3494 v1 4734 v2 4758 v3 4326 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 46620 nps 83250 time 560 pv i12k13 phase brs
+< info string nextturn Green
+< bestmove i12k13
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13
+> go depth 8
+< info depth 1 score cp 3629 v1 4734 v2 4758 v3 4322 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 826 nps 103250 time 8 pv l8k8 phase brs
+< info depth 2 score cp 3629 v1 4734 v2 4758 v3 4322 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 2052 nps 82080 time 25 pv l8k8 phase brs
+< info depth 3 score cp 3620 v1 4734 v2 4758 v3 4322 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 2281 nps 81464 time 28 pv l8k8 phase brs
+< info depth 4 score cp 3620 v1 4734 v2 4758 v3 4322 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 3885 nps 76176 time 51 pv l8k8 phase brs
+< info depth 5 score cp 3315 v1 4734 v2 4758 v3 4322 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 22516 nps 81876 time 275 pv n5l6 phase brs
+< info depth 6 score cp 3286 v1 4734 v2 4758 v3 4322 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 38944 nps 81302 time 479 pv m7l7 phase brs
+< info depth 7 score cp 3258 v1 4734 v2 4758 v3 4322 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 62641 nps 77911 time 804 pv n7m8 phase brs
+< info depth 8 score cp 3283 v1 4734 v2 4758 v3 4322 v4 3923 s1 0 s2 3 s3 5 s4 0 nodes 84007 nps 75140 time 1118 pv n11m11 phase brs
+< info string nextturn Red
+< bestmove n11m11
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11
+> go depth 8
+< info depth 1 score cp 4579 v1 4734 v2 4758 v3 4322 v4 3948 s1 0 s2 3 s3 5 s4 0 nodes 3262 nps 112482 time 29 pv e3e4 phase brs
+< info depth 2 score cp 4579 v1 4734 v2 4758 v3 4322 v4 3948 s1 0 s2 3 s3 5 s4 0 nodes 7889 nps 93916 time 84 pv e3e4 phase brs
+< info depth 3 score cp 4582 v1 4734 v2 4758 v3 4322 v4 3948 s1 0 s2 3 s3 5 s4 0 nodes 8830 nps 94946 time 93 pv e3e4 phase brs
+< info depth 4 score cp 4582 v1 4734 v2 4758 v3 4322 v4 3948 s1 0 s2 3 s3 5 s4 0 nodes 14124 nps 89961 time 157 pv e3e4 phase brs
+< info depth 5 score cp 4522 v1 4734 v2 4758 v3 4322 v4 3948 s1 0 s2 3 s3 5 s4 0 nodes 138408 nps 103831 time 1333 pv f5d5 phase brs
+< info depth 6 score cp 4522 v1 4734 v2 4758 v3 4322 v4 3948 s1 0 s2 3 s3 5 s4 0 nodes 192706 nps 100055 time 1926 pv f5d5 phase brs
+< info depth 7 score cp 4522 v1 4734 v2 4758 v3 4322 v4 3948 s1 0 s2 3 s3 5 s4 0 nodes 405156 nps 92776 time 4367 pv f5d5 phase brs
+< info depth 8 score cp 4565 v1 4734 v2 4758 v3 4322 v4 3948 s1 0 s2 3 s3 5 s4 0 nodes 652598 nps 88970 time 7335 pv f5d5 phase brs
+< info string nextturn Blue
+< bestmove f5d5
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5
+> go depth 8
+< info depth 1 score cp 4667 v1 4791 v2 4668 v3 4330 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 691 nps 86375 time 8 pv c8c10 phase brs
+< info depth 2 score cp 3806 v1 4791 v2 4668 v3 4330 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 2163 nps 80111 time 27 pv g11h9 phase brs
+< info depth 3 score cp 3806 v1 4791 v2 4668 v3 4330 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 2319 nps 79965 time 29 pv g11h9 phase brs
+< info depth 4 score cp 3806 v1 4791 v2 4668 v3 4330 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 3060 nps 78461 time 39 pv g11h9 phase brs
+< info depth 5 score cp 3641 v1 4791 v2 4668 v3 4330 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 10525 nps 81589 time 129 pv a8a9 phase brs
+< info depth 6 score cp 3644 v1 4791 v2 4668 v3 4330 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 21297 nps 82867 time 257 pv a4a5 phase brs
+< info depth 7 score cp 3644 v1 4791 v2 4668 v3 4330 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 35995 nps 81069 time 444 pv a4a5 phase brs
+< info depth 8 score cp 3596 v1 4791 v2 4668 v3 4330 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 50411 nps 79138 time 637 pv a4a5 phase brs
+< info string nextturn Yellow
+< bestmove a4a5
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5
+> go depth 8
+< info depth 1 score cp 3929 v1 4791 v2 4668 v3 4330 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 361 nps 120333 time 3 pv j11j10 phase brs
+< info depth 2 score cp 3929 v1 4791 v2 4668 v3 4330 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 794 nps 99250 time 8 pv j11j10 phase brs
+< info depth 3 score cp 3896 v1 4791 v2 4668 v3 4330 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 1269 nps 90642 time 14 pv f14g13 phase brs
+< info depth 4 score cp 3896 v1 4791 v2 4668 v3 4330 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 1741 nps 87050 time 20 pv f14g13 phase brs
+< info depth 5 score cp 3787 v1 4791 v2 4668 v3 4330 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 26219 nps 78500 time 334 pv g14g13 phase brs
+< info depth 6 score cp 3762 v1 4791 v2 4668 v3 4330 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 31872 nps 78502 time 406 pv g14g13 phase brs
+< info depth 7 score cp 3762 v1 4791 v2 4668 v3 4330 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 47273 nps 77369 time 611 pv g14g13 phase brs
+< info depth 8 score cp 3750 v1 4791 v2 4668 v3 4330 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 53746 nps 78005 time 689 pv g14g13 phase brs
+< info string nextturn Green
+< bestmove g14g13
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13
+> go depth 8
+< info depth 1 score cp 3789 v1 4791 v2 4668 v3 4267 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 868 nps 108500 time 8 pv l8k8 phase brs
+< info depth 2 score cp 3830 v1 4791 v2 4668 v3 4267 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 2074 nps 86416 time 24 pv l9j10 phase brs
+< info depth 3 score cp 3789 v1 4791 v2 4668 v3 4267 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 2653 nps 82906 time 32 pv l8k8 phase brs
+< info depth 4 score cp 3749 v1 4791 v2 4668 v3 4267 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 4011 nps 77134 time 52 pv l9k7 phase brs
+< info depth 5 score cp 3749 v1 4791 v2 4668 v3 4267 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 7645 nps 75693 time 101 pv l9k7 phase brs
+< info depth 6 score cp 3556 v1 4791 v2 4668 v3 4267 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 31799 nps 78516 time 405 pv l8k8 phase brs
+< info depth 7 score cp 3551 v1 4791 v2 4668 v3 4267 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 49488 nps 76488 time 647 pv l8k8 phase brs
+< info depth 8 score cp 3340 v1 4791 v2 4668 v3 4267 v4 3957 s1 1 s2 3 s3 5 s4 0 nodes 82805 nps 73539 time 1126 pv n5l6 phase brs
+< info string nextturn Red
+< bestmove n5l6
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6
+> go depth 8
+< info depth 1 score cp 4634 v1 4791 v2 4668 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 2067 nps 103350 time 20 pv e2g4 phase brs
+< info depth 2 score cp 4634 v1 4791 v2 4668 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 4800 nps 88888 time 54 pv e2g4 phase brs
+< info depth 3 score cp 4634 v1 4791 v2 4668 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 5586 nps 88666 time 63 pv e2g4 phase brs
+< info depth 4 score cp 4639 v1 4791 v2 4668 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 8524 nps 85240 time 100 pv e3e4 phase brs
+< info depth 5 score cp 4577 v1 4791 v2 4668 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 108998 nps 99815 time 1092 pv e2h5 phase brs
+< info depth 6 score cp 4577 v1 4791 v2 4668 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 146678 nps 96308 time 1523 pv e2h5 phase brs
+< info depth 7 score cp 4577 v1 4791 v2 4668 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 272851 nps 88559 time 3081 pv e2h5 phase brs
+< info depth 8 score cp 4613 v1 4791 v2 4668 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 425289 nps 85571 time 4970 pv k1j1 phase brs
+< info string nextturn Blue
+< bestmove k1j1
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1
+> go depth 8
+< info depth 1 score cp 3928 v1 4791 v2 4668 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 679 nps 97000 time 7 pv g11h9 phase brs
+< info depth 2 score cp 3928 v1 4791 v2 4668 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 1393 nps 92866 time 15 pv g11h9 phase brs
+< info depth 3 score cp 3920 v1 4791 v2 4668 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 2179 nps 87160 time 25 pv g11h9 phase brs
+< info depth 4 score cp 3920 v1 4791 v2 4668 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 3570 nps 85000 time 42 pv g11h9 phase brs
+< info depth 5 score cp 3920 v1 4791 v2 4668 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 7463 nps 86779 time 86 pv g11h9 phase brs
+< info depth 6 score cp 3658 v1 4791 v2 4668 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 29422 nps 88354 time 333 pv d8e8 phase brs
+< info depth 7 score cp 3691 v1 4791 v2 4668 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 42784 nps 85397 time 501 pv b11d11 phase brs
+< info depth 8 score cp 3717 v1 4791 v2 4668 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 64403 nps 81729 time 788 pv a8a9 phase brs
+< info string nextturn Yellow
+< bestmove a8a9
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9
+> go depth 8
+< info depth 1 score cp 4012 v1 4791 v2 4721 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 230 nps 115000 time 2 pv i13g11 phase brs
+< info depth 2 score cp 4012 v1 4791 v2 4721 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 474 nps 94800 time 5 pv i13g11 phase brs
+< info depth 3 score cp 4012 v1 4791 v2 4721 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 552 nps 92000 time 6 pv i13g11 phase brs
+< info depth 4 score cp 4012 v1 4791 v2 4721 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 803 nps 89222 time 9 pv i13g11 phase brs
+< info depth 5 score cp 4012 v1 4791 v2 4721 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 1112 nps 85538 time 13 pv i13g11 phase brs
+< info depth 6 score cp 3872 v1 4791 v2 4721 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 4021 nps 80420 time 50 pv h13h12 phase brs
+< info depth 7 score cp 3878 v1 4791 v2 4721 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 4641 nps 80017 time 58 pv h13h12 phase brs
+< info depth 8 score cp 4141 v1 4791 v2 4721 v3 4267 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 6550 nps 77976 time 84 pv h13h12 phase brs
+< info string nextturn Green
+< bestmove h13h12
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12
+> go depth 8
+< info depth 1 score cp 3755 v1 4791 v2 4721 v3 4368 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 761 nps 108714 time 7 pv l9k7 phase brs
+< info depth 2 score cp 3882 v1 4791 v2 4721 v3 4368 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 1716 nps 95333 time 18 pv l9k7 phase brs
+< info depth 3 score cp 3798 v1 4791 v2 4721 v3 4368 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 2295 nps 91800 time 25 pv l9k7 phase brs
+< info depth 4 score cp 3798 v1 4791 v2 4721 v3 4368 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 3574 nps 83116 time 43 pv l9k7 phase brs
+< info depth 5 score cp 3798 v1 4791 v2 4721 v3 4368 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 7309 nps 81211 time 90 pv l9k7 phase brs
+< info depth 6 score cp 3625 v1 4791 v2 4721 v3 4368 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 34525 nps 81619 time 423 pv l8k8 phase brs
+< info depth 7 score cp 3600 v1 4791 v2 4721 v3 4368 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 52831 nps 79684 time 663 pv l8k8 phase brs
+< info depth 8 score cp 3600 v1 4791 v2 4721 v3 4368 v4 4006 s1 1 s2 3 s3 5 s4 0 nodes 74385 nps 77565 time 959 pv l8k8 phase brs
+< info string nextturn Red
+< bestmove l8k8
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8
+> go depth 8
+< info depth 1 score cp 4639 v1 4791 v2 4721 v3 4368 v4 4007 s1 1 s2 3 s3 5 s4 0 nodes 2848 nps 129454 time 22 pv e3e4 phase brs
+< info depth 2 score cp 4639 v1 4791 v2 4721 v3 4368 v4 4007 s1 1 s2 3 s3 5 s4 0 nodes 6822 nps 103363 time 66 pv e3e4 phase brs
+< info depth 3 score cp 4639 v1 4791 v2 4721 v3 4368 v4 4007 s1 1 s2 3 s3 5 s4 0 nodes 7322 nps 103126 time 71 pv e3e4 phase brs
+< info depth 4 score cp 4639 v1 4791 v2 4721 v3 4368 v4 4007 s1 1 s2 3 s3 5 s4 0 nodes 10688 nps 91350 time 117 pv e3e4 phase brs
+< info depth 5 score cp 4697 v1 4791 v2 4721 v3 4368 v4 4007 s1 1 s2 3 s3 5 s4 0 nodes 73947 nps 108109 time 684 pv d5f7 phase brs
+< info depth 6 score cp 4697 v1 4791 v2 4721 v3 4368 v4 4007 s1 1 s2 3 s3 5 s4 0 nodes 132762 nps 103801 time 1279 pv d5f5 phase brs
+< info depth 7 score cp 4681 v1 4791 v2 4721 v3 4368 v4 4007 s1 1 s2 3 s3 5 s4 0 nodes 269672 nps 92990 time 2900 pv d5f5 phase brs
+< info depth 8 score cp 4706 v1 4791 v2 4721 v3 4368 v4 4007 s1 1 s2 3 s3 5 s4 0 nodes 401492 nps 88786 time 4522 pv d5f7 phase brs
+< info string nextturn Blue
+< bestmove d5f7
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7
+> go depth 8
+< info depth 1 score cp 4644 v1 4793 v2 4721 v3 4343 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 1215 nps 101250 time 12 pv g11e10 phase brs
+< info depth 2 score cp 4533 v1 4793 v2 4721 v3 4343 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 2697 nps 103730 time 26 pv g11e10 phase brs
+< info depth 3 score cp 4524 v1 4793 v2 4721 v3 4343 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 2992 nps 99733 time 30 pv g11e10 phase brs
+< info depth 4 score cp 4524 v1 4793 v2 4721 v3 4343 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 4974 nps 92111 time 54 pv g11e10 phase brs
+< info depth 5 score cp 4404 v1 4793 v2 4721 v3 4343 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 14769 nps 90054 time 164 pv g11e10 phase brs
+< info depth 6 score cp 4404 v1 4793 v2 4721 v3 4343 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 35596 nps 92939 time 383 pv g11e10 phase brs
+< info depth 7 score cp 4404 v1 4793 v2 4721 v3 4343 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 56083 nps 86815 time 646 pv g11e10 phase brs
+< info depth 8 score cp 4421 v1 4793 v2 4721 v3 4343 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 79888 nps 82614 time 967 pv g11e10 phase brs
+< info string nextturn Yellow
+< bestmove g11e10
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10
+> go depth 8
+< info depth 1 score cp 3989 v1 4793 v2 4719 v3 4383 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 193 nps 96500 time 2 pv g13h14 phase brs
+< info depth 2 score cp 3989 v1 4793 v2 4719 v3 4383 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 389 nps 97250 time 4 pv g13h14 phase brs
+< info depth 3 score cp 3989 v1 4793 v2 4719 v3 4383 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 462 nps 92400 time 5 pv g13h14 phase brs
+< info depth 4 score cp 4197 v1 4793 v2 4719 v3 4383 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 719 nps 89875 time 8 pv g12g11 phase brs
+< info depth 5 score cp 4296 v1 4793 v2 4719 v3 4383 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 1899 nps 99947 time 19 pv i14h13 phase brs
+< info depth 6 score cp 4079 v1 4793 v2 4719 v3 4383 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 14710 nps 83579 time 176 pv g13h14 phase brs
+< info depth 7 score cp 4062 v1 4793 v2 4719 v3 4383 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 19289 nps 83502 time 231 pv g13h14 phase brs
+< info depth 8 score cp 4062 v1 4793 v2 4719 v3 4383 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 28532 nps 77956 time 366 pv g13h14 phase brs
+< info string nextturn Green
+< bestmove g13h14
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14
+> go depth 8
+< info depth 1 score cp 3618 v1 4793 v2 4719 v3 4336 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 827 nps 118142 time 7 pv n8n9 phase brs
+< info depth 2 score cp 3618 v1 4793 v2 4719 v3 4336 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 1991 nps 99550 time 20 pv n8n9 phase brs
+< info depth 3 score cp 3610 v1 4793 v2 4719 v3 4336 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 2909 nps 96966 time 30 pv n8n9 phase brs
+< info depth 4 score cp 3610 v1 4793 v2 4719 v3 4336 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 4156 nps 88425 time 47 pv n8n9 phase brs
+< info depth 5 score cp 3479 v1 4793 v2 4719 v3 4336 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 9211 nps 82241 time 112 pv m5n4 phase brs
+< info depth 6 score cp 3479 v1 4793 v2 4719 v3 4336 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 12305 nps 82033 time 150 pv l4k4 phase brs
+< info depth 7 score cp 3514 v1 4793 v2 4719 v3 4336 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 17404 nps 81327 time 214 pv l5k5 phase brs
+< info depth 8 score cp 3514 v1 4793 v2 4719 v3 4336 v4 3982 s1 1 s2 3 s3 5 s4 0 nodes 22584 nps 78965 time 286 pv l5k5 phase brs
+< info string nextturn Red
+< bestmove l5k5
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5
+> go depth 8
+< info depth 1 score cp 4641 v1 4793 v2 4719 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 3426 nps 131769 time 26 pv e3e4 phase brs
+< info depth 2 score cp 4641 v1 4793 v2 4719 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 8208 nps 106597 time 77 pv e3e4 phase brs
+< info depth 3 score cp 4641 v1 4793 v2 4719 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 8925 nps 105000 time 85 pv e3e4 phase brs
+< info depth 4 score cp 4706 v1 4793 v2 4719 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 15160 nps 95949 time 158 pv e3e4 phase brs
+< info depth 5 score cp 4706 v1 4793 v2 4719 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 33992 nps 96568 time 352 pv e3e4 phase brs
+< info depth 6 score cp 4697 v1 4793 v2 4719 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 194437 nps 104367 time 1863 pv f7i7 phase brs
+< info depth 7 score cp 4706 v1 4793 v2 4719 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 348082 nps 97365 time 3575 pv e3e4 phase brs
+< info depth 8 score cp 4706 v1 4793 v2 4719 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 562215 nps 92181 time 6099 pv j1k1 phase brs
+< info string nextturn Blue
+< bestmove j1k1
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1
+> go depth 8
+< info depth 1 score cp 4653 v1 4793 v2 4719 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 1314 nps 101076 time 13 pv d7e7 phase brs
+< info depth 2 score cp 4593 v1 4793 v2 4719 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 2484 nps 92000 time 27 pv b9c9 phase brs
+< info depth 3 score cp 4609 v1 4793 v2 4719 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 2704 nps 90133 time 30 pv b9c9 phase brs
+< info depth 4 score cp 4601 v1 4793 v2 4719 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 4104 nps 85500 time 48 pv b9c9 phase brs
+< info depth 5 score cp 4609 v1 4793 v2 4719 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 7015 nps 85548 time 82 pv b9c9 phase brs
+< info depth 6 score cp 4483 v1 4793 v2 4719 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 22271 nps 93970 time 237 pv b9c9 phase brs
+< info depth 7 score cp 4483 v1 4793 v2 4719 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 36250 nps 93911 time 386 pv b9c9 phase brs
+< info depth 8 score cp 4625 v1 4793 v2 4719 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 52720 nps 91211 time 578 pv b9c9 phase brs
+< info string nextturn Yellow
+< bestmove b9c9
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9
+> go depth 8
+< info depth 1 score cp 4048 v1 4793 v2 4679 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 216 nps 108000 time 2 pv f12f11 phase brs
+< info depth 2 score cp 4048 v1 4793 v2 4679 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 438 nps 109500 time 4 pv f12f11 phase brs
+< info depth 3 score cp 4048 v1 4793 v2 4679 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 500 nps 125000 time 4 pv f12f11 phase brs
+< info depth 4 score cp 4190 v1 4793 v2 4679 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 758 nps 108285 time 7 pv e13e12 phase brs
+< info depth 5 score cp 4258 v1 4793 v2 4679 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 2116 nps 111368 time 19 pv h14g13 phase brs
+< info depth 6 score cp 4117 v1 4793 v2 4679 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 22421 nps 88620 time 253 pv f14g13 phase brs
+< info depth 7 score cp 4134 v1 4793 v2 4679 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 23979 nps 89141 time 269 pv f14g13 phase brs
+< info depth 8 score cp 4134 v1 4793 v2 4679 v3 4336 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 32490 nps 87810 time 370 pv f14g13 phase brs
+< info string nextturn Green
+< bestmove f14g13
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9 f14g13
+> go depth 8
+< info depth 1 score cp 3627 v1 4793 v2 4679 v3 4374 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 814 nps 116285 time 7 pv n8n9 phase brs
+< info depth 2 score cp 3627 v1 4793 v2 4679 v3 4374 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 1875 nps 98684 time 19 pv n8n9 phase brs
+< info depth 3 score cp 3619 v1 4793 v2 4679 v3 4374 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 2751 nps 94862 time 29 pv n8n9 phase brs
+< info depth 4 score cp 3619 v1 4793 v2 4679 v3 4374 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 3990 nps 86739 time 46 pv n8n9 phase brs
+< info depth 5 score cp 3523 v1 4793 v2 4679 v3 4374 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 9498 nps 80491 time 118 pv n7n6 phase brs
+< info depth 6 score cp 3523 v1 4793 v2 4679 v3 4374 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 12424 nps 80154 time 155 pv n7m8 phase brs
+< info depth 7 score cp 3499 v1 4793 v2 4679 v3 4374 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 17609 nps 77915 time 226 pv m7l7 phase brs
+< info depth 8 score cp 3515 v1 4793 v2 4679 v3 4374 v4 3991 s1 1 s2 3 s3 5 s4 0 nodes 21954 nps 76762 time 286 pv m7l7 phase brs
+< info string nextturn Red
+< bestmove m7l7
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9 f14g13 m7l7
+> go depth 8
+< info depth 1 score cp 4641 v1 4793 v2 4679 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 3506 nps 129851 time 27 pv e3e4 phase brs
+< info depth 2 score cp 4641 v1 4793 v2 4679 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 8427 nps 105337 time 80 pv e3e4 phase brs
+< info depth 3 score cp 4641 v1 4793 v2 4679 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 9222 nps 103617 time 89 pv e3e4 phase brs
+< info depth 4 score cp 4706 v1 4793 v2 4679 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 15237 nps 94055 time 162 pv e3e4 phase brs
+< info depth 5 score cp 4706 v1 4793 v2 4679 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 35898 nps 98350 time 365 pv e3e4 phase brs
+< info depth 6 score cp 4697 v1 4793 v2 4679 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 194366 nps 102136 time 1903 pv k1j1 phase brs
+< info depth 7 score cp 4706 v1 4793 v2 4679 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 352581 nps 95680 time 3685 pv e3e4 phase brs
+< info depth 8 score cp 4711 v1 4793 v2 4679 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 569863 nps 90082 time 6326 pv e2h5 phase brs
+< info string nextturn Blue
+< bestmove e2h5
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9 f14g13 m7l7 e2h5
+> go depth 8
+< info depth 1 score cp 4578 v1 4798 v2 4679 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 1152 nps 96000 time 12 pv b11d11 phase brs
+< info depth 2 score cp 4583 v1 4798 v2 4679 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 2162 nps 94000 time 23 pv b11d11 phase brs
+< info depth 3 score cp 4575 v1 4798 v2 4679 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 3257 nps 90472 time 36 pv b11d11 phase brs
+< info depth 4 score cp 4596 v1 4798 v2 4679 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 4931 nps 85017 time 58 pv a9a10 phase brs
+< info depth 5 score cp 4575 v1 4798 v2 4679 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 12838 nps 91049 time 141 pv b11d11 phase brs
+< info depth 6 score cp 4611 v1 4798 v2 4679 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 40715 nps 94466 time 431 pv b11c11 phase brs
+< info depth 7 score cp 4611 v1 4798 v2 4679 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 61707 nps 90083 time 685 pv b11c11 phase brs
+< info depth 8 score cp 4561 v1 4798 v2 4679 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 94007 nps 84997 time 1106 pv b11c11 phase brs
+< info string nextturn Yellow
+< bestmove b11c11
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9 f14g13 m7l7 e2h5 b11c11
+> go depth 8
+< info depth 1 score cp 4135 v1 4798 v2 4680 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 450 nps 112500 time 4 pv i14h13 phase brs
+< info depth 2 score cp 4135 v1 4798 v2 4680 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 923 nps 102555 time 9 pv i14h13 phase brs
+< info depth 3 score cp 4135 v1 4798 v2 4680 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 1021 nps 113444 time 9 pv i14h13 phase brs
+< info depth 4 score cp 4262 v1 4798 v2 4680 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 1475 nps 98333 time 15 pv i14h13 phase brs
+< info depth 5 score cp 4262 v1 4798 v2 4680 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 2762 nps 102296 time 27 pv i14h13 phase brs
+< info depth 6 score cp 4130 v1 4798 v2 4680 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 32305 nps 87310 time 370 pv i14j13 phase brs
+< info depth 7 score cp 4122 v1 4798 v2 4680 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 37603 nps 87043 time 432 pv i14j13 phase brs
+< info depth 8 score cp 4217 v1 4798 v2 4680 v3 4374 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 42840 nps 86370 time 496 pv i14j13 phase brs
+< info string nextturn Green
+< bestmove i14j13
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9 f14g13 m7l7 e2h5 b11c11 i14j13
+> go depth 8
+< info depth 1 score cp 3659 v1 4798 v2 4680 v3 4410 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 1054 nps 95818 time 11 pv n7m7 phase brs
+< info depth 2 score cp 3659 v1 4798 v2 4680 v3 4410 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 2502 nps 92666 time 27 pv n7m7 phase brs
+< info depth 3 score cp 3651 v1 4798 v2 4680 v3 4410 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 3803 nps 90547 time 42 pv n7m7 phase brs
+< info depth 4 score cp 3651 v1 4798 v2 4680 v3 4410 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 5352 nps 83625 time 64 pv n7m7 phase brs
+< info depth 5 score cp 3522 v1 4798 v2 4680 v3 4410 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 15269 nps 78706 time 194 pv n7m8 phase brs
+< info depth 6 score cp 3566 v1 4798 v2 4680 v3 4410 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 20664 nps 77393 time 267 pv n7m8 phase brs
+< info depth 7 score cp 3557 v1 4798 v2 4680 v3 4410 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 32456 nps 75655 time 429 pv n7m7 phase brs
+< info depth 8 score cp 3557 v1 4798 v2 4680 v3 4410 v4 3977 s1 1 s2 3 s3 5 s4 0 nodes 42387 nps 74363 time 570 pv n7m7 phase brs
+< info string nextturn Red
+< bestmove n7m7
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9 f14g13 m7l7 e2h5 b11c11 i14j13 n7m7
+> go depth 8
+< info depth 1 score cp 4646 v1 4798 v2 4680 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 3180 nps 113571 time 28 pv e3e4 phase brs
+< info depth 2 score cp 4646 v1 4798 v2 4680 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 7758 nps 94609 time 82 pv e3e4 phase brs
+< info depth 3 score cp 4646 v1 4798 v2 4680 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 8471 nps 94122 time 90 pv e3e4 phase brs
+< info depth 4 score cp 4711 v1 4798 v2 4680 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 14274 nps 85473 time 167 pv e3e4 phase brs
+< info depth 5 score cp 4711 v1 4798 v2 4680 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 32572 nps 85490 time 381 pv e3e4 phase brs
+< info depth 6 score cp 4703 v1 4798 v2 4680 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 183675 nps 96215 time 1909 pv d3d4 phase brs
+< info depth 7 score cp 4711 v1 4798 v2 4680 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 376461 nps 89082 time 4226 pv e3e4 phase brs
+< info depth 8 score cp 4720 v1 4798 v2 4680 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 573759 nps 86162 time 6659 pv e3e4 phase brs
+< info string nextturn Blue
+< bestmove e3e4
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9 f14g13 m7l7 e2h5 b11c11 i14j13 n7m7 e3e4
+> go depth 8
+< info depth 1 score cp 4553 v1 4799 v2 4680 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 1437 nps 110538 time 13 pv e10g9 phase brs
+< info depth 2 score cp 4553 v1 4799 v2 4680 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 3403 nps 94527 time 36 pv e10g9 phase brs
+< info depth 3 score cp 4553 v1 4799 v2 4680 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 3975 nps 92441 time 43 pv a5a7 phase brs
+< info depth 4 score cp 4488 v1 4799 v2 4680 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 8408 nps 79320 time 106 pv a5a7 phase brs
+< info depth 5 score cp 4438 v1 4799 v2 4680 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 26408 nps 87443 time 302 pv none phase brs
+< info depth 6 score cp 4252 v1 4799 v2 4680 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 71669 nps 89586 time 800 pv b10d10 phase brs
+< info depth 7 score cp 4302 v1 4799 v2 4680 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 104313 nps 87364 time 1194 pv b10d10 phase brs
+< info depth 8 score cp 4252 v1 4799 v2 4680 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 139911 nps 85520 time 1636 pv b10d10 phase brs
+< info string nextturn Yellow
+< bestmove b10d10
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9 f14g13 m7l7 e2h5 b11c11 i14j13 n7m7 e3e4 b10d10
+> go depth 8
+< info depth 1 score cp 4131 v1 4799 v2 4640 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 1400 nps 93333 time 15 pv j11j10 phase brs
+< info depth 2 score cp 4131 v1 4799 v2 4640 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 3027 nps 84083 time 36 pv j11j10 phase brs
+< info depth 3 score cp 4131 v1 4799 v2 4640 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 3303 nps 84692 time 39 pv j11j10 phase brs
+< info depth 4 score cp 4186 v1 4799 v2 4640 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 4780 nps 81016 time 59 pv j11j10 phase brs
+< info depth 5 score cp 3960 v1 4799 v2 4640 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 24580 nps 81390 time 302 pv d14f14 phase brs
+< info depth 6 score cp 3960 v1 4799 v2 4640 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 29797 nps 80750 time 369 pv d14f14 phase brs
+< info depth 7 score cp 3929 v1 4799 v2 4640 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 43002 nps 79633 time 540 pv d13d11 phase brs
+< info depth 8 score cp 3928 v1 4799 v2 4640 v3 4410 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 47779 nps 79764 time 599 pv d13d11 phase brs
+< info string nextturn Green
+< bestmove d13d11
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9 f14g13 m7l7 e2h5 b11c11 i14j13 n7m7 e3e4 b10d10 d13d11
+> go depth 8
+< info depth 1 score cp 3679 v1 4799 v2 4640 v3 4412 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 1261 nps 90071 time 14 pv l7k7 phase brs
+< info depth 2 score cp 3679 v1 4799 v2 4640 v3 4412 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 3023 nps 88911 time 34 pv l7k7 phase brs
+< info depth 3 score cp 3671 v1 4799 v2 4640 v3 4412 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 4559 nps 87673 time 52 pv l7k7 phase brs
+< info depth 4 score cp 3671 v1 4799 v2 4640 v3 4412 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 6472 nps 81924 time 79 pv l7k7 phase brs
+< info depth 5 score cp 3630 v1 4799 v2 4640 v3 4412 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 14521 nps 77652 time 187 pv m7l8 phase brs
+< info depth 6 score cp 3567 v1 4799 v2 4640 v3 4412 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 30854 nps 77717 time 397 pv m7l8 phase brs
+< info depth 7 score cp 3558 v1 4799 v2 4640 v3 4412 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 44813 nps 76342 time 587 pv m7l8 phase brs
+< info depth 8 score cp 3519 v1 4799 v2 4640 v3 4412 v4 4027 s1 1 s2 3 s3 5 s4 0 nodes 58855 nps 74974 time 785 pv n8n9 phase brs
+< info string nextturn Red
+< bestmove n8n9
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9 f14g13 m7l7 e2h5 b11c11 i14j13 n7m7 e3e4 b10d10 d13d11 n8n9
+> go depth 8
+< info depth 1 score cp 4664 v1 4799 v2 4640 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 2445 nps 106304 time 23 pv e4e5 phase brs
+< info depth 2 score cp 4664 v1 4799 v2 4640 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 5811 nps 90796 time 64 pv e4e5 phase brs
+< info depth 3 score cp 4664 v1 4799 v2 4640 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 6280 nps 91014 time 69 pv e4e5 phase brs
+< info depth 4 score cp 4704 v1 4799 v2 4640 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 10436 nps 83488 time 125 pv d3d4 phase brs
+< info depth 5 score cp 4712 v1 4799 v2 4640 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 29890 nps 87397 time 342 pv d2f2 phase brs
+< info depth 6 score cp 4711 v1 4799 v2 4640 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 142628 nps 90730 time 1572 pv f7f6 phase brs
+< info depth 7 score cp 4712 v1 4799 v2 4640 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 262197 nps 87166 time 3008 pv d2f2 phase brs
+< info depth 8 score cp 4720 v1 4799 v2 4640 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 414350 nps 83961 time 4935 pv d2e2 phase brs
+< info string nextturn Blue
+< bestmove d2e2
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9 f14g13 m7l7 e2h5 b11c11 i14j13 n7m7 e3e4 b10d10 d13d11 n8n9 d2e2
+> go depth 8
+< info depth 1 score cp 4513 v1 4799 v2 4640 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 1245 nps 103750 time 12 pv e10g9 phase brs
+< info depth 2 score cp 4513 v1 4799 v2 4640 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 2928 nps 91500 time 32 pv e10g9 phase brs
+< info depth 3 score cp 4513 v1 4799 v2 4640 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 3303 nps 89270 time 37 pv e10g9 phase brs
+< info depth 4 score cp 4428 v1 4799 v2 4640 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 6311 nps 85283 time 74 pv e10g9 phase brs
+< info depth 5 score cp 4263 v1 4799 v2 4640 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 15970 nps 82319 time 194 pv e10g9 phase brs
+< info depth 6 score cp 4254 v1 4799 v2 4640 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 50497 nps 86172 time 586 pv e10g9 phase brs
+< info depth 7 score cp 4246 v1 4799 v2 4640 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 91851 nps 84733 time 1084 pv e10g9 phase brs
+< info depth 8 score cp 4246 v1 4799 v2 4640 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 136418 nps 83334 time 1637 pv e10g9 phase brs
+< info string nextturn Yellow
+< bestmove e10g9
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9 f14g13 m7l7 e2h5 b11c11 i14j13 n7m7 e3e4 b10d10 d13d11 n8n9 d2e2 e10g9
+> go depth 8
+< info depth 1 score cp 4003 v1 4799 v2 4642 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 895 nps 74583 time 12 pv g12g11 phase brs
+< info depth 2 score cp 4003 v1 4799 v2 4642 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 1851 nps 74040 time 25 pv g12g11 phase brs
+< info depth 3 score cp 4023 v1 4799 v2 4642 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 2063 nps 73678 time 28 pv g12g11 phase brs
+< info depth 4 score cp 3913 v1 4799 v2 4642 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 4145 nps 70254 time 59 pv g12g11 phase brs
+< info depth 5 score cp 3057 v1 4799 v2 4642 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 11413 nps 61360 time 186 pv d14d13 phase brs
+< info depth 6 score cp 3057 v1 4799 v2 4642 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 12505 nps 62213 time 201 pv d14d13 phase brs
+< info depth 7 score cp 3358 v1 4799 v2 4642 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 17040 nps 63820 time 267 pv j11j10 phase brs
+< info depth 8 score cp 3308 v1 4799 v2 4642 v3 4412 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 19869 nps 66451 time 299 pv j11j10 phase brs
+< info string nextturn Green
+< bestmove j11j10
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9 f14g13 m7l7 e2h5 b11c11 i14j13 n7m7 e3e4 b10d10 d13d11 n8n9 d2e2 e10g9 j11j10
+> go depth 8
+< info depth 1 score cp 3702 v1 4799 v2 4642 v3 4421 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 1015 nps 126875 time 8 pv l7k7 phase brs
+< info depth 2 score cp 3717 v1 4799 v2 4642 v3 4421 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 2284 nps 103818 time 22 pv m7m8 phase brs
+< info depth 3 score cp 3709 v1 4799 v2 4642 v3 4421 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 3090 nps 99677 time 31 pv m7m8 phase brs
+< info depth 4 score cp 3709 v1 4799 v2 4642 v3 4421 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 4721 nps 89075 time 53 pv m7m8 phase brs
+< info depth 5 score cp 3592 v1 4799 v2 4642 v3 4421 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 14742 nps 81447 time 181 pv l7k7 phase brs
+< info depth 6 score cp 3592 v1 4799 v2 4642 v3 4421 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 20769 nps 82090 time 253 pv l7k7 phase brs
+< info depth 7 score cp 3567 v1 4799 v2 4642 v3 4421 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 32232 nps 80781 time 399 pv l7k7 phase brs
+< info depth 8 score cp 3572 v1 4799 v2 4642 v3 4421 v4 4005 s1 1 s2 3 s3 5 s4 0 nodes 45213 nps 78223 time 578 pv l7k7 phase brs
+< info string nextturn Red
+< bestmove l7k7
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9 f14g13 m7l7 e2h5 b11c11 i14j13 n7m7 e3e4 b10d10 d13d11 n8n9 d2e2 e10g9 j11j10 l7k7
+> go depth 8
+< info depth 1 score cp 4647 v1 4799 v2 4642 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 1323 nps 101769 time 13 pv f7g8 phase brs
+< info depth 2 score cp 4647 v1 4799 v2 4642 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 2695 nps 89833 time 30 pv f7g8 phase brs
+< info depth 3 score cp 4647 v1 4799 v2 4642 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 2959 nps 89666 time 33 pv f7g8 phase brs
+< info depth 4 score cp 4647 v1 4799 v2 4642 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 4245 nps 83235 time 51 pv f7g8 phase brs
+< info depth 5 score cp 4711 v1 4799 v2 4642 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 17731 nps 88655 time 200 pv f7f8 phase brs
+< info depth 6 score cp 4711 v1 4799 v2 4642 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 83559 nps 91722 time 911 pv f7f8 phase brs
+< info depth 7 score cp 4711 v1 4799 v2 4642 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 167496 nps 83915 time 1996 pv f7f10 phase brs
+< info depth 8 score cp 4695 v1 4799 v2 4642 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 267415 nps 81504 time 3281 pv f7f10 phase brs
+< info string nextturn Blue
+< bestmove f7f10
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9 f14g13 m7l7 e2h5 b11c11 i14j13 n7m7 e3e4 b10d10 d13d11 n8n9 d2e2 e10g9 j11j10 l7k7 f7f10
+> go depth 8
+< info depth 1 score cp 4303 v1 4799 v2 4642 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 1491 nps 93187 time 16 pv g9h7 phase brs
+< info depth 2 score cp 4303 v1 4799 v2 4642 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 3466 nps 91210 time 38 pv g9h7 phase brs
+< info depth 3 score cp 4295 v1 4799 v2 4642 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 5111 nps 88120 time 58 pv g9h7 phase brs
+< info depth 4 score cp 4295 v1 4799 v2 4642 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 7440 nps 84545 time 88 pv g9h7 phase brs
+< info depth 5 score cp 4089 v1 4799 v2 4642 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 24325 nps 84169 time 289 pv g9h7 phase brs
+< info depth 6 score cp 4080 v1 4799 v2 4642 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 51829 nps 85951 time 603 pv g9h7 phase brs
+< info depth 7 score cp 4072 v1 4799 v2 4642 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 85083 nps 83991 time 1013 pv g9h7 phase brs
+< info depth 8 score cp 4072 v1 4799 v2 4642 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 114371 nps 82340 time 1389 pv g9h7 phase brs
+< info string nextturn Yellow
+< bestmove g9h7
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9 f14g13 m7l7 e2h5 b11c11 i14j13 n7m7 e3e4 b10d10 d13d11 n8n9 d2e2 e10g9 j11j10 l7k7 f7f10 g9h7
+> go depth 8
+< info depth 1 score cp 4047 v1 4799 v2 4643 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 551 nps 78714 time 7 pv g12g11 phase brs
+< info depth 2 score cp 4047 v1 4799 v2 4643 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 1180 nps 78666 time 15 pv g12g11 phase brs
+< info depth 3 score cp 4097 v1 4799 v2 4643 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 1330 nps 78235 time 17 pv g12g11 phase brs
+< info depth 4 score cp 3987 v1 4799 v2 4643 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 2254 nps 80500 time 28 pv g12g11 phase brs
+< info depth 5 score cp 3709 v1 4799 v2 4643 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 5457 nps 76859 time 71 pv f12f11 phase brs
+< info depth 6 score cp 3666 v1 4799 v2 4643 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 6298 nps 76804 time 82 pv f12f11 phase brs
+< info depth 7 score cp 3700 v1 4799 v2 4643 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 8746 nps 76719 time 114 pv f12f11 phase brs
+< info depth 8 score cp 3672 v1 4799 v2 4643 v3 4421 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 11123 nps 75155 time 148 pv f12f11 phase brs
+< info string nextturn Green
+< bestmove f12f11
+> position startpos moves f2f4 b8d8 i13i12 m11k11 g1d4 a10c11 e14f12 m10l10 e1f3 b5c5 k13k12 m8l8 d4f6 a8c8 j13j11 n9l11 f3g1 b7d7 i12i11 n10l9 d2d3 a9c7 k12l11 m5l5 g1h3 a7a8 f12e10 m4l4 f6f5 c11e10 f13f12 n4m4 d1d2 a5c6 j14i12 m4n4 e2e3 a6b5 h14i13 n6m5 j1i3 e10g11 g13g12 n4m4 f1e2 c5d5 i12k13 n11m11 f5d5 a4a5 g14g13 n5l6 k1j1 a8a9 h13h12 l8k8 d5f7 g11e10 g13h14 l5k5 j1k1 b9c9 f14g13 m7l7 e2h5 b11c11 i14j13 n7m7 e3e4 b10d10 d13d11 n8n9 d2e2 e10g9 j11j10 l7k7 f7f10 g9h7 f12f11
+> go depth 8
+< info depth 1 score cp 3742 v1 4799 v2 4643 v3 4430 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 1464 nps 97600 time 15 pv k7j7 phase brs
+< info depth 2 score cp 3742 v1 4799 v2 4643 v3 4430 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 3497 nps 85292 time 41 pv k7j7 phase brs
+< info depth 3 score cp 3734 v1 4799 v2 4643 v3 4430 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 5271 nps 82359 time 64 pv k7j7 phase brs
+< info depth 4 score cp 3734 v1 4799 v2 4643 v3 4430 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 7623 nps 76230 time 100 pv k7j7 phase brs
+< info depth 5 score cp 3638 v1 4799 v2 4643 v3 4430 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 30793 nps 77369 time 398 pv n9n8 phase brs
+< info depth 6 score cp 3638 v1 4799 v2 4643 v3 4430 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 39617 nps 76480 time 518 pv n9n8 phase brs
+< info depth 7 score cp 3613 v1 4799 v2 4643 v3 4430 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 67687 nps 73096 time 926 pv n9n8 phase brs
+< info depth 8 score cp 3563 v1 4799 v2 4643 v3 4430 v4 3998 s1 1 s2 3 s3 5 s4 0 nodes 94954 nps 71179 time 1334 pv n9n8 phase brs
+< info string nextturn Red
+< bestmove n9n8
+> setoption name LogFile value none

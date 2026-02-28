@@ -7,6 +7,8 @@
 pub mod rules;
 pub mod scoring;
 
+use std::sync::Arc;
+
 use crate::board::{Board, PieceStatus, Player};
 use crate::movegen::{generate_legal, make_move, Move};
 
@@ -70,7 +72,7 @@ pub struct GameState {
     scores: [i32; 4],
     current_player: Player,
     elimination_order: Vec<Player>,
-    position_history: Vec<u64>,
+    position_history: Arc<Vec<u64>>,
     game_mode: GameMode,
     terrain_mode: bool,
     game_over: bool,
@@ -88,7 +90,7 @@ impl GameState {
             scores: [0; 4],
             current_player,
             elimination_order: Vec::new(),
-            position_history: Vec::new(),
+            position_history: Arc::new(Vec::new()),
             game_mode,
             terrain_mode,
             game_over: false,
@@ -258,7 +260,7 @@ impl GameState {
         }
 
         // 4. Record position in history
-        self.position_history.push(self.board.zobrist());
+        Arc::make_mut(&mut self.position_history).push(self.board.zobrist());
 
         // 5. Advance to next active player
         if let Some(next) = self.next_active_player(mover) {
@@ -451,14 +453,14 @@ impl GameState {
 
     /// Find the previous active player (the one whose move led to this position).
     fn prev_active_player(&self, before: Player) -> Option<Player> {
-        let mut candidate = prev_player(before);
+        let mut candidate = before.prev();
         for _ in 0..4 {
             if self.player_status[candidate.index()] == PlayerStatus::Active
                 || self.player_status[candidate.index()] == PlayerStatus::DeadKingWalking
             {
                 return Some(candidate);
             }
-            candidate = prev_player(candidate);
+            candidate = candidate.prev();
         }
         None
     }
@@ -589,16 +591,6 @@ impl GameState {
                 self.winner = best_player;
             }
         }
-    }
-}
-
-/// Previous player in turn order (inverse of next).
-fn prev_player(player: Player) -> Player {
-    match player {
-        Player::Red => Player::Green,
-        Player::Blue => Player::Red,
-        Player::Yellow => Player::Blue,
-        Player::Green => Player::Yellow,
     }
 }
 

@@ -1,9 +1,10 @@
 // King safety heuristic for bootstrap evaluation.
 //
 // Components:
-//   1. Pawn shield: friendly pawns in front of king (+35cp each, max 3 = 105cp total).
-//   2. Open file penalty: no friendly pawn on a king-adjacent file within 3 forward ranks (-25cp each).
-//   3. Attacker pressure: opponent attacks on king zone (-25cp base + -20cp per extra).
+//   1. Pawn shield: friendly pawns in front of king (+50cp each, max 3 = 150cp total).
+//   2. Open file penalty: no friendly pawn on a king-adjacent file within 3 forward ranks (-40cp each).
+//   3. King displacement: flat -40cp if king has left its home rank/file.
+//   4. Attacker pressure: opponent attacks on king zone (-25cp base + -20cp per extra).
 //
 // Uses is_square_attacked_by (allocation-free) instead of attackers_of (returns Vec).
 
@@ -25,6 +26,9 @@ const MAX_SHIELD_SQUARES: i16 = 3;
 
 /// Penalty per open file adjacent to the king (no friendly pawn within 3 ranks forward).
 const OPEN_KING_FILE_PENALTY: i16 = 40;
+
+/// Flat penalty if the king has left its home rank/file (discourages king walking).
+const KING_DISPLACEMENT_PENALTY: i16 = 40;
 
 /// King zone: the 8 squares adjacent to the king plus the king square itself.
 const ADJACENT_DELTAS: [(i8, i8); 8] = [
@@ -57,7 +61,12 @@ pub(crate) fn king_safety_score(
     //    that lacks a friendly pawn within 3 ranks forward.
     score = score.saturating_sub(open_file_penalty(board, player, king_file, king_rank));
 
-    // 3. Attacker pressure from each active opponent.
+    // 3. King displacement: penalise king that has left its home rank/file.
+    if !is_on_home_rank(player, king_file, king_rank) {
+        score = score.saturating_sub(KING_DISPLACEMENT_PENALTY);
+    }
+
+    // 4. Attacker pressure from each active opponent.
     for &opp in &Player::ALL {
         if opp == player {
             continue;
@@ -182,6 +191,16 @@ fn shield_squares_for_player(player: Player, king_file: i8, king_rank: i8) -> [(
     }
 }
 
+/// Check if the king is still on its home rank/file.
+fn is_on_home_rank(player: Player, king_file: i8, king_rank: i8) -> bool {
+    match player {
+        Player::Red => king_rank == 0,
+        Player::Blue => king_file == 0,
+        Player::Yellow => king_rank == 13,
+        Player::Green => king_file == 13,
+    }
+}
+
 /// Count the number of king zone squares attacked by an opponent.
 /// King zone = king square + 8 adjacent squares.
 fn count_king_zone_attacks(
@@ -281,6 +300,22 @@ mod tests {
         assert_eq!(shields[0], (12, 6));
         assert_eq!(shields[1], (12, 7));
         assert_eq!(shields[2], (12, 8));
+    }
+
+    #[test]
+    fn test_king_displacement_penalty() {
+        // Home rank: no penalty.
+        assert!(is_on_home_rank(Player::Red, 7, 0));
+        assert!(!is_on_home_rank(Player::Red, 7, 1)); // walked forward
+
+        assert!(is_on_home_rank(Player::Blue, 0, 6));
+        assert!(!is_on_home_rank(Player::Blue, 1, 6)); // walked forward
+
+        assert!(is_on_home_rank(Player::Yellow, 6, 13));
+        assert!(!is_on_home_rank(Player::Yellow, 6, 12)); // walked forward
+
+        assert!(is_on_home_rank(Player::Green, 13, 7));
+        assert!(!is_on_home_rank(Player::Green, 12, 7)); // walked forward
     }
 
     #[test]

@@ -4,9 +4,11 @@
 // this trait, never a specific implementation. Bootstrap handcrafted eval
 // (this stage) is replaced by NNUE in Stage 16.
 
+mod development;
 mod king_safety;
 mod material;
 mod multi_player;
+mod pawn_structure;
 mod pst;
 pub mod values;
 
@@ -135,8 +137,8 @@ impl Evaluator for BootstrapEvaluator {
 
 /// Evaluate a position from one player's perspective. Returns centipawns.
 ///
-/// Formula (per MASTERPLAN Stage 6 spec):
-///   material + positional + king_safety - threat + lead_penalty + ffa_points
+/// Formula:
+///   material + positional + development + pawn_structure + king_safety - threat + lead_penalty + ffa_points + relative_material
 fn eval_for_player(position: &GameState, player: Player, weights: &EvalWeights) -> i16 {
     if position.player_status(player) == PlayerStatus::Eliminated {
         return ELIMINATED_SCORE;
@@ -147,9 +149,10 @@ fn eval_for_player(position: &GameState, player: Player, weights: &EvalWeights) 
 
     let mat = material::material_score(board, player);
     let pos = pst::positional_score(board, player);
+    let dev = development::development_score(board, player);
+    let pawn = pawn_structure::connected_pawn_score(board, player);
     let king = king_safety::king_safety_score(board, player, &statuses);
     let threat = multi_player::threat_penalty(board, player, &statuses);
-    let hanging = multi_player::hanging_piece_penalty(board, player, &statuses);
     let lead = multi_player::lead_penalty(
         player,
         &material::material_scores(board),
@@ -158,15 +161,22 @@ fn eval_for_player(position: &GameState, player: Player, weights: &EvalWeights) 
         weights.lead_penalty_enabled,
         weights.lead_penalty_divisor,
         weights.max_lead_penalty,
+        weights.ffa_point_weight,
     );
     let ffa = multi_player::ffa_points_eval(position.score(player), weights.ffa_point_weight);
     let rel_mat = material::relative_material_advantage(board, player, &statuses);
 
+    // NOTE: hanging_piece_penalty was removed here — it double-counted capture
+    // threats already handled by the search tree, causing the engine to retreat
+    // developed pieces (Nf3→e1 regression in v0.4.3). The narrowing fix
+    // (root-capture protection) addresses hanging pieces through search instead.
+
     // Combine with saturating arithmetic to avoid i16 overflow.
     mat.saturating_add(pos)
+        .saturating_add(dev)
+        .saturating_add(pawn)
         .saturating_add(king)
         .saturating_sub(threat)
-        .saturating_sub(hanging)
         .saturating_add(lead)
         .saturating_add(ffa)
         .saturating_add(rel_mat)
@@ -229,7 +239,7 @@ mod tests {
         let raw = [30_000, -30_000, 0, 500];
         let result = normalize_4vec(&raw);
         for &v in &result {
-            assert!(v >= 0.0 && v <= 1.0);
+            assert!((0.0..=1.0).contains(&v));
         }
     }
 

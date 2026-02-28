@@ -9,14 +9,14 @@
 // instead of fixed module constants. Standard profile preserves original
 // behavior; Aggressive profile disables lead penalty and increases FFA weight.
 
-use crate::board::{Board, PieceType, Player, PLAYER_COUNT};
+use crate::board::{Board, Player, PLAYER_COUNT};
 use crate::gamestate::PlayerStatus;
 use crate::movegen::is_square_attacked_by;
 
-use super::values::PIECE_EVAL_VALUES;
-
-/// Default centipawns per FFA point (Standard profile).
-pub(crate) const FFA_POINT_WEIGHT_DEFAULT: i16 = 50;
+/// Default centipawns per FFA point (Standard profile). Test-only since
+/// lead_penalty now receives the weight via parameter from eval profile.
+#[cfg(test)]
+const FFA_POINT_WEIGHT_DEFAULT: i16 = 50;
 
 /// Penalty per distinct opponent threatening the king.
 /// Raised from 30 to 50 in Stage 8 debugging: 3 opponents threatening = 150cp (a minor piece).
@@ -28,6 +28,7 @@ const THREAT_PENALTY_PER_OPPONENT: i16 = 50;
 ///
 /// Returns 0 if not leading, disabled, or no active opponents.
 /// Returns negative when leading (penalty subtracted from score).
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn lead_penalty(
     player: Player,
     material_scores: &[i16; PLAYER_COUNT],
@@ -36,16 +37,16 @@ pub(crate) fn lead_penalty(
     enabled: bool,
     divisor: i16,
     max_penalty: i16,
+    ffa_point_weight: i16,
 ) -> i16 {
     if !enabled {
         return 0;
     }
 
-    let ffa_weight = FFA_POINT_WEIGHT_DEFAULT;
     let my_strength = combined_strength(
         material_scores[player.index()],
         ffa_scores[player.index()],
-        ffa_weight,
+        ffa_point_weight,
     );
 
     let mut max_opponent_strength = i32::MIN;
@@ -59,7 +60,7 @@ pub(crate) fn lead_penalty(
         let opp_strength = combined_strength(
             material_scores[opp.index()],
             ffa_scores[opp.index()],
-            ffa_weight,
+            ffa_point_weight,
         );
         if opp_strength > max_opponent_strength {
             max_opponent_strength = opp_strength;
@@ -113,61 +114,6 @@ pub(crate) fn threat_penalty(
     threatening_opponents * THREAT_PENALTY_PER_OPPONENT
 }
 
-/// Hanging piece penalty: penalize undefended pieces under attack.
-///
-/// For each alive piece (excluding kings), checks if any active opponent
-/// attacks the square AND the player does NOT defend it. Penalty = half
-/// the piece's eval value per hanging piece, capped at 500cp total.
-///
-/// Returns a positive value (the penalty amount to be subtracted).
-const HANGING_PENALTY_DIVISOR: i16 = 2; // half value per hanging piece
-const HANGING_PENALTY_CAP: i16 = 500;
-
-pub(crate) fn hanging_piece_penalty(
-    board: &Board,
-    player: Player,
-    player_statuses: &[PlayerStatus; PLAYER_COUNT],
-) -> i16 {
-    let mut penalty: i16 = 0;
-
-    for &(pt, sq) in board.piece_list(player) {
-        // Skip kings — king safety is handled separately.
-        if pt == PieceType::King {
-            continue;
-        }
-
-        // Check if any active opponent attacks this square.
-        let mut attacked = false;
-        for &opp in &Player::ALL {
-            if opp == player {
-                continue;
-            }
-            if player_statuses[opp.index()] == PlayerStatus::Eliminated {
-                continue;
-            }
-            if is_square_attacked_by(sq, opp, board) {
-                attacked = true;
-                break;
-            }
-        }
-
-        if !attacked {
-            continue;
-        }
-
-        // Check if the player defends this square (own pieces attack it).
-        let defended = is_square_attacked_by(sq, player, board);
-
-        if !defended {
-            // Hanging: attacked by opponent, not defended by self.
-            let piece_val = PIECE_EVAL_VALUES[pt.index()];
-            penalty = penalty.saturating_add(piece_val / HANGING_PENALTY_DIVISOR);
-        }
-    }
-
-    penalty.min(HANGING_PENALTY_CAP)
-}
-
 /// Convert FFA game points to centipawn evaluation contribution.
 /// Each FFA point = `weight` centipawns.
 pub(crate) fn ffa_points_eval(ffa_score: i32, weight: i16) -> i16 {
@@ -198,6 +144,7 @@ mod tests {
             STD_ENABLED,
             STD_DIVISOR,
             STD_MAX,
+            STD_FFA_WEIGHT,
         );
         assert_eq!(penalty, 0, "No penalty when not leading");
     }
@@ -216,6 +163,7 @@ mod tests {
             STD_ENABLED,
             STD_DIVISOR,
             STD_MAX,
+            STD_FFA_WEIGHT,
         );
         // Lead = 500, penalty = -500/4 = -125.
         assert_eq!(penalty, -125);
@@ -235,6 +183,7 @@ mod tests {
             STD_ENABLED,
             STD_DIVISOR,
             STD_MAX,
+            STD_FFA_WEIGHT,
         );
         assert_eq!(penalty, -STD_MAX);
     }
@@ -253,6 +202,7 @@ mod tests {
             STD_ENABLED,
             STD_DIVISOR,
             STD_MAX,
+            STD_FFA_WEIGHT,
         );
         // Lead = 10 * 50 = 500cp, penalty = -500/4 = -125.
         assert_eq!(penalty, -125);
@@ -277,6 +227,7 @@ mod tests {
             STD_ENABLED,
             STD_DIVISOR,
             STD_MAX,
+            STD_FFA_WEIGHT,
         );
         assert_eq!(penalty, 0);
     }
@@ -295,6 +246,7 @@ mod tests {
             false,
             STD_DIVISOR,
             0,
+            STD_FFA_WEIGHT,
         );
         assert_eq!(penalty, 0, "Disabled lead penalty should return 0");
     }
@@ -333,74 +285,4 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_hanging_penalty_starting_position_zero() {
-        // At start, all pieces are defended by adjacent pawns/pieces.
-        let board = crate::board::Board::starting_position();
-        let statuses = [PlayerStatus::Active; 4];
-        for &player in &Player::ALL {
-            let penalty = hanging_piece_penalty(&board, player, &statuses);
-            assert_eq!(
-                penalty, 0,
-                "No hanging pieces at starting position for {player:?}"
-            );
-        }
-    }
-
-    #[test]
-    fn test_hanging_penalty_exposed_piece() {
-        // Place a lone Red knight in the middle of the board where Blue can attack it.
-        use crate::board::{square_from, Board, Piece, PieceStatus};
-
-        let mut board = Board::empty();
-        // Red king at back rank (safe).
-        board.place_piece(
-            square_from(7, 0).unwrap(),
-            Piece {
-                piece_type: PieceType::King,
-                owner: Player::Red,
-                status: PieceStatus::Alive,
-            },
-        );
-        // Red knight at g7 (file=6, rank=6) — undefended by Red.
-        board.place_piece(
-            square_from(6, 6).unwrap(),
-            Piece {
-                piece_type: PieceType::Knight,
-                owner: Player::Red,
-                status: PieceStatus::Alive,
-            },
-        );
-        // Blue rook on same file — attacks the knight.
-        board.place_piece(
-            square_from(6, 10).unwrap(),
-            Piece {
-                piece_type: PieceType::Rook,
-                owner: Player::Blue,
-                status: PieceStatus::Alive,
-            },
-        );
-        // Blue king somewhere safe.
-        board.place_piece(
-            square_from(0, 7).unwrap(),
-            Piece {
-                piece_type: PieceType::King,
-                owner: Player::Blue,
-                status: PieceStatus::Alive,
-            },
-        );
-
-        let statuses = [
-            PlayerStatus::Active,
-            PlayerStatus::Active,
-            PlayerStatus::Eliminated,
-            PlayerStatus::Eliminated,
-        ];
-        let penalty = hanging_piece_penalty(&board, Player::Red, &statuses);
-        // Knight (300cp) hanging = 300/2 = 150cp penalty.
-        assert_eq!(
-            penalty, 150,
-            "Undefended knight under attack should give 150cp penalty"
-        );
-    }
 }

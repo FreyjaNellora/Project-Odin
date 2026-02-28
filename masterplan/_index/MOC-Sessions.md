@@ -2,7 +2,7 @@
 type: moc
 tags:
   - type/moc
-last_updated: 2026-02-25
+last_updated: 2026-02-27
 ---
 
 # Session Journal
@@ -12,6 +12,15 @@ Chronological index of build sessions. Each session note captures what was attem
 ## Sessions
 
 <!-- Add newest sessions at the top -->
+- **2026-02-27** [[Session-2026-02-27-Stage10-MCTS]] -- Stage 10: Gumbel MCTS implementation. SplitMix64 PRNG, MctsNode, priors, Gumbel+Top-k, Sequential Halving, PUCT, MaxN backprop, progressive widening, SimConfig, Searcher trait. 1000 sims in 124ms release. AC1-AC8 pass. 440 tests.
+- **2026-02-27** [[Session-2026-02-27-Observer-Baselines-Stage10Prep]] -- Observer infrastructure (AGENT_CONDUCT 1.18, LogFile toggle), human baselines (6 games, Elo 1954-3438), depth-8 diagnostic (~2100-2300 Elo), Stage 10 Claude.T prompt written.
+- **2026-02-27** [[Session-2026-02-27-PreStage10-Cleanup]] -- Pre-Stage-10 cleanup: audit fixes (W1/W2/N1), pawn-push eval mitigations (dev bonuses, pawn gate, king displacement), Vec clone retrofit (Arc position_history, fixed-size piece_lists). Issue-Vec-Clone-Cost resolved. 408 tests.
+- **2026-02-27** [[Session-2026-02-27-BRS-ScoreCap-PawnStructure]] -- BRS score cap (9999 display clamp), connected pawn bonus (+8cp), development bonus, depth 8 default, false mate early-termination gate. New issue: pawn-push preference + king walk.
+- **2026-02-27** [[Session-2026-02-27-Multi-Perspective]] -- Multi-perspective opponent modeling: 3-term blend (paranoid + BRS + anti-leader), dynamic context-driven weights, 7 new tests. ENGINE_VERSION v0.5.0.
+- **2026-02-27** [[Session-2026-02-27-Game-Analysis-Fixes]] -- Self-play game analysis: likelihood tuning (0.7→0.5), TT player-awareness (root_player Zobrist), TT persistence (BrsSearcher in OdinEngine), root TT probe safety, hybrid reply fallback. 3 issues resolved.
+- **2026-02-26** [[Session-2026-02-26-BRS-Architecture-Investigation]] -- Narrowing fix (root-capture protection), hanging penalty experiment (reverted), deep BRS architecture investigation: paranoid modeling too aggressive, TT not player-aware, TT fresh per search. 4 issues cataloged.
+- **2026-02-26** [[Session-2026-02-26-PST-Tuning]] -- PST tuning: knight gradient flattened (+23→+10cp first hop), bishop development strengthened. Clippy cleanup.
+- **2026-02-26** [[Session-2026-02-26-KingSafety-SEE-Hotfixes]] -- King safety + SEE hotfixes: KING_GRID rank 1 made negative, SEE defense check, pawn shield + open king file constants raised.
 - **2026-02-25** [[Session-2026-02-25-Stage9-TT-Ordering]] -- Stage 9: TT & Move Ordering. TranspositionTable (depth-preferred, mate-score ply adjustment), full ordering pipeline (TT hint → win caps → killers → counter-move → history quiets → lose caps), simplified SEE. 58% node reduction at depth 6. 387 engine tests.
 - **2026-02-25** [[Session-2026-02-25-PostElim-Crash-Fix]] -- Post-elimination crash fix: engine panicked when BRS search reached eliminated player's turn (kingless board → generate_legal corrupts state). Four-layer fix: alphabeta skip, quiescence skip, board scanner Active-only filter, king square 255 sentinel. Eval strengthening: PAWN_SHIELD_BONUS 35, MVV-LVA ordering, THREAT_PENALTY 50. Version canary v0.4.1-fix. User verified.
 - **2026-02-25** [[Session-2026-02-25-UI-Bugfixes]] -- In-search repetition detection (BRS rep_stack), depth 7 default, piece-prefix notation in game log, game log player label bug fixed (React 18 batching — currentPlayerRef read lazily inside updater).

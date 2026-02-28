@@ -550,6 +550,165 @@ and what didn't work. Ask the user.
 
 ---
 
+### 1.17 Task Tracking Protocol
+
+**The problem this solves:** Agents jump into code changes without proving they understand the problem. Sessions produce code but leave no reasoning trail. When a fix causes a regression 3 sessions later, there's no record of *why* the original change was made or what alternatives were considered. The next agent re-derives everything from scratch.
+
+**The solution:** Every non-trivial unit of work gets a **task file** in `masterplan/tasks/` that records understanding, investigation, plan, execution, and follow-up. The file name signals status at a glance.
+
+---
+
+#### File Naming
+
+- **In progress:** `Task-Short-Name_in_progress.md`
+- **Complete:** `Task-Short-Name_complete.md`
+
+When a task finishes, rename the file (change `_in_progress` to `_complete`). Update [[MOC-Tasks]].
+
+---
+
+#### Task Lifecycle
+
+**Step 1: Create the task file** from `_templates/task.md`. Name it `Task-Short-Name_in_progress.md`. Add it to [[MOC-Tasks]] under "In Progress."
+
+**Step 2: Fill Section 1 (Understanding Check) BEFORE writing any code.** This is mandatory. The agent must:
+- List every file read and what was learned from each
+- State the problem in their own words
+- List all constraints and invariants that must not be broken
+- Note any prior attempts and what happened
+
+**The understanding gate:** If the agent cannot fill Section 1 with specific file paths, specific constraints, and a clear problem statement, they are not ready to write code. Read more first.
+
+**Step 3: Fill Section 2 (Investigation).** Record root cause analysis with confidence levels (HIGH/MEDIUM/LOW) and concrete evidence (code references, game logs, eval traces). This is the reasoning trail that future agents will read.
+
+**Step 4: Fill Section 3 (Plan).** List specific changes with file, function, and rationale. Note risks and alternatives considered.
+
+**Step 5: Execute and fill Section 4** as you work. Record actual changes, test results, and verification.
+
+**Step 6: Fill Section 5 (References)** with wikilinks to all related sessions, issues, components, and decisions.
+
+**Step 7: Fill Section 6 (Follow-Up)** if the task revealed new problems. Create issues/tasks for them.
+
+**Step 8: Rename the file** from `_in_progress` to `_complete`. Update [[MOC-Tasks]] (move from "In Progress" to "Completed" with a reference note pointing to related sessions and issues).
+
+---
+
+#### When to Use Task Files
+
+| Situation | Task File? |
+|---|---|
+| Multi-file code change with investigation | YES |
+| Bug fix requiring root cause analysis | YES |
+| Eval tuning or search parameter change | YES |
+| Performance retrofit (Vec clone cost) | YES |
+| One-line typo fix | NO |
+| Adding a single test | NO |
+| Documentation-only update | NO |
+
+**Rule of thumb:** If the work involves investigation or could cause a regression, it gets a task file.
+
+---
+
+#### Why This Matters
+
+1. **Proof of understanding** prevents agents from coding before they understand the problem
+2. **Investigation logs** preserve reasoning that would otherwise be lost when context resets
+3. **Plan + alternatives** prevent re-litigating the same design choices in future sessions
+4. **The `_in_progress` / `_complete` rename** makes the backlog scannable at a glance
+5. **Reference links** let any future agent trace from a task back to the full context
+6. **Follow-up section** catches downstream issues early instead of discovering them 3 sessions later
+
+---
+
+### 1.18 Diagnostic Gameplay Observer Protocol
+
+**The problem this solves:** Behavioral bugs (pawn-push preference, king walks, hanging piece blindness) only surface during live gameplay. Without automated observation, the only way to catch them is for a human to manually watch games. Agents need a structured way to run games, capture logs, and analyze engine thinking — without interfering with other agents or the user's workflow.
+
+**The solution:** The engine has a built-in protocol logging toggle. The UI has a Max Rounds auto-stop. Together, an agent can run a diagnostic game, capture all protocol traffic, and analyze it afterward.
+
+---
+
+#### Who Runs Diagnostics
+
+**ONLY the top-level orchestrating agent** may start the engine, build the project, or run diagnostic games. Subagents (Explore, Plan, Bash workers, etc.) MUST NOT independently:
+- Start or stop the engine process
+- Run `cargo build` or `cargo build --release`
+- Spawn the engine binary
+- Modify engine state while another agent is working
+
+If a subagent needs diagnostic data, the top-level agent runs the game and passes the resulting log file path to the subagent for analysis.
+
+**Before building or starting the engine:** The top-level agent must confirm no other agent (including Claude.T or any parallel session) is actively compiling or running the engine. Building while another agent is mid-compilation corrupts outputs.
+
+---
+
+#### Engine Protocol Logging
+
+The engine supports a `LogFile` option via the standard `setoption` command:
+
+```
+setoption name LogFile value observer/logs/diagnostic_2026-02-27.log
+```
+
+- **Enable:** `setoption name LogFile value <path>` — opens a buffered file writer. Creates parent directories automatically.
+- **Disable:** `setoption name LogFile value none` (or `off`, or empty) — flushes and closes the log file.
+- **Format:** Incoming commands logged as `> ...`, engine responses as `< ...`.
+- **Overhead:** Zero when disabled (single `if let` check). Negligible when enabled (buffered I/O, flushed on each response).
+
+Log files persist in `observer/logs/` for historical comparison across sessions.
+
+---
+
+#### Max Rounds Auto-Stop
+
+The UI provides a **Max Rounds** slider (0–50, where 0 = unlimited). When set:
+- After all players complete the specified number of rounds (1 round = 4 ply), auto-play pauses automatically.
+- The game state is preserved — the user or agent can resume, adjust settings, or start a new game.
+
+For diagnostic use, set Max Rounds to the desired observation window (e.g., 10–20 rounds) before starting Full Auto.
+
+---
+
+#### Diagnostic Workflow
+
+When the top-level agent needs to diagnose engine behavior:
+
+1. **Build** (if needed): `cargo build --release` — confirm no other agent is compiling first.
+2. **Start engine + UI**: Via Tauri dev or standalone.
+3. **Configure settings**: Game Mode, Eval Profile, Terrain, Depth — as needed for the test.
+4. **Enable logging**: Send `setoption name LogFile value observer/logs/<descriptive_name>.log` via the Communication Log input in the UI, or programmatically if using the engine directly.
+5. **Set Max Rounds**: Use the UI slider to set the observation window.
+6. **Set Full Auto**: Start the game in Full Auto mode.
+7. **Wait for auto-stop**: The game pauses when the round limit is reached.
+8. **Disable logging**: Send `setoption name LogFile value none`.
+9. **Analyze**: Read the log file. Look for patterns: eval swings, suspicious moves, repetitive play, hanging piece blindness, pawn-push preference, king displacement.
+10. **Record findings**: Create an issue in `masterplan/issues/` if a new behavioral bug is found, or update an existing issue with new evidence.
+
+---
+
+#### Log File Naming Convention
+
+Use descriptive names that encode the test parameters:
+
+```
+observer/logs/ffa_standard_d6_20rounds_2026-02-27.log
+observer/logs/lks_aggressive_d4_10rounds_2026-02-27.log
+observer/logs/post-stage10-mcts-baseline_2026-03-01.log
+```
+
+---
+
+#### When to Run Diagnostics
+
+| Situation | Run diagnostic? |
+|---|---|
+| After eval tuning or search changes | YES — verify behavior improved |
+| After completing a stage | YES — baseline before next stage |
+| Investigating a reported behavioral bug | YES — reproduce and capture evidence |
+| Routine code cleanup or refactor | NO — run tests instead |
+
+---
+
 ## 2. COMPREHENSIVE AUDIT CHECKLIST
 
 ---

@@ -42,6 +42,17 @@ impl Player {
         }
     }
 
+    /// Previous player in turn order (wraps around).
+    #[inline]
+    pub fn prev(self) -> Player {
+        match self {
+            Player::Red => Player::Green,
+            Player::Blue => Player::Red,
+            Player::Yellow => Player::Blue,
+            Player::Green => Player::Yellow,
+        }
+    }
+
     /// Player from index (0-3).
     pub fn from_index(idx: usize) -> Option<Player> {
         match idx {
@@ -168,6 +179,22 @@ mod tests {
         assert_eq!(Player::Blue.next(), Player::Yellow);
         assert_eq!(Player::Yellow.next(), Player::Green);
         assert_eq!(Player::Green.next(), Player::Red);
+    }
+
+    #[test]
+    fn test_player_prev_order() {
+        assert_eq!(Player::Red.prev(), Player::Green);
+        assert_eq!(Player::Blue.prev(), Player::Red);
+        assert_eq!(Player::Yellow.prev(), Player::Blue);
+        assert_eq!(Player::Green.prev(), Player::Yellow);
+    }
+
+    #[test]
+    fn test_player_prev_next_roundtrip() {
+        for &player in &Player::ALL {
+            assert_eq!(player.next().prev(), player);
+            assert_eq!(player.prev().next(), player);
+        }
     }
 
     #[test]

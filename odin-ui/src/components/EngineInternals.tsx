@@ -67,7 +67,7 @@ export default function EngineInternals({ latestInfo }: EngineInternalsProps) {
               {/* Per-player values */}
               {latestInfo.values && (
                 <div className="internals-values">
-                  <span className="internals-key">Per-Player Values</span>
+                  <span className="internals-key">Per-Player Eval (cp)</span>
                   <div className="values-grid">
                     {PLAYERS.map((player: Player, i: number) => (
                       <div key={player} className="value-cell">
