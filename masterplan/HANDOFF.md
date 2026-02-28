@@ -1,74 +1,72 @@
 # HANDOFF — Last Session Summary
 
 **Date:** 2026-02-28
-**Stage:** Stage 13 (Time Management) — IMPLEMENTATION COMPLETE. Pending human review + tag.
-**Next:** Human reviews, tags `stage-13-complete` / `v1.13`, then begin Stage 14 (NNUE Feature Design & Architecture).
+**Stage:** Stage 14 (NNUE Feature Design & Architecture) — IMPLEMENTATION COMPLETE. Pending human review + tag.
+**Next:** Human reviews, tags `stage-14-complete` / `v1.14`, then begin Stage 15 (NNUE Training Pipeline).
 
 ## What Was Done This Session
 
-### Stage 13: Time Management
+### Stage 14: NNUE Feature Design & Architecture
 
-1. **`odin-engine/src/search/time_manager.rs` (CREATE)** — Core time allocation module. `TimeContext` struct + `TimeManager::allocate()` pure function. Formula: `base_time = remaining / moves_left + increment`, with multiplicative factors (tactical ×1.3, quiet ×0.8, near-elimination ×2.0, in-check ×1.2, forced →0). Safety: 25% cap, 100ms min, panic mode (<1s: 10%). 9 unit tests.
+1. **`odin-engine/src/util.rs` (CREATE)** — Extracted `SplitMix64` PRNG from `search/mcts.rs` to shared module. Added `next_i16()`, `next_i8()`, `next_i32()` convenience methods. Pure refactor.
 
-2. **`odin-engine/src/protocol/types.rs` (MODIFY)** — Added increment fields (`winc`/`binc`/`yinc`/`ginc`: `Option<u64>`, `movestogo`: `Option<u32>`) to `SearchLimits`. Added `time_for_player(Player)` method. Added 5 tunable param fields to `EngineOptions`.
+2. **`odin-engine/src/eval/nnue/features.rs` (CREATE)** — HalfKP-4 feature encoding. 160 valid squares × 7 piece types × 4 relative owners = 4,480 features per perspective. Static const dense square mapping tables. `relative_owner()` CW rotation. `active_features()` returns fixed `[u16; 64]` + count (zero heap allocation). 7 unit tests.
 
-3. **`odin-engine/src/protocol/parser.rs` (MODIFY)** — Added parse cases for `winc`, `binc`, `yinc`, `ginc`, `movestogo` in `parse_go()`. 2 new parser tests.
+3. **`odin-engine/src/eval/nnue/weights.rs` (CREATE)** — `NnueWeights` struct with per-perspective FT weights (~8.7 MB), hidden layer, dual output heads. `.onnue` binary format (48-byte header, CRC32 footer). Inline CRC32 IEEE 802.3 + FNV-1a architecture hash (no external crates). `random(seed)`, `save(path)`, `load(path)`. 5 unit tests.
 
-4. **`odin-engine/src/search/hybrid.rs` (MODIFY)** — Enriched `PositionType` enum (+Endgame, +Forced). Expanded `classify_position()` to use `is_in_check()`, `piece_count()`, legal move count. Added `time_context`, `last_score`, 5 override fields to `HybridController`. `set_time_context()` / `apply_options()` methods. Effective-* override methods. Forced move fast path (depth=0, nodes=0). TimeManager integration in `search()`.
+4. **`odin-engine/src/eval/nnue/accumulator.rs` (CREATE)** — `Accumulator` (4 perspectives × 256 int16) + `AccumulatorStack` (128 pre-allocated entries, ~262 KB). Copy-on-push, zero-cost pop. Full refresh + incremental delta updates. King moves mark `needs_refresh` for owner's perspective; EP/castling fall back to full refresh.
 
-5. **`odin-engine/src/protocol/mod.rs` (MODIFY)** — Fixed `limits_to_budget()` player-time mapping bug (`.or()` chain picked wrong player → now uses `time_for_player(player)`). Added `setoption` cases for 5 tunable params. Wired `TimeContext` into `handle_go()`.
+5. **`odin-engine/src/eval/nnue/mod.rs` (CREATE)** — Quantized forward pass: SCReLU (QA=255) → hidden layer (1024→32, int8 weights) → dual output heads (BRS scalar centipawns + MCTS 4-player sigmoid). `NnueEvaluator` implements frozen Evaluator trait via `RefCell<AccumulatorStack>`. Stage 14: full refresh every eval call.
 
-6. **`odin-engine/tests/stage_13_time_mgmt.rs` (CREATE, 12 tests)** — T1-T7: TimeManager unit allocation tests. T8: protocol go with increments. T9: forced move instant return. T10: 24-ply timed game no flag. T11: enriched classification. T12: setoption tunable params.
+6. **`odin-engine/tests/stage_14_nnue.rs` (CREATE, 18 tests)** — T1-T18: feature indexing, square mapping, weight determinism, save/load roundtrip, accumulator full/incremental, push/pop, forward pass determinism, eval range, sensitivity, captures, castling, promotion, magic validation, benchmarks.
 
-7. **`observer/match.mjs` (MODIFY)** — Time control support: `time_control: { initial_ms, increment_ms }` config. Clock tracking per player, `go wtime/btime/ytime/gtime` command generation, time forfeit detection.
+7. **Module wiring** — `lib.rs`: added `pub mod util;`. `eval/mod.rs`: added `pub mod nnue;` + `pub use nnue::NnueEvaluator;`. `search/mcts.rs`: replaced inline SplitMix64 with `use crate::util::SplitMix64;`.
 
-8. **`observer/tune.mjs` (CREATE)** — Parameter tuning script. CLI: `node tune.mjs --param tactical_margin --values 100,150,200,250 --games 50`. Sends `setoption` to engine A, runs A/B match vs defaults, reports Elo per value with recommendations.
-
-9. **`observer/match_config.json` (MODIFY)** — Added `time_control: null` field.
-
-10. **Documentation** — `audit_log_stage_13.md` (pre+post audit), `downstream_log_stage_13.md` (W14-W16, API contracts, baselines), STATUS.md, HANDOFF.md, session note.
+8. **Documentation** — `audit_log_stage_14.md` (pre+post audit), `downstream_log_stage_14.md` (W17-W19, API contracts, baselines), STATUS.md, HANDOFF.md, session note.
 
 ---
 
 ## What's Next — Priority-Ordered
 
-### 1. Human Review + Tag Stage 13
+### 1. Human Review + Tag Stage 14
 
-Review the changes. Tag `stage-13-complete` / `v1.13`.
+Review the changes. Tag `stage-14-complete` / `v1.14`.
 
-### 2. Begin Stage 14 (NNUE Feature Design & Architecture)
+### 2. Begin Stage 15 (NNUE Training Pipeline)
 
-Per MASTERPLAN. NNUE feature extraction, network architecture design, inference code.
+Per MASTERPLAN. Training data generation, self-play data pipeline, NNUE weight training.
 
 ---
 
 ## Known Issues
 
-- **W14:** `TimeManager::allocate()` uses `score_cp < 2000` for near-elimination detection. If NNUE eval uses a different score scale, this threshold must be recalibrated.
-- **W15:** `PositionType::Endgame` triggers at `piece_count() <= 16`. May need tuning after NNUE makes positional evaluation more nuanced.
-- **W16:** `limits_to_budget()` now takes `current_player: Option<Player>`. If called from contexts without a known player, pass `None` for the fallback `.or()` chain behavior.
-- **Pondering not implemented:** Stage 13 prompt listed it as optional. Deferred.
-- **MCTS score 9999 (max):** Carried from W13 — unchanged.
+- **W17:** `NnueEvaluator` does full refresh every eval call. Stage 16 must wire `AccumulatorStack::push/pop` into BRS make/unmake for incremental updates.
+- **W18:** King moves mark `needs_refresh` even without king bucketing (Phase 1). Correct but wasteful — profile in Stage 19 if needed.
+- **W19:** EP/castling fall back to full refresh. Conservative but correct. Optimize in Stage 19 if profiling warrants.
+- **W15 (carried):** `PositionType::Endgame` triggers at `piece_count() <= 16`. May need tuning.
+- **W16 (carried):** `limits_to_budget()` takes `current_player: Option<Player>`.
+- **W13 (carried):** MCTS score 9999 (max) — unchanged.
+- **Pondering not implemented:** Deferred from Stage 13.
 
 ## Files Created/Modified This Session
 
-- `odin-engine/src/search/time_manager.rs` — CREATED
-- `odin-engine/src/search/mod.rs` — MODIFIED (pub mod time_manager)
-- `odin-engine/src/search/hybrid.rs` — MODIFIED (enriched classification, TimeContext, overrides)
-- `odin-engine/src/protocol/types.rs` — MODIFIED (increments, tunable params)
-- `odin-engine/src/protocol/parser.rs` — MODIFIED (increment parsing)
-- `odin-engine/src/protocol/mod.rs` — MODIFIED (limits_to_budget fix, setoption, TimeContext wiring)
-- `odin-engine/tests/stage_13_time_mgmt.rs` — CREATED
-- `observer/match.mjs` — MODIFIED (time control support)
-- `observer/match_config.json` — MODIFIED (time_control field)
-- `observer/tune.mjs` — CREATED
-- `masterplan/audit_log_stage_13.md` — FILLED
-- `masterplan/downstream_log_stage_13.md` — FILLED
+- `odin-engine/src/util.rs` — CREATED (SplitMix64 shared module)
+- `odin-engine/src/eval/nnue/mod.rs` — CREATED (forward pass, NnueEvaluator)
+- `odin-engine/src/eval/nnue/features.rs` — CREATED (HalfKP-4 feature indexing)
+- `odin-engine/src/eval/nnue/accumulator.rs` — CREATED (Accumulator, AccumulatorStack)
+- `odin-engine/src/eval/nnue/weights.rs` — CREATED (NnueWeights, .onnue format)
+- `odin-engine/tests/stage_14_nnue.rs` — CREATED (18 acceptance tests)
+- `odin-engine/src/lib.rs` — MODIFIED (pub mod util)
+- `odin-engine/src/eval/mod.rs` — MODIFIED (pub mod nnue + re-export)
+- `odin-engine/src/search/mcts.rs` — MODIFIED (use crate::util::SplitMix64)
+- `masterplan/audit_log_stage_14.md` — FILLED
+- `masterplan/downstream_log_stage_14.md` — FILLED
 - `masterplan/STATUS.md` — UPDATED
 - `masterplan/HANDOFF.md` — REWRITTEN (this file)
+- `masterplan/sessions/Session-2026-02-28-Stage14-NNUE-Design.md` — CREATED
 
 ## Test Counts
 
-- Engine: 490 (292 unit + 198 integration, 5 ignored)
+- Engine: 519 (305 unit + 214 integration, 5 ignored)
 - UI Vitest: 54
 - Total: 0 failures, 0 clippy warnings

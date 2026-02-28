@@ -8,6 +8,7 @@ mod development;
 mod king_safety;
 mod material;
 mod multi_player;
+pub mod nnue;
 mod pawn_structure;
 mod pst;
 pub mod values;
@@ -15,6 +16,7 @@ pub mod values;
 use crate::board::Player;
 use crate::gamestate::{GameState, PlayerStatus};
 
+pub use nnue::NnueEvaluator;
 pub use values::{
     BISHOP_EVAL_VALUE, KING_EVAL_VALUE, KNIGHT_EVAL_VALUE, PAWN_EVAL_VALUE, PIECE_EVAL_VALUES,
     PROMOTED_QUEEN_EVAL_VALUE, QUEEN_EVAL_VALUE, ROOK_EVAL_VALUE,

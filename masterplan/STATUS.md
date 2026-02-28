@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
 **Last Updated:** 2026-02-28
-**Updated By:** Claude Opus 4.6 (Stage 13 implementation complete, pending human review)
+**Updated By:** Claude Opus 4.6 (Stage 14 implementation complete, pending human review)
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 13 (Time Management) — IMPLEMENTATION COMPLETE. Pending human review + tag. |
-| **Current Build-Order Step** | Stage 14 (NNUE Feature Design & Architecture) — not started. |
+| **Current Stage** | Stage 14 (NNUE Feature Design & Architecture) — IMPLEMENTATION COMPLETE. Pending human review + tag. |
+| **Current Build-Order Step** | Stage 15 (NNUE Training Pipeline) — not started. |
 | **Build Compiles** | Yes — `cargo build` passes, 0 warnings, 0 clippy warnings |
-| **Tests Pass** | Yes — engine: 292 unit + 198 integration = 490 total (5 ignored); UI: 54 Vitest. |
+| **Tests Pass** | Yes — engine: 305 unit + 214 integration = 519 total (5 ignored); UI: 54 Vitest. |
 | **Blocking Issues** | None |
 
 ---
@@ -35,7 +35,7 @@
 | 11 | Hybrid Integration | complete | post-audit done | — | HybridController: BRS→MCTS two-phase. 457 tests. Pending tag. |
 | 12 | Self-Play & Regression Testing | complete | post-audit done | — | 9 regression tests, match manager, Elo+SPRT, data logging. 465 tests. Pending tag. |
 | 13 | Time Management | complete | post-audit done | — | TimeManager, enriched classification, tunable params, timed match support, tune.mjs. 490 tests. Pending tag. |
-| 14 | NNUE Feature Design & Architecture | not-started | — | — | |
+| 14 | NNUE Feature Design & Architecture | complete | post-audit done | — | HalfKP-4, dual-head NNUE inference, .onnue format. 519 tests. Pending tag. |
 | 15 | NNUE Training Pipeline | not-started | — | — | |
 | 16 | NNUE Integration | not-started | — | — | |
 | 17 | Game Mode Variant Tuning | not-started | — | — | |
@@ -55,29 +55,33 @@
 | AGENT_CONDUCT.md | current | v1.2 — Section 1.18 added (Diagnostic Observer Protocol). |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
 | DECISIONS.md | current | 15 ADRs. ADR-007/008 superseded by ADR-015 (Huginn → tracing). ADR-014 (UI Vision), ADR-015 (Retire Huginn). |
-| HANDOFF.md | current | Stage 13 complete, pending review + tag. |
+| HANDOFF.md | current | Stage 14 complete, pending review + tag. |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
-| audit_log_stage_00.md through audit_log_stage_13.md | current | All complete. |
-| downstream_log_stage_00.md through downstream_log_stage_13.md | current | All complete. |
+| audit_log_stage_00.md through audit_log_stage_14.md | current | All complete. |
+| downstream_log_stage_00.md through downstream_log_stage_14.md | current | All complete. |
 
 ---
 
 ## What the Next Session Should Do First
 
 1. Read STATUS.md + HANDOFF.md
-2. Human reviews Stage 13 changes, tags `stage-13-complete` / `v1.13`
-3. Begin Stage 14 (NNUE Feature Design & Architecture) per AGENT_CONDUCT.md Section 1.1
+2. Human reviews Stage 14 changes, tags `stage-14-complete` / `v1.14`
+3. Begin Stage 15 (NNUE Training Pipeline) per AGENT_CONDUCT.md Section 1.1
 
 ---
 
 ## Known Regressions
 
-None. All tests pass (490 engine + 54 UI Vitest).
+None. All tests pass (519 engine + 54 UI Vitest).
 
 ---
 
 ## Non-Stage Changes
+
+**2026-02-28 — Stage 14: NNUE Feature Design & Architecture** ([[Session-2026-02-28-Stage14-NNUE-Design]]):
+
+NNUE inference pipeline with HalfKP-4 feature set (4,480 features per perspective). Network: FT(4480→256) ×4 perspectives → concat(1024) → hidden(32) → dual output heads (BRS scalar centipawns + MCTS 4-player sigmoid). Quantized inference: int16 accumulator (SCReLU, QA=255), int8 hidden layer, int32 output. `AccumulatorStack` with copy-on-push/zero-cost-pop, incremental delta updates (king/EP/castling fall back to refresh). `.onnue` binary weight format (48-byte header, CRC32 footer). `NnueEvaluator` implements frozen Evaluator trait via `RefCell<AccumulatorStack>`. SplitMix64 extracted to shared `util.rs`. Stage 14 scope: inference-only with random weights, full refresh per eval call. No training (Stage 15), no search integration (Stage 16). Tests: 305 unit + 214 integration = 519 total (5 ignored), 0 clippy warnings.
 
 **2026-02-28 — Stage 13: Time Management** ([[Session-2026-02-28-Stage13-TimeManagement]]):
 
@@ -215,6 +219,11 @@ Follow-up items noted but not blocking:
 | Time alloc for 60s clock | ~960ms quiet, ~1560ms tactical | 13 | At ply 0, 50 moves estimated. |
 | Forced move return | <1ms | 13 | Bypasses search entirely. |
 | Test count | 490 | 13 | 292 unit + 198 integration (5 ignored). +11 time_manager unit, +12 stage_13 integration, +2 parser. |
+| Full NNUE eval (random weights) | ~30-50us | 14 | Starting position, release build, full refresh per call. |
+| Incremental accumulator update | ~1-5us | 14 | Per push, release build. |
+| AccumulatorStack memory | ~262 KB | 14 | 128 entries × 4 × 256 × 2 bytes pre-allocated. |
+| FT weight memory | ~8.7 MB | 14 | Per-perspective (4 × 4480 × 256 × 2 bytes). |
+| Test count | 519 | 14 | 305 unit + 214 integration (5 ignored). +13 nnue unit, +18 stage_14 integration. |
 
 ---
 
