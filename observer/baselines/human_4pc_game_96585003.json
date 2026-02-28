@@ -7,10 +7,10 @@
   "rule_variants": "Anonymous DeadKingWalking EnPassant PromoteTo=D",
   "date": "2026-02-09",
   "players": {
-    "Red":    { "name": "Chess_Taifun",      "elo": 2254 },
-    "Blue":   { "name": "Hamlet",            "elo": 3068 },
-    "Yellow": { "name": "Bidakterakhir",     "elo": 2072 },
-    "Green":  { "name": "visor_sarge",       "elo": 2594 }
+    "Red":    { "name": "Player-H",      "elo": 2254 },
+    "Blue":   { "name": "Player-C",            "elo": 3068 },
+    "Yellow": { "name": "Player-I",     "elo": 2072 },
+    "Green":  { "name": "Player-J",       "elo": 2594 }
   },
   "result": {
     "Red": 9, "Blue": 64, "Yellow": 18, "Green": 47
@@ -18,7 +18,7 @@
   "termination": "Blue +20",
   "total_moves": 173,
   "elo_category": "mixed-weak",
-  "notes": "Hamlet (3068) dominates a weak lobby (2072-2594). Good contrast game: strong player vs weak players. Red (2254) and Yellow (2072) show classic weak patterns. Green (2594) plays decently. Red gets 9 points — crushed.",
+  "notes": "Player-C (3068) dominates a weak lobby (2072-2594). Good contrast game: strong player vs weak players. Red (2254) and Yellow (2072) show classic weak patterns. Green (2594) plays decently. Red gets 9 points — crushed.",
   "moves": [
     { "round": 1,  "Red": "h2-h3",      "Blue": "b7-c7",     "Yellow": "d13-d11",    "Green": "m6-l6" },
     { "round": 2,  "Red": "k2-k4",      "Blue": "Qa8-c6",    "Yellow": "e13-e12",    "Green": "m7-k7" },
@@ -62,7 +62,7 @@
       "castle_round": 9,
       "queen_active_round": 2,
       "captures_in_first_20": 2,
-      "notes": "STRONG PATTERN (Hamlet 3068): Queen active round 2, both knights developed, both bishops active with one capturing a rook (Ba9xRf14 — material win). Castled O-O-O round 9. Only 30% pawn ratio. Knights maneuvered into attacking positions (Nd8→e6→g5)."
+      "notes": "STRONG PATTERN (Player-C 3068): Queen active round 2, both knights developed, both bishops active with one capturing a rook (Ba9xRf14 — material win). Castled O-O-O round 9. Only 30% pawn ratio. Knights maneuvered into attacking positions (Nd8→e6→g5)."
     },
     "Yellow": {
       "first_20_moves": ["d13-d11", "e13-e12", "Ne14-f12", "g13-g12", "Rd14xBf14", "h13-h12", "i13-i11", "Bi14-h13", "Bh13-i12", "Nj14-h13", "Bi12-h11", "Qh14-g13", "O-O-O", "Nh13-j14", "k13-k12", "Nf12-g10", "f13-f11", "e12-e11", "e11-e10", "Qg13-h13"],

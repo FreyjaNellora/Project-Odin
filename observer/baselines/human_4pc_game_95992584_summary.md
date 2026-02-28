@@ -1,7 +1,7 @@
 # Baseline: Human 4PC FFA — Game 95992584
 
 **Source:** chess.com 4-Player Chess (FFA)
-**Players:** SeadraCheeseChess (3293) | neoserbian (3054) | Hamlet (3434) | sakthi09 (3289)
+**Players:** Player-A (3293) | Player-B (3054) | Player-C (3434) | Player-D (3289)
 **Result:** Red 73, Blue 20, Yellow 73, Green 47 | Termination: Yellow +20
 **Total Moves:** 319 (100 rounds, game went to completion)
 **Date:** 2026-01-30

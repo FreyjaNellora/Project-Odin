@@ -8,8 +8,8 @@ Real 4PC FFA games from chess.com with 3000+ Elo players. The engine should aspi
 
 | File | Players | Elo Range | Result | Rounds | Key Feature |
 |------|---------|-----------|--------|--------|-------------|
-| `human_4pc_game_95992584` | SeadraCheeseChess, neoserbian, Hamlet, sakthi09 | 3054-3434 | Red 73, Yellow 73 | 100 | Full game, tight high-Elo spread |
-| `human_4pc_game_96085550` | Hamlet, Froggychess2, MillzGambit, Yunikra | 2541-3438 | Blue 87 (checkmate) | 84 | Lower-rated player wins, O-O-O popular |
+| `human_4pc_game_95992584` | Player-A, Player-B, Player-C, Player-D | 3054-3434 | Red 73, Yellow 73 | 100 | Full game, tight high-Elo spread |
+| `human_4pc_game_96085550` | Player-C, Player-E, Player-F, Player-G | 2541-3438 | Blue 87 (checkmate) | 84 | Lower-rated player wins, O-O-O popular |
 
 ## Weak/Mixed Human Games (Counter-Examples)
 
@@ -17,9 +17,9 @@ Games with weaker players (2000-2600). These players make the SAME mistakes the 
 
 | File | Players | Elo Range | Result | Rounds | Key Feature |
 |------|---------|-----------|--------|--------|-------------|
-| `human_4pc_game_96585003` | Chess_Taifun, Hamlet, Bidakterakhir, visor_sarge | 2072-3068 | Blue 64 (Hamlet dominates) | 52 | Weak players show engine-like bugs |
-| `human_4pc_game_96836735` | Chess_Taifun, lipeih1, martinaxo, Hamlet | 2104-3077 | Green 77 (Hamlet dominates) | 85 | Red checkmated R17, queen shuffle, king march |
-| `human_4pc_game_96602063` | Hamlet, Chess_Taifun, AaryaBhatt0123, basenowsky | 1954-2709 | Red 63 (Hamlet dominates) | 50 | Sub-2000 floor: 54% pawn, queen never activated, 3 pts |
+| `human_4pc_game_96585003` | Player-H, Player-C, Player-I, Player-J | 2072-3068 | Blue 64 (Player-C dominates) | 52 | Weak players show engine-like bugs |
+| `human_4pc_game_96836735` | Player-H, Player-K, Player-L, Player-C | 2104-3077 | Green 77 (Player-C dominates) | 85 | Red checkmated R17, queen shuffle, king march |
+| `human_4pc_game_96602063` | Player-C, Player-H, Player-M, Player-N | 1954-2709 | Red 63 (Player-C dominates) | 50 | Sub-2000 floor: 54% pawn, queen never activated, 3 pts |
 
 ## Elo Tier Benchmarks (Opening, First 20 Rounds)
 
@@ -73,7 +73,7 @@ Use this to estimate where the engine falls:
 
 **6 human games total** from chess.com 4PC FFA:
 - 2 strong lobbies (3000+ Elo, target behavior)
-- 3 weak lobbies (Hamlet vs 1954-2266 opponents, counter-examples)
+- 3 weak lobbies (Player-C vs 1954-2266 opponents, counter-examples)
 - 1 engine self-play (v0.4.3-narrowing, known bugs)
 - **24 player-games** across the dataset (each game has 4 players)
 - Elo range covered: **1954 to 3438**

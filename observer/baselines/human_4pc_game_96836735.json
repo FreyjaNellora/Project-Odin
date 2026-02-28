@@ -7,10 +7,10 @@
   "rule_variants": "Anonymous DeadKingWalking EnPassant PromoteTo=D",
   "date": "2026-02-12",
   "players": {
-    "Red":    { "name": "Chess_Taifun",  "elo": 2266 },
-    "Blue":   { "name": "lipeih1",       "elo": 2104 },
-    "Yellow": { "name": "martinaxo",     "elo": 2252 },
-    "Green":  { "name": "Hamlet",        "elo": 3077 }
+    "Red":    { "name": "Player-H",  "elo": 2266 },
+    "Blue":   { "name": "Player-K",       "elo": 2104 },
+    "Yellow": { "name": "Player-L",     "elo": 2252 },
+    "Green":  { "name": "Player-C",        "elo": 3077 }
   },
   "result": {
     "Red": 15, "Blue": 34, "Yellow": 36, "Green": 77
@@ -18,7 +18,7 @@
   "termination": "insuff. material; Blue +10, Green +30",
   "total_moves": 270,
   "elo_category": "weak-lobby-hamlet-dominates",
-  "notes": "All three opponents are weak (2104-2266). Hamlet (3077) as Green dominates with 77 points. Interesting: Red gets checkmated early (round 17) after blundering multiple pieces. Blue and Yellow play passive pawn-heavy openings. Green shows clinical strong-player exploitation of weak opponents.",
+  "notes": "All three opponents are weak (2104-2266). Player-C (3077) as Green dominates with 77 points. Interesting: Red gets checkmated early (round 17) after blundering multiple pieces. Blue and Yellow play passive pawn-heavy openings. Green shows clinical strong-player exploitation of weak opponents.",
   "moves": [
     { "round": 1,  "Red": "h2-h3",      "Blue": "b4-d4",     "Yellow": "g13-g12",    "Green": "m8-l8" },
     { "round": 2,  "Red": "k2-k4",      "Blue": "b9-c9",     "Yellow": "d13-d11",    "Green": "Qn7-m8" },
@@ -84,7 +84,7 @@
       "castle_round": 18,
       "queen_active_round": 2,
       "captures_in_first_20": 5,
-      "notes": "STRONG PATTERN (Hamlet 3077): Only 20% pawn ratio — lowest seen. Both knights developed by round 4. Queen active round 2 (Qn7-m8, repositioning). Bishops aggressively capture material (Bm5xj2→Bj2xRk1 wins a rook, Bl7xh3+ wins a piece). Delivers checkmate on Red at round 17. 5 captures in first 17 moves. Clinical destruction of weak opponents."
+      "notes": "STRONG PATTERN (Player-C 3077): Only 20% pawn ratio — lowest seen. Both knights developed by round 4. Queen active round 2 (Qn7-m8, repositioning). Bishops aggressively capture material (Bm5xj2→Bj2xRk1 wins a rook, Bl7xh3+ wins a piece). Delivers checkmate on Red at round 17. 5 captures in first 17 moves. Clinical destruction of weak opponents."
     }
   },
   "weak_player_patterns": {

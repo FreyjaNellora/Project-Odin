@@ -7,17 +7,17 @@
   "rule_variants": "Anonymous DeadKingWalking EnPassant PromoteTo=D",
   "date": "2026-01-31",
   "players": {
-    "Red":    { "name": "Hamlet",        "elo": 3438 },
-    "Blue":   { "name": "Froggychess2",  "elo": 2732 },
-    "Yellow": { "name": "MillzGambit",   "elo": 3083 },
-    "Green":  { "name": "Yunikra",       "elo": 2541 }
+    "Red":    { "name": "Player-C",        "elo": 3438 },
+    "Blue":   { "name": "Player-E",  "elo": 2732 },
+    "Yellow": { "name": "Player-F",   "elo": 3083 },
+    "Green":  { "name": "Player-G",       "elo": 2541 }
   },
   "result": {
     "Red": 32, "Blue": 87, "Yellow": 33, "Green": 65
   },
   "termination": "Checkmate",
   "total_moves": 286,
-  "notes": "Wide Elo spread (2541-3438). Hamlet (3438) plays Red. Blue (Froggychess2, 2732) wins with 87 points — lower Elo player wins. Checkmate finish. Good example of 4PC dynamics where lower-rated player can win by positioning.",
+  "notes": "Wide Elo spread (2541-3438). Player-C (3438) plays Red. Blue (Player-E, 2732) wins with 87 points — lower Elo player wins. Checkmate finish. Good example of 4PC dynamics where lower-rated player can win by positioning.",
   "moves": [
     { "round": 1,  "Red": "h2-h3",      "Blue": "b7-c7",     "Yellow": "g13-g12",    "Green": "m8-l8" },
     { "round": 2,  "Red": "Ne1-f3",     "Blue": "Qa8-b7",    "Yellow": "Nj14-i12",   "Green": "m6-l6" },
@@ -50,7 +50,7 @@
       "castle_round": 13,
       "queen_active_round": 3,
       "captures_in_first_20": 4,
-      "notes": "Hamlet (3438 Elo). Knight out round 2, queen active round 3, both bishops developed, castled O-O-O round 13. 4 captures in 20 moves — aggressive."
+      "notes": "Player-C (3438 Elo). Knight out round 2, queen active round 3, both bishops developed, castled O-O-O round 13. 4 captures in 20 moves — aggressive."
     },
     "Blue": {
       "first_20_moves": ["b7-c7", "Qa8-b7", "b11-d11", "b4-c4", "Na10-c9", "Na5-c6", "b10-c10", "Qb7-d9", "Qd9-d8", "Qd8-d7", "Ba9-b10", "Nc9-e8", "Bb10-e7", "Qd7xQg4", "Be7-c9", "Ba6-d9", "O-O-O", "Bd9-c8", "b9xQc8", "Ka9-b10"],

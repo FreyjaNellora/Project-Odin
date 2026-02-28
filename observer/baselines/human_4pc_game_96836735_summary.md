@@ -1,14 +1,14 @@
-# Baseline: Human 4PC FFA — Game 96836735 (Weak Lobby, Hamlet Dominates)
+# Baseline: Human 4PC FFA — Game 96836735 (Weak Lobby, Player-C Dominates)
 
 **Source:** chess.com 4-Player Chess (FFA)
-**Players:** Chess_Taifun (2266) | lipeih1 (2104) | martinaxo (2252) | Hamlet (3077)
+**Players:** Player-H (2266) | Player-K (2104) | Player-L (2252) | Player-C (3077)
 **Result:** Red 15, Blue 34, Yellow 36, Green 77 | Termination: insuff. material
 **Total Moves:** 270 (85 rounds) | Red checkmated round 17
 **Date:** 2026-02-12
 
 ## Why This Game Matters
 
-Hamlet as Green shows **maximum exploitation of weak players**: 20% pawn ratio, 5 captures in 17 moves, checkmate delivered by round 17. The weak players (all ~2100-2250) demonstrate how NOT to play. Red gets checkmated after wandering the king across the board.
+Player-C as Green shows **maximum exploitation of weak players**: 20% pawn ratio, 5 captures in 17 moves, checkmate delivered by round 17. The weak players (all ~2100-2250) demonstrate how NOT to play. Red gets checkmated after wandering the king across the board.
 
 ## Opening Patterns (First 17-20 Rounds)
 
@@ -40,7 +40,7 @@ This is almost exactly what the Odin engine does: push pawns, delay development,
 
 The queen shuffle is a new weak pattern to watch for: the engine might move the queen actively but without purpose, wasting tempo.
 
-### Green/Hamlet (3077) — "Clinical Exploitation"
+### Green/Player-C (3077) — "Clinical Exploitation"
 1. **20% pawn ratio** — lowest in any baseline game (only 4 pawn moves in 20)
 2. Both knights developed by round 4
 3. Bishop pair aggressively captures material: Bm5→j2→Rk1 (wins rook), Bl7→h3+ (wins piece)

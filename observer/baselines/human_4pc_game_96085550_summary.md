@@ -1,14 +1,14 @@
 # Baseline: Human 4PC FFA — Game 96085550
 
 **Source:** chess.com 4-Player Chess (FFA)
-**Players:** Hamlet (3438) | Froggychess2 (2732) | MillzGambit (3083) | Yunikra (2541)
+**Players:** Player-C (3438) | Player-E (2732) | Player-F (3083) | Player-G (2541)
 **Result:** Red 32, Blue 87, Yellow 33, Green 65 | Termination: Checkmate
 **Total Moves:** 286 (84 rounds) | Checkmate finish
 **Date:** 2026-01-31
 
 ## Notable: Lower-rated player wins
 
-Froggychess2 (2732 Elo, lowest in lobby) wins with 87 points and checkmate. Demonstrates that in 4PC FFA, positioning and timing matter more than raw Elo. The lower-rated player can exploit multi-player dynamics.
+Player-E (2732 Elo, lowest in lobby) wins with 87 points and checkmate. Demonstrates that in 4PC FFA, positioning and timing matter more than raw Elo. The lower-rated player can exploit multi-player dynamics.
 
 ## Opening Patterns (First 20 Rounds)
 

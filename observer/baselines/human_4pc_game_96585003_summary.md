@@ -1,14 +1,14 @@
 # Baseline: Human 4PC FFA — Game 96585003 (Mixed Elo — Weak Lobby)
 
 **Source:** chess.com 4-Player Chess (FFA)
-**Players:** Chess_Taifun (2254) | Hamlet (3068) | Bidakterakhir (2072) | visor_sarge (2594)
+**Players:** Player-H (2254) | Player-C (3068) | Player-I (2072) | Player-J (2594)
 **Result:** Red 9, Blue 64, Yellow 18, Green 47 | Termination: Blue +20
 **Total Moves:** 173 (52 rounds)
 **Date:** 2026-02-09
 
 ## Why This Game Matters
 
-This is the **counter-example** baseline. Hamlet (3068) dominates weaker players (2072-2594). The weak players exhibit the SAME behavioral bugs we see in the Odin engine. If the engine plays like Red or Yellow here, it's playing at ~2100-2250 Elo.
+This is the **counter-example** baseline. Player-C (3068) dominates weaker players (2072-2594). The weak players exhibit the SAME behavioral bugs we see in the Odin engine. If the engine plays like Red or Yellow here, it's playing at ~2100-2250 Elo.
 
 ## Opening Patterns (First 20 Rounds)
 

@@ -7,10 +7,10 @@
   "rule_variants": "Anonymous DeadKingWalking EnPassant PromoteTo=D",
   "date": "2026-01-30",
   "players": {
-    "Red":    { "name": "SeadraCheeseChess", "elo": 3293 },
-    "Blue":   { "name": "neoserbian",        "elo": 3054 },
-    "Yellow": { "name": "Hamlet",            "elo": 3434 },
-    "Green":  { "name": "sakthi09",          "elo": 3289 }
+    "Red":    { "name": "Player-A", "elo": 3293 },
+    "Blue":   { "name": "Player-B",        "elo": 3054 },
+    "Yellow": { "name": "Player-C",            "elo": 3434 },
+    "Green":  { "name": "Player-D",          "elo": 3289 }
   },
   "result": {
     "Red": 73, "Blue": 20, "Yellow": 73, "Green": 47
