@@ -1,7 +1,7 @@
 .game-controls {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 6px;
   min-width: 180px;
 }
 
@@ -17,7 +17,7 @@
 }
 
 .turn-indicator .player-name {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: bold;
 }
 
@@ -38,10 +38,10 @@
 .score-row {
   display: flex;
   justify-content: space-between;
-  padding: 4px 8px;
+  padding: 2px 8px;
   border-radius: 4px;
   background: #1a1a1a;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .score-row.active {
@@ -108,11 +108,16 @@
   color: #d8b46a;
 }
 
+.config-tag-960 {
+  background: #2a1a2e;
+  color: #c46ab4;
+}
+
 /* Control sections */
 .control-section {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .section-label {
@@ -120,6 +125,41 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+/* Compact toggle row (Terrain + Chess960 side by side) */
+.toggle-row {
+  display: flex;
+  gap: 8px;
+}
+
+.toggle-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.btn-toggle {
+  padding: 3px 6px;
+  font-size: 11px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #888;
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.btn-toggle:hover {
+  background: #2a2a2a;
+  color: #ccc;
+}
+
+.btn-toggle.active {
+  background: #1a2a3a;
+  border-color: #4488cc;
+  color: #8ab4f8;
 }
 
 /* Mode selector */
@@ -149,28 +189,80 @@
   color: #8ab4f8;
 }
 
-/* Player selector */
-.player-selector {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+/* Per-slot config (Stage 18) */
+.slot-config {
+  display: flex;
+  flex-direction: column;
   gap: 2px;
 }
 
-.btn-player {
-  padding: 4px 6px;
-  font-size: 11px;
-  font-weight: bold;
+.slot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 4px;
   background: #1a1a1a;
-  border: 1px solid #333;
   border-radius: 3px;
 }
 
-.btn-player:hover {
-  background: #2a2a2a;
+.slot-player {
+  font-size: 12px;
+  font-weight: bold;
+  min-width: 50px;
 }
 
-.btn-player.active {
+.slot-toggle {
+  display: flex;
+}
+
+.btn-slot {
+  padding: 2px 10px;
+  font-size: 11px;
   background: #1a2a1a;
+  border: 1px solid #2a5a2a;
+  color: #8ad88a;
+  border-radius: 3px;
+  cursor: pointer;
+  min-width: 60px;
+}
+
+.btn-slot:hover {
+  background: #2a3a2a;
+}
+
+.btn-slot.active {
+  background: #1a2a3a;
+  border-color: #4488cc;
+  color: #8ab4f8;
+}
+
+/* Slot presets */
+.slot-presets {
+  display: flex;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.btn-preset {
+  flex: 1;
+  padding: 3px 4px;
+  font-size: 10px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #888;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.btn-preset:hover {
+  background: #2a2a2a;
+  color: #ccc;
+}
+
+.btn-preset.active {
+  background: #1a2a3a;
+  border-color: #4488cc;
+  color: #8ab4f8;
 }
 
 /* Speed slider */
@@ -208,7 +300,8 @@
 .control-buttons {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  margin-top: 2px;
 }
 
 .btn-engine {
@@ -253,4 +346,35 @@
   background: #2a2a3e;
   border-color: #555;
   color: #ddd;
+}
+
+/* Undo / Redo (Stage 18) */
+.undo-redo-row {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-undo,
+.btn-redo {
+  flex: 1;
+  padding: 4px 6px;
+  font-size: 11px;
+  background: #1a1a2e;
+  border: 1px solid #333;
+  color: #aaa;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.btn-undo:hover,
+.btn-redo:hover {
+  background: #2a2a3e;
+  border-color: #555;
+  color: #ddd;
+}
+
+.btn-undo:disabled,
+.btn-redo:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }

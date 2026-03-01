@@ -88,3 +88,25 @@
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
+
+/* Move list sections (BRS moves, MCTS visits — Stage 18) */
+.internals-section {
+  padding: 3px 0;
+}
+
+.internals-move-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.internals-move-item {
+  font-size: 11px;
+  color: #aaa;
+  background: #0a0a1a;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
+}

@@ -66,6 +66,40 @@ export function parseEngineOutput(line: string): EngineMessage {
     return { type: 'gameover', winner: isValidPlayerColor(winner) ? winner : null };
   }
 
+  // info string in_check <color> (Stage 18)
+  if (trimmed.startsWith('info string in_check ')) {
+    const color = trimmed.slice('info string in_check '.length).trim();
+    if (isValidPlayerColor(color)) {
+      return { type: 'in_check', player: color };
+    }
+  }
+
+  // info string brs_moves <move:score ...> (Stage 18)
+  if (trimmed.startsWith('info string brs_moves ')) {
+    const rest = trimmed.slice('info string brs_moves '.length).trim();
+    const brsMoves = rest.split(/\s+/).map(pair => {
+      const [move, scoreStr] = pair.split(':');
+      return { move, score: parseInt(scoreStr, 10) };
+    }).filter(m => m.move && !isNaN(m.score));
+    return { type: 'info', data: { brsMoves, brsSurviving: brsMoves.length } };
+  }
+
+  // info string mcts_visits <move:visits ...> (Stage 18)
+  if (trimmed.startsWith('info string mcts_visits ')) {
+    const rest = trimmed.slice('info string mcts_visits '.length).trim();
+    const mctsVisits = rest.split(/\s+/).map(pair => {
+      const [move, visitsStr] = pair.split(':');
+      return { move, visits: parseInt(visitsStr, 10) };
+    }).filter(m => m.move && !isNaN(m.visits));
+    return { type: 'info', data: { mctsVisits } };
+  }
+
+  // info string stop_reason <reason> (Stage 18)
+  if (trimmed.startsWith('info string stop_reason ')) {
+    const reason = trimmed.slice('info string stop_reason '.length).trim();
+    return { type: 'info', data: { stopReason: reason } };
+  }
+
   // info string Error: <msg>
   if (trimmed.startsWith('info string Error: ')) {
     return { type: 'error', message: trimmed.slice('info string Error: '.length) };

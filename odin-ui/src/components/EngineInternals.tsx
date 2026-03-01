@@ -40,19 +40,56 @@ export default function EngineInternals({ latestInfo }: EngineInternalsProps) {
                 </div>
               )}
 
-              {/* BRS-specific */}
-              {latestInfo.brsSurviving !== undefined && (
+              {/* BRS surviving moves with scores (Stage 18) */}
+              {latestInfo.brsMoves && latestInfo.brsMoves.length > 0 && (
+                <div className="internals-section">
+                  <span className="internals-key">
+                    BRS Surviving: {latestInfo.brsMoves.length} candidates
+                  </span>
+                  <div className="internals-move-list">
+                    {latestInfo.brsMoves.map((m) => (
+                      <span key={m.move} className="internals-move-item">
+                        {m.move}:{m.score}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* BRS count-only fallback */}
+              {!latestInfo.brsMoves && latestInfo.brsSurviving !== undefined && (
                 <div className="internals-row">
                   <span className="internals-key">BRS Surviving</span>
                   <span className="internals-value">{latestInfo.brsSurviving} candidates</span>
                 </div>
               )}
 
-              {/* MCTS-specific */}
+              {/* MCTS visits — top moves by visit count (Stage 18) */}
+              {latestInfo.mctsVisits && latestInfo.mctsVisits.length > 0 && (
+                <div className="internals-section">
+                  <span className="internals-key">MCTS Top Moves</span>
+                  <div className="internals-move-list">
+                    {latestInfo.mctsVisits.map((m) => (
+                      <span key={m.move} className="internals-move-item">
+                        {m.move}: {m.visits}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* MCTS sims count */}
               {latestInfo.mctsSims !== undefined && (
                 <div className="internals-row">
                   <span className="internals-key">MCTS Sims</span>
                   <span className="internals-value">{latestInfo.mctsSims.toLocaleString()}</span>
+                </div>
+              )}
+
+              {/* Stop reason (Stage 18) */}
+              {latestInfo.stopReason && (
+                <div className="internals-row">
+                  <span className="internals-key">Stop Reason</span>
+                  <span className="internals-value">{latestInfo.stopReason}</span>
                 </div>
               )}
 

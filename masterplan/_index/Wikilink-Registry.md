@@ -213,3 +213,4 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Pattern-Terrain-Awareness]]` | `patterns/Pattern-Terrain-Awareness.md` | Terrain pieces block movement and don't give check at MoveGen level |
 | `[[Pattern-DKW-Instant-Moves]]` | `patterns/Pattern-DKW-Instant-Moves.md` | DKW king moves happen instantly between turns via side_to_move swap |
 | `[[Pattern-React-Ref-Async-State]]` | `patterns/Pattern-React-Ref-Async-State.md` | Use refs alongside React state for synchronous reads in async chains |
+| `[[Pattern-Kaggle-Training-Pipeline]]` | `patterns/Pattern-Kaggle-Training-Pipeline.md` | Local datagen → Kaggle GPU training → .onnue export workflow |

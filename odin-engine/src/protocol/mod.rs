@@ -18,6 +18,7 @@ use std::rc::Rc;
 
 use crate::board::{Board, Player};
 use crate::gamestate::{EliminationReason, GameMode, GameState};
+use crate::movegen::is_in_check;
 use crate::search::hybrid::HybridController;
 use crate::search::{SearchBudget, Searcher};
 
@@ -365,6 +366,17 @@ impl OdinEngine {
         // Emit elimination events before bestmove so the UI can process them first.
         for (player, _reason) in &move_result.eliminations {
             self.send(&format!("info string eliminated {}", player_color(*player)));
+        }
+
+        // Emit check status for the next player (Stage 18: UI check highlight).
+        if !post_position.is_game_over() {
+            let next_player = post_position.current_player();
+            if is_in_check(next_player, post_position.board()) {
+                self.send(&format!(
+                    "info string in_check {}",
+                    player_color(next_player)
+                ));
+            }
         }
 
         // Emit game-over or next-turn indicator so the UI can sync its turn tracker.

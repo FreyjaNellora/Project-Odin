@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
-**Last Updated:** 2026-02-28
-**Updated By:** Claude Opus 4.6 (Stage 17 Game Mode Variant Tuning — IMPLEMENTATION COMPLETE)
+**Last Updated:** 2026-03-01
+**Updated By:** Claude Opus 4.6 (Stage 18: Full UI implementation)
 
 ---
 
@@ -9,11 +9,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 17 (Game Mode Variant Tuning) — IMPLEMENTATION COMPLETE. Pending human review and tag. |
-| **Current Build-Order Step** | Stage 18 (Full UI) — not started. |
-| **Build Compiles** | Yes — `cargo build` passes, 0 warnings, 0 clippy warnings |
-| **Tests Pass** | Yes — engine: 308 unit + 249 integration = 557 total (6 ignored); Python: 8 pytest; UI: 54 Vitest. |
-| **Blocking Issues** | None blocking implementation. Gen-0 pipeline run (Stage 15) still needed for trained weights. |
+| **Current Stage** | Stage 18 (Full UI) — IMPLEMENTATION COMPLETE. Pending human review and tag. |
+| **Current Build-Order Step** | Stage 19 (Optimization & Hardening) — not started. |
+| **Build Compiles** | Yes — `cargo build` passes, 0 warnings; `tsc --noEmit` clean |
+| **Tests Pass** | Yes — engine: 308 unit + 249 integration = 557 total (6 ignored); Python: 8 pytest; UI: 63 Vitest. |
+| **Blocking Issues** | None blocking implementation. Gen-0 pipeline run (Stage 15) still needed for trained weights. P2 UI features (move arrows, check highlight, terrain styling, FEN4 parser) intentionally deferred to web platform. |
 
 ---
 
@@ -39,7 +39,7 @@
 | 15 | NNUE Training Pipeline | complete | post-audit done | — | 526 tests. Pending Gen-0 run + T13 + tag. |
 | 16 | NNUE Integration | complete | post-audit done | — | 536 tests. AccumulatorStack wired into BRS+MCTS. Pending tag. |
 | 17 | Game Mode Variant Tuning | complete | post-audit done | — | Chess960, DKW/FFA/Terrain eval, dead piece ordering. 557 tests. Pending tag. |
-| 18 | Full UI | not-started | — | — | |
+| 18 | Full UI | complete | post-audit done | — | Engine protocol extensions, per-slot config, self-play dashboard, undo/redo. P2 deferred to web. Pending tag. |
 | 19 | Optimization & Hardening | not-started | — | — | |
 
 **Status values:** `not-started` | `in-progress` | `complete` | `blocked`
@@ -55,7 +55,7 @@
 | AGENT_CONDUCT.md | current | v1.2 — Section 1.18 added (Diagnostic Observer Protocol). |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
 | DECISIONS.md | current | 15 ADRs. ADR-007/008 superseded by ADR-015 (Huginn → tracing). ADR-014 (UI Vision), ADR-015 (Retire Huginn). |
-| HANDOFF.md | current | Stage 17 complete, pending review + tag. |
+| HANDOFF.md | current | Stage 18 Full UI complete. Pending review + tag. |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
 | audit_log_stage_00.md through audit_log_stage_17.md | current | All complete. |
@@ -66,19 +66,29 @@
 ## What the Next Session Should Do First
 
 1. Read STATUS.md + HANDOFF.md
-2. Human reviews Stage 17 changes, tags `stage-17-complete` / `v1.17`
-3. If Gen-0 pipeline hasn't been run yet (Stage 15), run it to produce trained weights
-4. Begin Stage 18 (Full UI) per AGENT_CONDUCT.md Section 1.1
+2. Human reviews Stage 17 + Stage 18 changes, tags both
+3. Manual smoke test: `cd odin-ui && cargo tauri dev`, verify slot config, self-play dashboard, undo/redo
+4. Run self-play AC4 test: 100+ games without crashes
+5. Run Gen-0 datagen pipeline — see [[Pattern-Kaggle-Training-Pipeline]]
+6. Begin Stage 19 (Optimization & Hardening) per AGENT_CONDUCT.md Section 1.1
 
 ---
 
 ## Known Regressions
 
-None. All tests pass (557 engine + 8 Python pytest + 54 UI Vitest).
+None. All tests pass (557 engine + 8 Python pytest + 63 UI Vitest).
 
 ---
 
 ## Non-Stage Changes
+
+**2026-03-01 — Stage 18: Full UI** ([[Session-2026-03-01-Stage18-Full-UI]]):
+
+Engine protocol extensions: `in_check`, `brs_moves`, `mcts_visits`, `stop_reason` info string emissions (permanent investment for any frontend). Per-slot player configuration: replaced `PlayMode` (`manual`/`semi-auto`/`full-auto`) + `humanPlayer` with `SlotConfig = Record<Player, 'human' | 'engine'>` and quick presets (Play as Red / Watch / Hot Seat). Self-play dashboard: `useSelfPlay` hook runs batches of all-engine games with win rate tracking, avg game length/duration stats. Undo/redo: pure board replay approach with redo stack cleared on new moves. Debug panel: BRS surviving moves with scores, MCTS top-5 visit counts, stop reason. P2 visual features (move arrows, check highlight, terrain styling, FEN4 parser) intentionally deferred to web platform. Tests: 557 engine + 63 UI Vitest.
+
+**2026-03-01 — UI Bugfixes: Stale Engine Output + En Passant Display** ([[Session-2026-03-01-UI-Stale-Output-Fix]]):
+
+Three UI bugs fixed. (1) **Stale engine output on restart** — old engine's reader thread continued emitting Tauri events after kill. Fix: Rust-level generation tagging in `engine.rs` (`EngineOutputPayload { line, gen }`), frontend filters by generation in `useEngine.ts`. (2) **Stale bestmove on New Game** — same-process race where in-flight search's bestmove corrupted new game state. Fix: `ignoreNextBestmoveRef` flag + `stop` command in `newGame()`, guards on info/nextturn/bestmove handlers. (3) **En passant display for lateral captures** — captured pawn formula only worked for vertical-moving pawns. Fix: check both candidate squares `(toFile, fromRank)` and `(fromFile, toRank)`. Also in working tree: MCTS override fixes from prior session (BRS_CONFIDENCE_MARGIN 25cp, MCTS_OVERRIDE_TOLERANCE 30cp, mate detection). See [[Issue-UI-Stale-Engine-Output]].
 
 **2026-02-28 — Stage 17: Game Mode Variant Tuning** ([[Session-2026-02-28-Stage17-Variant-Tuning]]):
 
@@ -246,6 +256,8 @@ Follow-up items noted but not blocking:
 | Test count | 557 | 17 | 308 unit + 249 integration (6 ignored). +3 chess960 unit, +18 stage_17 integration. |
 | Chess960 position generation | <1us | 17 | Deterministic, pure computation |
 | DKW/FFA/Terrain eval overhead | <5us total | 17 | Negligible vs existing eval |
+| Vitest test count | 63 | 18 | 29 board-constants + 34 protocol-parser (+7 new parser tests) |
+| Engine info string emissions | negligible | 18 | ~1 format! per search for brs_moves, mcts_visits, stop_reason, in_check |
 
 ---
 

@@ -375,8 +375,12 @@ fn test_info_callback_receives_lines() {
         !captured.is_empty(),
         "info callback should receive at least one line"
     );
-    // Verify info lines contain expected fields
+    // Verify search info lines contain expected fields.
+    // Skip "info string ..." lines (metadata like mcts_visits, stop_reason).
     for line in captured.iter() {
+        if line.starts_with("info string") {
+            continue;
+        }
         assert!(
             line.contains("phase mcts"),
             "info line missing 'phase mcts': {}",

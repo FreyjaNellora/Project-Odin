@@ -35,6 +35,7 @@ export default function AnalysisPanel({ latestInfo }: AnalysisPanelProps) {
             <span className="analysis-value">
               {latestInfo.depth}
               {latestInfo.seldepth !== undefined && `/${latestInfo.seldepth}`}
+              {latestInfo.stopReason && ` (${latestInfo.stopReason})`}
             </span>
           </div>
         )}

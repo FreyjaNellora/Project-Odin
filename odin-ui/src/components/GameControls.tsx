@@ -1,9 +1,10 @@
-// Game controls: turn indicator, scores, game settings, play mode, speed, new game button.
+// Game controls: turn indicator, scores, game settings, slot config, speed, new game button.
 
 import type { Player } from '../types/board';
 import { PLAYERS } from '../types/board';
 import { PLAYER_COLORS } from '../lib/board-constants';
-import type { PlayMode, GameMode, EvalProfileSetting } from '../hooks/useGameState';
+import type { SlotConfig, SlotRole, GameMode, EvalProfileSetting } from '../hooks/useGameState';
+import { DEFAULT_SLOT_CONFIG } from '../hooks/useGameState';
 import '../styles/GameControls.css';
 
 interface GameControlsProps {
@@ -11,32 +12,30 @@ interface GameControlsProps {
   scores: [number, number, number, number];
   isGameOver: boolean;
   error: string | null;
-  playMode: PlayMode;
-  humanPlayer: Player | null;
+  slotConfig: SlotConfig;
   engineDelay: number;
   isPaused: boolean;
   gameMode: GameMode;
   evalProfile: EvalProfileSetting;
   resolvedEvalProfile: 'standard' | 'aggressive';
   terrainMode: boolean;
+  chess960: boolean;
   maxRounds: number;
   onNewGame: () => void;
   onEngineMove: () => void;
-  onSetPlayMode: (mode: PlayMode) => void;
-  onSetHumanPlayer: (player: Player | null) => void;
+  onSetSlotConfig: (config: SlotConfig) => void;
   onSetEngineDelay: (ms: number) => void;
   onSetGameMode: (mode: GameMode) => void;
   onSetEvalProfile: (profile: EvalProfileSetting) => void;
   onSetTerrainMode: (on: boolean) => void;
+  onSetChess960: (on: boolean) => void;
   onSetMaxRounds: (n: number) => void;
   onTogglePause: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
 }
-
-const MODE_LABELS: Record<PlayMode, string> = {
-  manual: 'Manual',
-  'semi-auto': 'Semi-Auto',
-  'full-auto': 'Full Auto',
-};
 
 
 export default function GameControls({
@@ -44,26 +43,38 @@ export default function GameControls({
   scores,
   isGameOver,
   error,
-  playMode,
-  humanPlayer,
+  slotConfig,
   engineDelay,
   isPaused,
   gameMode,
   evalProfile,
   resolvedEvalProfile,
   terrainMode,
+  chess960,
   maxRounds,
   onNewGame,
   onEngineMove,
-  onSetPlayMode,
-  onSetHumanPlayer,
+  onSetSlotConfig,
   onSetEngineDelay,
   onSetGameMode,
   onSetEvalProfile,
   onSetTerrainMode,
+  onSetChess960,
   onSetMaxRounds,
   onTogglePause,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
 }: GameControlsProps) {
+  const hasEngineSlot = PLAYERS.some((p) => slotConfig[p] === 'engine');
+  const allEngine = PLAYERS.every((p) => slotConfig[p] === 'engine');
+  const allHuman = PLAYERS.every((p) => slotConfig[p] === 'human');
+
+  const toggleSlot = (player: Player) => {
+    const newRole: SlotRole = slotConfig[player] === 'human' ? 'engine' : 'human';
+    onSetSlotConfig({ ...slotConfig, [player]: newRole });
+  };
   return (
     <div className="game-controls">
       {/* Turn indicator */}
@@ -107,6 +118,9 @@ export default function GameControls({
         <span className={`config-tag config-tag-terrain`}>
           {terrainMode ? 'Terrain' : 'Normal'}
         </span>
+        {chess960 && (
+          <span className="config-tag config-tag-960">960</span>
+        )}
       </div>
 
       {/* Error display */}
@@ -153,21 +167,24 @@ export default function GameControls({
         </div>
       </div>
 
-      {/* Terrain toggle */}
-      <div className="control-section">
-        <span className="section-label">Terrain</span>
-        <div className="mode-selector">
+      {/* Terrain & Chess960 toggles (compact row) */}
+      <div className="toggle-row">
+        <div className="toggle-item">
+          <span className="section-label">Terrain</span>
           <button
-            className={`btn-mode ${!terrainMode ? 'active' : ''}`}
-            onClick={() => onSetTerrainMode(false)}
+            className={`btn-toggle ${terrainMode ? 'active' : ''}`}
+            onClick={() => onSetTerrainMode(!terrainMode)}
           >
-            Off
+            {terrainMode ? 'On' : 'Off'}
           </button>
+        </div>
+        <div className="toggle-item">
+          <span className="section-label">Chess960</span>
           <button
-            className={`btn-mode ${terrainMode ? 'active' : ''}`}
-            onClick={() => onSetTerrainMode(true)}
+            className={`btn-toggle ${chess960 ? 'active' : ''}`}
+            onClick={() => onSetChess960(!chess960)}
           >
-            On
+            {chess960 ? 'On' : 'Off'}
           </button>
         </div>
       </div>
@@ -188,43 +205,51 @@ export default function GameControls({
         />
       </div>
 
-      {/* Play mode selector */}
+      {/* Per-slot player configuration (Stage 18) */}
       <div className="control-section">
-        <span className="section-label">Play Mode</span>
-        <div className="mode-selector">
-          {(['manual', 'semi-auto', 'full-auto'] as PlayMode[]).map((mode) => (
-            <button
-              key={mode}
-              className={`btn-mode ${playMode === mode ? 'active' : ''}`}
-              onClick={() => onSetPlayMode(mode)}
-            >
-              {MODE_LABELS[mode]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Player selector (semi-auto only) */}
-      {playMode === 'semi-auto' && (
-        <div className="control-section">
-          <span className="section-label">Play as</span>
-          <div className="player-selector">
-            {PLAYERS.map((player) => (
-              <button
-                key={player}
-                className={`btn-player ${humanPlayer === player ? 'active' : ''}`}
-                style={{
-                  color: PLAYER_COLORS[player],
-                  borderColor: humanPlayer === player ? PLAYER_COLORS[player] : undefined,
-                }}
-                onClick={() => onSetHumanPlayer(player)}
+        <span className="section-label">Players</span>
+        <div className="slot-config">
+          {PLAYERS.map((player) => (
+            <div key={player} className="slot-row">
+              <span
+                className="slot-player"
+                style={{ color: PLAYER_COLORS[player] }}
               >
                 {player}
-              </button>
-            ))}
-          </div>
+              </span>
+              <div className="slot-toggle">
+                <button
+                  className={`btn-slot ${slotConfig[player] === 'human' ? 'active' : ''}`}
+                  onClick={() => toggleSlot(player)}
+                >
+                  {slotConfig[player] === 'human' ? 'Human' : 'Engine'}
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
-      )}
+        {/* Quick presets */}
+        <div className="slot-presets">
+          <button
+            className={`btn-preset ${slotConfig.Red === 'human' && slotConfig.Blue === 'engine' && slotConfig.Yellow === 'engine' && slotConfig.Green === 'engine' ? 'active' : ''}`}
+            onClick={() => onSetSlotConfig(DEFAULT_SLOT_CONFIG)}
+          >
+            Play as Red
+          </button>
+          <button
+            className={`btn-preset ${allEngine ? 'active' : ''}`}
+            onClick={() => onSetSlotConfig({ Red: 'engine', Blue: 'engine', Yellow: 'engine', Green: 'engine' })}
+          >
+            Watch
+          </button>
+          <button
+            className={`btn-preset ${allHuman ? 'active' : ''}`}
+            onClick={() => onSetSlotConfig({ Red: 'human', Blue: 'human', Yellow: 'human', Green: 'human' })}
+          >
+            Hot Seat
+          </button>
+        </div>
+      </div>
 
       {/* Speed control */}
       <div className="control-section">
@@ -244,7 +269,7 @@ export default function GameControls({
 
       {/* Control buttons */}
       <div className="control-buttons">
-        {playMode === 'manual' && (
+        {slotConfig[currentPlayer] === 'human' && (
           <button
             className="btn-engine"
             onClick={onEngineMove}
@@ -254,7 +279,7 @@ export default function GameControls({
           </button>
         )}
 
-        {playMode !== 'manual' && (
+        {hasEngineSlot && (
           <button
             className="btn-pause"
             onClick={onTogglePause}
@@ -263,6 +288,24 @@ export default function GameControls({
             {isPaused ? 'Resume' : 'Pause'}
           </button>
         )}
+
+        {/* Undo / Redo (Stage 18) */}
+        <div className="undo-redo-row">
+          <button
+            className="btn-undo"
+            onClick={onUndo}
+            disabled={!canUndo}
+          >
+            Undo
+          </button>
+          <button
+            className="btn-redo"
+            onClick={onRedo}
+            disabled={!canRedo}
+          >
+            Redo
+          </button>
+        </div>
 
         <button className="btn-new" onClick={onNewGame}>
           New Game

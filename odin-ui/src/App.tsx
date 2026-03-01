@@ -5,8 +5,10 @@ import { useState, useEffect } from 'react';
 import './App.css';
 import { useEngine } from './hooks/useEngine';
 import { useGameState } from './hooks/useGameState';
+import { useSelfPlay } from './hooks/useSelfPlay';
 import BoardDisplay from './components/BoardDisplay';
 import GameControls from './components/GameControls';
+import SelfPlayDashboard from './components/SelfPlayDashboard';
 import AnalysisPanel from './components/AnalysisPanel';
 import GameLog from './components/GameLog';
 import EngineInternals from './components/EngineInternals';
@@ -17,6 +19,7 @@ import PromotionDialog from './components/PromotionDialog';
 function App() {
   const engine = useEngine();
   const game = useGameState(engine.sendCommand);
+  const selfPlay = useSelfPlay(game);
   const [showCoords, setShowCoords] = useState(true);
 
   // Wire engine messages to game state handler
@@ -39,25 +42,33 @@ function App() {
             scores={game.scores}
             isGameOver={game.isGameOver}
             error={game.error}
-            playMode={game.playMode}
-            humanPlayer={game.humanPlayer}
+            slotConfig={game.slotConfig}
             engineDelay={game.engineDelay}
             isPaused={game.isPaused}
             gameMode={game.gameMode}
             evalProfile={game.evalProfile}
             resolvedEvalProfile={game.resolvedEvalProfile}
             terrainMode={game.terrainMode}
+            chess960={game.chess960}
             maxRounds={game.maxRounds}
             onNewGame={game.newGame}
             onEngineMove={game.requestEngineMove}
-            onSetPlayMode={game.setPlayMode}
-            onSetHumanPlayer={game.setHumanPlayer}
+            onSetSlotConfig={game.setSlotConfig}
             onSetEngineDelay={game.setEngineDelay}
             onSetGameMode={game.setGameMode}
             onSetEvalProfile={game.setEvalProfile}
             onSetTerrainMode={game.setTerrainMode}
+            onSetChess960={game.setChess960}
             onSetMaxRounds={game.setMaxRounds}
             onTogglePause={game.togglePause}
+            canUndo={game.canUndo}
+            canRedo={game.canRedo}
+            onUndo={game.undo}
+            onRedo={game.redo}
+          />
+          <SelfPlayDashboard
+            selfPlay={selfPlay}
+            engineConnected={engine.isConnected}
           />
           <div className="board-options">
             <label className="coord-toggle">

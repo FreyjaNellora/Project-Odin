@@ -189,4 +189,75 @@ describe('parseEngineOutput', () => {
       expect(msg.data.ffaScores).toEqual([0, 1, 6, 5]);
     }
   });
+
+  // --- Stage 18: in_check ---
+
+  it('parses info string in_check', () => {
+    const msg = parseEngineOutput('info string in_check Blue');
+    expect(msg).toEqual({ type: 'in_check', player: 'Blue' });
+  });
+
+  it('parses in_check for all player colors', () => {
+    for (const color of ['Red', 'Blue', 'Yellow', 'Green']) {
+      const msg = parseEngineOutput(`info string in_check ${color}`);
+      expect(msg).toEqual({ type: 'in_check', player: color });
+    }
+  });
+
+  it('ignores in_check with invalid color', () => {
+    const msg = parseEngineOutput('info string in_check Purple');
+    expect(msg.type).not.toBe('in_check');
+  });
+
+  // --- Stage 18: brs_moves ---
+
+  it('parses info string brs_moves', () => {
+    const msg = parseEngineOutput('info string brs_moves e2e4:150 d2d4:120 g1f3:100');
+    expect(msg.type).toBe('info');
+    if (msg.type === 'info') {
+      expect(msg.data.brsMoves).toEqual([
+        { move: 'e2e4', score: 150 },
+        { move: 'd2d4', score: 120 },
+        { move: 'g1f3', score: 100 },
+      ]);
+      expect(msg.data.brsSurviving).toBe(3);
+    }
+  });
+
+  it('parses brs_moves with negative scores', () => {
+    const msg = parseEngineOutput('info string brs_moves a2a3:-50 b2b4:10');
+    expect(msg.type).toBe('info');
+    if (msg.type === 'info') {
+      expect(msg.data.brsMoves).toEqual([
+        { move: 'a2a3', score: -50 },
+        { move: 'b2b4', score: 10 },
+      ]);
+    }
+  });
+
+  // --- Stage 18: mcts_visits ---
+
+  it('parses info string mcts_visits', () => {
+    const msg = parseEngineOutput('info string mcts_visits d2d4:468 i2i3:468 j2j4:218');
+    expect(msg.type).toBe('info');
+    if (msg.type === 'info') {
+      expect(msg.data.mctsVisits).toEqual([
+        { move: 'd2d4', visits: 468 },
+        { move: 'i2i3', visits: 468 },
+        { move: 'j2j4', visits: 218 },
+      ]);
+    }
+  });
+
+  // --- Stage 18: stop_reason ---
+
+  it('parses info string stop_reason', () => {
+    for (const reason of ['time', 'depth', 'nodes', 'forced', 'brs_confidence', 'time_pressure']) {
+      const msg = parseEngineOutput(`info string stop_reason ${reason}`);
+      expect(msg.type).toBe('info');
+      if (msg.type === 'info') {
+        expect(msg.data.stopReason).toBe(reason);
+      }
+    }
+  });
 });

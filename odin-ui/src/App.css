@@ -62,6 +62,8 @@
 
 .left-panel {
   flex: 0 0 200px;
+  overflow-y: auto;
+  max-height: 100%;
 }
 
 .center-panel {

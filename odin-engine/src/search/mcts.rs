@@ -861,6 +861,26 @@ impl Searcher for MctsSearcher {
             }
         }
 
+        // Emit top-5 root children by visit count (Stage 18: UI debug panel).
+        if let Some(ref mut cb) = self.info_cb {
+            let mut visit_pairs: Vec<(String, u32)> = root
+                .children
+                .iter()
+                .filter_map(|c| c.move_to_here.map(|m| (m.to_algebraic(), c.visit_count)))
+                .filter(|(_, v)| *v > 0)
+                .collect();
+            visit_pairs.sort_by(|a, b| b.1.cmp(&a.1));
+            visit_pairs.truncate(5);
+            if !visit_pairs.is_empty() {
+                let visits_str = visit_pairs
+                    .iter()
+                    .map(|(m, v)| format!("{m}:{v}"))
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                cb(format!("info string mcts_visits {visits_str}"));
+            }
+        }
+
         // Select final move
         let best_idx =
             temperature_select(&root, &candidates, self.temperature, &mut self.rng);

@@ -17,6 +17,8 @@ export type EngineMessage =
   | { type: 'nextturn'; player: Player }
   /** Game has ended; winner is the surviving player or null for a draw. */
   | { type: 'gameover'; winner: Player | null }
+  /** The next player to move is in check (Stage 18). */
+  | { type: 'in_check'; player: Player }
   | { type: 'unknown'; raw: string };
 
 /** Parsed search info data from `info` lines. */
@@ -35,4 +37,10 @@ export interface InfoData {
   phase?: 'brs' | 'mcts';
   brsSurviving?: number;
   mctsSims?: number;
+  /** BRS surviving move list with scores: [{move, score}] (Stage 18). */
+  brsMoves?: { move: string; score: number }[];
+  /** MCTS top-N root moves by visit count: [{move, visits}] (Stage 18). */
+  mctsVisits?: { move: string; visits: number }[];
+  /** Why the search stopped: "time" | "depth" | "nodes" | "forced" | etc. (Stage 18). */
+  stopReason?: string;
 }
