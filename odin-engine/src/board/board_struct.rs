@@ -3,7 +3,7 @@
 // 196-element array of Option<Piece>, plus per-player piece lists,
 // per-player king square tracking, and Zobrist hash.
 
-use super::square::{is_valid_square, square_from, Square, TOTAL_SQUARES};
+use super::square::{file_of, is_valid_square, rank_of, square_from, Square, TOTAL_SQUARES};
 use super::types::{Piece, PieceType, Player, PLAYER_COUNT};
 use super::zobrist::ZobristKeys;
 
@@ -39,6 +39,9 @@ pub struct Board {
     zobrist: u64,
     /// Castling rights: 8 bits, 2 per player.
     castling_rights: u8,
+    /// Initial king/rook positions for castling (supports Chess960).
+    /// [player_index] = (king_start_sq, ks_rook_sq, qs_rook_sq)
+    castling_starts: [(Square, Square, Square); PLAYER_COUNT],
     /// En passant target square (the square a capturing pawn lands on).
     /// In 4PC, this is a full square index because Blue/Green pawns move
     /// along files, not ranks, so a file alone doesn't identify the target.
@@ -71,6 +74,14 @@ impl Board {
             king_squares: [0; PLAYER_COUNT],
             zobrist: 0,
             castling_rights: 0,
+            castling_starts: [
+                // Standard castling starts (king, ks_rook, qs_rook).
+                // Overridden by chess960_position() for Chess960.
+                (square_from(7, 0).unwrap(), square_from(10, 0).unwrap(), square_from(3, 0).unwrap()),     // Red
+                (square_from(0, 6).unwrap(), square_from(0, 3).unwrap(), square_from(0, 10).unwrap()),     // Blue
+                (square_from(6, 13).unwrap(), square_from(3, 13).unwrap(), square_from(10, 13).unwrap()),  // Yellow
+                (square_from(13, 7).unwrap(), square_from(13, 10).unwrap(), square_from(13, 3).unwrap()),  // Green
+            ],
             en_passant: None,
             side_to_move: Player::Red,
             halfmove_clock: 0,
@@ -182,6 +193,102 @@ impl Board {
         // All castling rights available at start
         board.set_castling_rights(0xFF);
 
+        // Standard castling start squares (king, ks_rook, qs_rook)
+        board.castling_starts = [
+            (square_from(7, 0).unwrap(), square_from(10, 0).unwrap(), square_from(3, 0).unwrap()),     // Red
+            (square_from(0, 6).unwrap(), square_from(0, 3).unwrap(), square_from(0, 10).unwrap()),     // Blue
+            (square_from(6, 13).unwrap(), square_from(3, 13).unwrap(), square_from(10, 13).unwrap()),  // Yellow
+            (square_from(13, 7).unwrap(), square_from(13, 10).unwrap(), square_from(13, 3).unwrap()),  // Green
+        ];
+
+        board
+    }
+
+    /// Create a Chess960 starting position from a seed.
+    ///
+    /// Generates a valid Chess960 back rank and rotates it for all 4 players:
+    ///   - Red (south, files 3-10, rank 0): array as-is
+    ///   - Blue (west, file 0, ranks 3-10): array REVERSED
+    ///   - Yellow (north, files 3-10, rank 13): array REVERSED
+    ///   - Green (east, file 13, ranks 3-10): array as-is
+    ///
+    /// Castling starts are set based on actual king/rook positions.
+    pub fn chess960_position(seed: u64) -> Self {
+        use crate::variants::chess960;
+
+        let back_rank = chess960::generate_back_rank(seed);
+
+        // Reversed array for Blue and Yellow
+        let mut reversed = back_rank;
+        reversed.reverse();
+
+        let mut board = Self::empty();
+
+        // Red: files 3-10, rank 0 (array as-is), pawns rank 1
+        for (i, &pt) in back_rank.iter().enumerate() {
+            let file = (3 + i) as u8;
+            board.place_piece(square_from(file, 0).unwrap(), Piece::new(pt, Player::Red));
+            board.place_piece(
+                square_from(file, 1).unwrap(),
+                Piece::new(PieceType::Pawn, Player::Red),
+            );
+        }
+
+        // Blue: file 0, ranks 3-10 (array REVERSED), pawns file 1
+        for (i, &pt) in reversed.iter().enumerate() {
+            let rank = (3 + i) as u8;
+            board.place_piece(square_from(0, rank).unwrap(), Piece::new(pt, Player::Blue));
+            board.place_piece(
+                square_from(1, rank).unwrap(),
+                Piece::new(PieceType::Pawn, Player::Blue),
+            );
+        }
+
+        // Yellow: files 3-10, rank 13 (array REVERSED), pawns rank 12
+        for (i, &pt) in reversed.iter().enumerate() {
+            let file = (3 + i) as u8;
+            board.place_piece(
+                square_from(file, 13).unwrap(),
+                Piece::new(pt, Player::Yellow),
+            );
+            board.place_piece(
+                square_from(file, 12).unwrap(),
+                Piece::new(PieceType::Pawn, Player::Yellow),
+            );
+        }
+
+        // Green: file 13, ranks 3-10 (array as-is), pawns file 12
+        for (i, &pt) in back_rank.iter().enumerate() {
+            let rank = (3 + i) as u8;
+            board.place_piece(
+                square_from(13, rank).unwrap(),
+                Piece::new(pt, Player::Green),
+            );
+            board.place_piece(
+                square_from(12, rank).unwrap(),
+                Piece::new(PieceType::Pawn, Player::Green),
+            );
+        }
+
+        board.set_castling_rights(0xFF);
+
+        // Set castling_starts by scanning each player's actual piece positions.
+        // For each player, find king and both rooks, then determine KS/QS.
+        for &player in &Player::ALL {
+            let mut king_sq = 0u8;
+            let mut rooks = Vec::with_capacity(2);
+            for &(pt, sq) in board.piece_list(player) {
+                match pt {
+                    PieceType::King => king_sq = sq,
+                    PieceType::Rook => rooks.push(sq),
+                    _ => {}
+                }
+            }
+            debug_assert_eq!(rooks.len(), 2, "expected 2 rooks for {player:?}");
+            let (ks_rook, qs_rook) = determine_ks_qs_rook(player, king_sq, rooks[0], rooks[1]);
+            board.set_castling_starts(player, king_sq, ks_rook, qs_rook);
+        }
+
         board
     }
 
@@ -230,6 +337,25 @@ impl Board {
     #[inline]
     pub fn castling_rights(&self) -> u8 {
         self.castling_rights
+    }
+
+    /// Initial castling positions: (king_start, ks_rook, qs_rook) per player.
+    /// Used by castling_config() to support both standard and Chess960 positions.
+    #[inline]
+    pub fn castling_starts(&self) -> &[(Square, Square, Square); PLAYER_COUNT] {
+        &self.castling_starts
+    }
+
+    /// Set the initial castling positions for a player (used by Chess960 setup).
+    #[inline]
+    pub fn set_castling_starts(
+        &mut self,
+        player: Player,
+        king: Square,
+        ks_rook: Square,
+        qs_rook: Square,
+    ) {
+        self.castling_starts[player.index()] = (king, ks_rook, qs_rook);
     }
 
     /// Current en passant target square, if any.
@@ -446,6 +572,45 @@ impl Board {
     /// Count total pieces on the board.
     pub fn piece_count(&self) -> usize {
         self.piece_counts.iter().map(|&c| c as usize).sum()
+    }
+}
+
+/// Determine which rook is kingside and which is queenside for a player.
+///
+/// In Chess960, the king is always between the two rooks. KS/QS is determined
+/// by which side of the back rank the rook is on relative to the castling
+/// destination squares:
+///   - Red/Green: higher coordinate = KS
+///   - Blue/Yellow: lower coordinate = KS
+fn determine_ks_qs_rook(
+    player: Player,
+    king_sq: Square,
+    rook1: Square,
+    rook2: Square,
+) -> (Square, Square) {
+    // Extract coordinate along the back rank axis
+    let (king_coord, r1_coord, _r2_coord) = match player {
+        Player::Red | Player::Yellow => {
+            (file_of(king_sq), file_of(rook1), file_of(rook2))
+        }
+        Player::Blue | Player::Green => {
+            (rank_of(king_sq), rank_of(rook1), rank_of(rook2))
+        }
+    };
+
+    // KS side: Red/Green = higher coordinate, Blue/Yellow = lower coordinate
+    let ks_is_higher = matches!(player, Player::Red | Player::Green);
+
+    let r1_is_ks = if ks_is_higher {
+        r1_coord > king_coord
+    } else {
+        r1_coord < king_coord
+    };
+
+    if r1_is_ks {
+        (rook1, rook2) // (ks, qs)
+    } else {
+        (rook2, rook1) // (ks, qs)
     }
 }
 

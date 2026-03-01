@@ -309,14 +309,14 @@ fn generate_castling(board: &Board, player: Player, moves: &mut Vec<Move>) {
         _rook_target_qs,
         ks_bit,
         qs_bit,
-    ) = get_castling_config(player);
+    ) = get_castling_config(player, board);
 
     // Kingside
     if rights & ks_bit != 0 {
-        let empty = castling_empty_squares(player, true);
-        let path = castling_king_path(player, true);
+        let empty = castling_empty_squares(player, true, board);
+        let path = castling_king_path(player, true, board);
 
-        // All squares between king and rook must be empty
+        // All squares on the travel paths must be empty
         let all_empty = empty.iter().all(|&s| board.piece_at(s).is_none());
 
         // King must not be in check, and must not pass through check
@@ -334,8 +334,8 @@ fn generate_castling(board: &Board, player: Player, moves: &mut Vec<Move>) {
 
     // Queenside
     if rights & qs_bit != 0 {
-        let empty = castling_empty_squares(player, false);
-        let path = castling_king_path(player, false);
+        let empty = castling_empty_squares(player, false, board);
+        let path = castling_king_path(player, false, board);
 
         let all_empty = empty.iter().all(|&s| board.piece_at(s).is_none());
 

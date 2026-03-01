@@ -278,13 +278,15 @@ struct CastlingConfig {
     queenside_bit: u8,
 }
 
-/// Get the rook squares and castling details for each player.
-fn castling_config(player: Player) -> CastlingConfig {
+/// Get the castling details for a player, reading initial positions from the board.
+/// Supports both standard and Chess960 starting positions.
+fn castling_config(player: Player, board: &Board) -> CastlingConfig {
+    let (king_sq, ks_rook, qs_rook) = board.castling_starts()[player.index()];
     match player {
         Player::Red => CastlingConfig {
-            king_sq: square_from(7, 0).unwrap(),
-            kingside_rook_sq: square_from(10, 0).unwrap(),
-            queenside_rook_sq: square_from(3, 0).unwrap(),
+            king_sq,
+            kingside_rook_sq: ks_rook,
+            queenside_rook_sq: qs_rook,
             king_target_ks: square_from(9, 0).unwrap(),
             rook_target_ks: square_from(8, 0).unwrap(),
             king_target_qs: square_from(5, 0).unwrap(),
@@ -293,9 +295,9 @@ fn castling_config(player: Player) -> CastlingConfig {
             queenside_bit: CASTLE_RED_QUEEN,
         },
         Player::Blue => CastlingConfig {
-            king_sq: square_from(0, 6).unwrap(),
-            kingside_rook_sq: square_from(0, 3).unwrap(),
-            queenside_rook_sq: square_from(0, 10).unwrap(),
+            king_sq,
+            kingside_rook_sq: ks_rook,
+            queenside_rook_sq: qs_rook,
             king_target_ks: square_from(0, 4).unwrap(),
             rook_target_ks: square_from(0, 5).unwrap(),
             king_target_qs: square_from(0, 8).unwrap(),
@@ -304,9 +306,9 @@ fn castling_config(player: Player) -> CastlingConfig {
             queenside_bit: CASTLE_BLUE_QUEEN,
         },
         Player::Yellow => CastlingConfig {
-            king_sq: square_from(6, 13).unwrap(),
-            kingside_rook_sq: square_from(3, 13).unwrap(),
-            queenside_rook_sq: square_from(10, 13).unwrap(),
+            king_sq,
+            kingside_rook_sq: ks_rook,
+            queenside_rook_sq: qs_rook,
             king_target_ks: square_from(4, 13).unwrap(),
             rook_target_ks: square_from(5, 13).unwrap(),
             king_target_qs: square_from(8, 13).unwrap(),
@@ -315,9 +317,9 @@ fn castling_config(player: Player) -> CastlingConfig {
             queenside_bit: CASTLE_YELLOW_QUEEN,
         },
         Player::Green => CastlingConfig {
-            king_sq: square_from(13, 7).unwrap(),
-            kingside_rook_sq: square_from(13, 10).unwrap(),
-            queenside_rook_sq: square_from(13, 3).unwrap(),
+            king_sq,
+            kingside_rook_sq: ks_rook,
+            queenside_rook_sq: qs_rook,
             king_target_ks: square_from(13, 9).unwrap(),
             rook_target_ks: square_from(13, 8).unwrap(),
             king_target_qs: square_from(13, 5).unwrap(),
@@ -358,14 +360,20 @@ pub fn make_move(board: &mut Board, mv: Move) -> MoveUndo {
             board.move_piece(from, to);
         }
         FLAG_CASTLE_KING => {
-            let config = castling_config(player);
-            board.move_piece(from, config.king_target_ks);
-            board.move_piece(config.kingside_rook_sq, config.rook_target_ks);
+            let config = castling_config(player, board);
+            // Chess960: king/rook may overlap destinations. Remove both first, then place.
+            let king_piece = board.remove_piece(from);
+            let rook_piece = board.remove_piece(config.kingside_rook_sq);
+            board.place_piece(config.king_target_ks, king_piece);
+            board.place_piece(config.rook_target_ks, rook_piece);
         }
         FLAG_CASTLE_QUEEN => {
-            let config = castling_config(player);
-            board.move_piece(from, config.king_target_qs);
-            board.move_piece(config.queenside_rook_sq, config.rook_target_qs);
+            let config = castling_config(player, board);
+            // Chess960: king/rook may overlap destinations. Remove both first, then place.
+            let king_piece = board.remove_piece(from);
+            let rook_piece = board.remove_piece(config.queenside_rook_sq);
+            board.place_piece(config.king_target_qs, king_piece);
+            board.place_piece(config.rook_target_qs, rook_piece);
         }
         _ => {
             // Normal move, capture, double push, promotion
@@ -444,14 +452,20 @@ pub fn unmake_move(board: &mut Board, mv: Move, undo: MoveUndo) {
             }
         }
         FLAG_CASTLE_KING => {
-            let config = castling_config(player);
-            board.move_piece(config.king_target_ks, from);
-            board.move_piece(config.rook_target_ks, config.kingside_rook_sq);
+            let config = castling_config(player, board);
+            // Chess960: remove both, then place at original squares.
+            let king_piece = board.remove_piece(config.king_target_ks);
+            let rook_piece = board.remove_piece(config.rook_target_ks);
+            board.place_piece(from, king_piece);
+            board.place_piece(config.kingside_rook_sq, rook_piece);
         }
         FLAG_CASTLE_QUEEN => {
-            let config = castling_config(player);
-            board.move_piece(config.king_target_qs, from);
-            board.move_piece(config.rook_target_qs, config.queenside_rook_sq);
+            let config = castling_config(player, board);
+            // Chess960: remove both, then place at original squares.
+            let king_piece = board.remove_piece(config.king_target_qs);
+            let rook_piece = board.remove_piece(config.rook_target_qs);
+            board.place_piece(from, king_piece);
+            board.place_piece(config.queenside_rook_sq, rook_piece);
         }
         _ => {
             if mv.is_promotion() {
@@ -518,7 +532,7 @@ fn update_castling_rights(board: &mut Board, from: Square, to: Square) {
 
     // Check each player's castling squares
     for &player in &Player::ALL {
-        let config = castling_config(player);
+        let config = castling_config(player, board);
 
         // King moved -> lose both rights
         if from == config.king_sq {
@@ -540,6 +554,7 @@ fn update_castling_rights(board: &mut Board, from: Square, to: Square) {
 /// Get the castling configuration (public for use by move generation).
 pub fn get_castling_config(
     player: Player,
+    board: &Board,
 ) -> (
     Square, // king_sq
     Square, // ks_rook
@@ -551,7 +566,7 @@ pub fn get_castling_config(
     u8,     // ks_bit
     u8,     // qs_bit
 ) {
-    let c = castling_config(player);
+    let c = castling_config(player, board);
     (
         c.king_sq,
         c.kingside_rook_sq,
@@ -565,43 +580,84 @@ pub fn get_castling_config(
     )
 }
 
-/// Squares between king and rook that must be empty for castling.
-pub fn castling_empty_squares(player: Player, kingside: bool) -> Vec<Square> {
-    let config = castling_config(player);
-    let (king, rook) = if kingside {
-        (config.king_sq, config.kingside_rook_sq)
+/// Squares that must be empty for castling (Chess960-compatible).
+///
+/// Computes the union of:
+///   - King's travel path (start → destination, excluding start)
+///   - Rook's travel path (start → destination, excluding start)
+///   - Minus the king and rook starting squares (they vacate)
+///
+/// In standard chess this produces the same result as "between king and rook."
+/// In Chess960, the king/rook may travel paths that don't overlap with each other.
+pub fn castling_empty_squares(player: Player, kingside: bool, board: &Board) -> Vec<Square> {
+    let config = castling_config(player, board);
+    let (king_start, rook_start, king_dest, rook_dest) = if kingside {
+        (
+            config.king_sq,
+            config.kingside_rook_sq,
+            config.king_target_ks,
+            config.rook_target_ks,
+        )
     } else {
-        (config.king_sq, config.queenside_rook_sq)
+        (
+            config.king_sq,
+            config.queenside_rook_sq,
+            config.king_target_qs,
+            config.rook_target_qs,
+        )
     };
 
-    // Generate squares strictly between king and rook
-    let king_file = file_of(king) as i8;
-    let king_rank = rank_of(king) as i8;
-    let rook_file = file_of(rook) as i8;
-    let rook_rank = rank_of(rook) as i8;
+    let mut must_be_empty: Vec<Square> = Vec::with_capacity(12);
 
-    let df = (rook_file - king_file).signum();
-    let dr = (rook_rank - king_rank).signum();
+    // King's travel path: all squares from king_start to king_dest (inclusive of dest)
+    walk_path_inclusive(&mut must_be_empty, king_start, king_dest);
 
-    let mut squares = Vec::new();
-    let mut f = king_file + df;
-    let mut r = king_rank + dr;
-    while (f, r) != (rook_file, rook_rank) {
-        squares.push(square_from(f as u8, r as u8).unwrap());
+    // Rook's travel path: all squares from rook_start to rook_dest (inclusive of dest)
+    walk_path_inclusive(&mut must_be_empty, rook_start, rook_dest);
+
+    // Remove king and rook themselves (they will vacate their squares)
+    must_be_empty.retain(|&sq| sq != king_start && sq != rook_start);
+
+    // Deduplicate (paths may overlap)
+    must_be_empty.sort_unstable();
+    must_be_empty.dedup();
+
+    must_be_empty
+}
+
+/// Walk from `from` towards `to`, adding each intermediate square and `to` itself.
+/// Does NOT add `from`. If `from == to`, adds nothing.
+fn walk_path_inclusive(out: &mut Vec<Square>, from: Square, to: Square) {
+    if from == to {
+        return;
+    }
+    let (ff, fr) = (file_of(from) as i8, rank_of(from) as i8);
+    let (tf, tr) = (file_of(to) as i8, rank_of(to) as i8);
+    let df = (tf - ff).signum();
+    let dr = (tr - fr).signum();
+    let mut f = ff + df;
+    let mut r = fr + dr;
+    // Walk until we've passed `to`
+    while (f, r) != (tf + df, tr + dr) {
+        out.push(square_from(f as u8, r as u8).unwrap());
         f += df;
         r += dr;
     }
-    squares
 }
 
 /// Squares the king passes through during castling (including from and to).
-pub fn castling_king_path(player: Player, kingside: bool) -> Vec<Square> {
-    let config = castling_config(player);
+/// If king_start == king_dest (Chess960 edge case), returns just [king_start].
+pub fn castling_king_path(player: Player, kingside: bool, board: &Board) -> Vec<Square> {
+    let config = castling_config(player, board);
     let (from, to) = if kingside {
         (config.king_sq, config.king_target_ks)
     } else {
         (config.king_sq, config.king_target_qs)
     };
+
+    if from == to {
+        return vec![from];
+    }
 
     let from_file = file_of(from) as i8;
     let from_rank = rank_of(from) as i8;
@@ -712,8 +768,10 @@ mod tests {
 
     #[test]
     fn test_castling_empty_squares_red_kingside() {
-        let empty = castling_empty_squares(Player::Red, true);
-        // Red kingside: between king h1 (7,0) and rook k1 (10,0): i1, j1
+        let board = Board::starting_position();
+        let empty = castling_empty_squares(Player::Red, true, &board);
+        // Red kingside: king h1 (7,0) -> j1, rook k1 (10,0) -> i1
+        // King path: i1, j1. Rook path: i1. Union minus king/rook starts: i1, j1
         assert_eq!(empty.len(), 2);
         assert!(empty.contains(&square_from(8, 0).unwrap())); // i1
         assert!(empty.contains(&square_from(9, 0).unwrap())); // j1
@@ -721,8 +779,10 @@ mod tests {
 
     #[test]
     fn test_castling_empty_squares_red_queenside() {
-        let empty = castling_empty_squares(Player::Red, false);
-        // Red queenside: between king h1 (7,0) and rook d1 (3,0): e1, f1, g1
+        let board = Board::starting_position();
+        let empty = castling_empty_squares(Player::Red, false, &board);
+        // Red queenside: king h1 (7,0) -> f1, rook d1 (3,0) -> g1
+        // King path: g1, f1. Rook path: e1, f1, g1. Union minus king/rook: e1, f1, g1
         assert_eq!(empty.len(), 3);
         assert!(empty.contains(&square_from(4, 0).unwrap())); // e1
         assert!(empty.contains(&square_from(5, 0).unwrap())); // f1
@@ -731,7 +791,8 @@ mod tests {
 
     #[test]
     fn test_castling_king_path_red_kingside() {
-        let path = castling_king_path(Player::Red, true);
+        let board = Board::starting_position();
+        let path = castling_king_path(Player::Red, true, &board);
         // King h1 -> j1: h1, i1, j1
         assert_eq!(path.len(), 3);
         assert_eq!(path[0], square_from(7, 0).unwrap()); // h1

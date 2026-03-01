@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
 **Last Updated:** 2026-02-28
-**Updated By:** Claude Opus 4.6 (Stage 16 NNUE Integration implementation complete, pending human review + tag)
+**Updated By:** Claude Opus 4.6 (Stage 17 Game Mode Variant Tuning — IMPLEMENTATION COMPLETE)
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 16 (NNUE Integration) — IMPLEMENTATION COMPLETE. Pending human review and tag. |
-| **Current Build-Order Step** | Stage 17 (Game Mode Variant Tuning) — not started. |
+| **Current Stage** | Stage 17 (Game Mode Variant Tuning) — IMPLEMENTATION COMPLETE. Pending human review and tag. |
+| **Current Build-Order Step** | Stage 18 (Full UI) — not started. |
 | **Build Compiles** | Yes — `cargo build` passes, 0 warnings, 0 clippy warnings |
-| **Tests Pass** | Yes — engine: 305 unit + 231 integration = 536 total (6 ignored); Python: 8 pytest; UI: 54 Vitest. |
+| **Tests Pass** | Yes — engine: 308 unit + 249 integration = 557 total (6 ignored); Python: 8 pytest; UI: 54 Vitest. |
 | **Blocking Issues** | None blocking implementation. Gen-0 pipeline run (Stage 15) still needed for trained weights. |
 
 ---
@@ -38,7 +38,7 @@
 | 14 | NNUE Feature Design & Architecture | complete | post-audit done | — | HalfKP-4, dual-head NNUE inference, .onnue format. 519 tests. Pending tag. |
 | 15 | NNUE Training Pipeline | complete | post-audit done | — | 526 tests. Pending Gen-0 run + T13 + tag. |
 | 16 | NNUE Integration | complete | post-audit done | — | 536 tests. AccumulatorStack wired into BRS+MCTS. Pending tag. |
-| 17 | Game Mode Variant Tuning | not-started | — | — | |
+| 17 | Game Mode Variant Tuning | complete | post-audit done | — | Chess960, DKW/FFA/Terrain eval, dead piece ordering. 557 tests. Pending tag. |
 | 18 | Full UI | not-started | — | — | |
 | 19 | Optimization & Hardening | not-started | — | — | |
 
@@ -55,30 +55,34 @@
 | AGENT_CONDUCT.md | current | v1.2 — Section 1.18 added (Diagnostic Observer Protocol). |
 | 4PC_RULES_REFERENCE.md | current | Complete game rules. |
 | DECISIONS.md | current | 15 ADRs. ADR-007/008 superseded by ADR-015 (Huginn → tracing). ADR-014 (UI Vision), ADR-015 (Retire Huginn). |
-| HANDOFF.md | current | Stage 16 complete, pending review + tag. |
+| HANDOFF.md | current | Stage 17 complete, pending review + tag. |
 | STATUS.md (this file) | current | |
 | README.md | current | Project overview at repo root. |
-| audit_log_stage_00.md through audit_log_stage_16.md | current | All complete. |
-| downstream_log_stage_00.md through downstream_log_stage_16.md | current | All complete. |
+| audit_log_stage_00.md through audit_log_stage_17.md | current | All complete. |
+| downstream_log_stage_00.md through downstream_log_stage_17.md | current | All complete. |
 
 ---
 
 ## What the Next Session Should Do First
 
 1. Read STATUS.md + HANDOFF.md
-2. Human reviews Stage 16 changes, tags `stage-16-complete` / `v1.16`
+2. Human reviews Stage 17 changes, tags `stage-17-complete` / `v1.17`
 3. If Gen-0 pipeline hasn't been run yet (Stage 15), run it to produce trained weights
-4. Begin Stage 17 (Game Mode Variant Tuning) per AGENT_CONDUCT.md Section 1.1
+4. Begin Stage 18 (Full UI) per AGENT_CONDUCT.md Section 1.1
 
 ---
 
 ## Known Regressions
 
-None. All tests pass (536 engine + 8 Python pytest + 54 UI Vitest).
+None. All tests pass (557 engine + 8 Python pytest + 54 UI Vitest).
 
 ---
 
 ## Non-Stage Changes
+
+**2026-02-28 — Stage 17: Game Mode Variant Tuning** ([[Session-2026-02-28-Stage17-Variant-Tuning]]):
+
+Chess960 position generator (back rank + 4-player mirroring + castling_starts). Castling refactored: `castling_config` reads from `board.castling_starts()`, `castling_empty_squares` fully rewritten for Chess960 (union of king/rook travel paths), make/unmake uses atomic remove-both-then-place. Dead piece capture ordering fix in BRS `order_moves` and MCTS `compute_priors` (check PieceStatus::Alive). Three new eval modules: `dkw.rs` (proximity penalty, 20cp), `ffa_strategy.rs` (claim-win urgency, gated on FFA mode), `terrain.rs` (wall/trap/fortress/outpost bonuses, gated on terrain_mode). EvalWeights expanded with 5 new fields. Chess960 engine option (`setoption name Chess960 value true`). DKW MCTS chance nodes skipped (W26). Tests: 308 unit + 249 integration = 557 total (6 ignored), 0 clippy warnings.
 
 **2026-02-28 — Stage 16: NNUE Integration** ([[Session-2026-02-28-Stage16-NNUE-Integration]]):
 
@@ -239,6 +243,9 @@ Follow-up items noted but not blocking:
 | Test count | 536 | 16 | 305 unit + 231 integration (6 ignored). +10 Stage 16 NNUE integration. |
 | BRS depth 6 + NNUE (random weights) | Comparable to bootstrap | 16 | No significant overhead from incremental updates |
 | Incremental push+forward_pass | Faster than full init+forward_pass | 16 | T10 verified |
+| Test count | 557 | 17 | 308 unit + 249 integration (6 ignored). +3 chess960 unit, +18 stage_17 integration. |
+| Chess960 position generation | <1us | 17 | Deterministic, pure computation |
+| DKW/FFA/Terrain eval overhead | <5us total | 17 | Negligible vs existing eval |
 
 ---
 

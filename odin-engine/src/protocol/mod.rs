@@ -212,6 +212,12 @@ impl OdinEngine {
                     self.options.brs_max_depth = Some(v.clamp(1, 20));
                 }
             }
+            // --- Chess960 (Stage 17) ---
+            "chess960" => {
+                self.options.chess960 = value.eq_ignore_ascii_case("true")
+                    || value.eq_ignore_ascii_case("on")
+                    || value == "1";
+            }
             // --- NNUE (Stage 16) ---
             "nnuefile" | "nnue_file" => {
                 let v = value.trim();
@@ -249,7 +255,17 @@ impl OdinEngine {
     fn handle_position_startpos(&mut self, moves: &[String]) {
         let mode = self.options.game_mode;
         let terrain = self.options.terrain_mode;
-        self.game_state = Some(GameState::new(Board::starting_position(), mode, terrain));
+        let board = if self.options.chess960 {
+            // Use system time as seed for Chess960 positions.
+            let seed = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos() as u64)
+                .unwrap_or(42);
+            Board::chess960_position(seed)
+        } else {
+            Board::starting_position()
+        };
+        self.game_state = Some(GameState::new(board, mode, terrain));
         if let Err(e) = self.apply_moves(moves) {
             self.send(&format_error(&e));
             self.game_state = None;

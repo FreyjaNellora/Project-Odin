@@ -6,4 +6,4 @@ pub mod movegen;
 pub mod protocol;
 pub mod search;
 pub mod util;
-mod variants;
+pub mod variants;

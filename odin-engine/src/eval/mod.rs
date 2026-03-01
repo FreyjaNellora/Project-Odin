@@ -5,12 +5,15 @@
 // (this stage) is replaced by NNUE in Stage 16.
 
 mod development;
+mod dkw;
+mod ffa_strategy;
 mod king_safety;
 mod material;
 mod multi_player;
 pub mod nnue;
 mod pawn_structure;
 mod pst;
+mod terrain;
 pub mod values;
 
 use crate::board::Player;
@@ -66,6 +69,17 @@ pub struct EvalWeights {
     pub lead_penalty_divisor: i16,
     /// Maximum lead penalty in centipawns.
     pub max_lead_penalty: i16,
+    // --- Stage 17: Variant tuning ---
+    /// Bonus per piece adjacent to terrain that forms a fortress (default 15).
+    pub terrain_fortress_bonus: i16,
+    /// Bonus per adjacent terrain piece protecting king (max 2) (default 20).
+    pub terrain_king_wall_bonus: i16,
+    /// Penalty when king is surrounded by 3+ terrain pieces (default 30).
+    pub terrain_king_trap_penalty: i16,
+    /// Penalty when a DKW king is within 3 Manhattan distance (default 20).
+    pub dkw_proximity_penalty: i16,
+    /// Bonus for approaching claim-win in FFA (Standard: 50, Aggressive: 100).
+    pub claim_win_urgency_bonus: i16,
 }
 
 impl EvalProfile {
@@ -77,12 +91,22 @@ impl EvalProfile {
                 lead_penalty_enabled: true,
                 lead_penalty_divisor: 4,
                 max_lead_penalty: 150,
+                terrain_fortress_bonus: 15,
+                terrain_king_wall_bonus: 20,
+                terrain_king_trap_penalty: 30,
+                dkw_proximity_penalty: 20,
+                claim_win_urgency_bonus: 50,
             },
             EvalProfile::Aggressive => EvalWeights {
                 ffa_point_weight: 120,
                 lead_penalty_enabled: false,
                 lead_penalty_divisor: 4,
                 max_lead_penalty: 0,
+                terrain_fortress_bonus: 15,
+                terrain_king_wall_bonus: 20,
+                terrain_king_trap_penalty: 30,
+                dkw_proximity_penalty: 20,
+                claim_win_urgency_bonus: 100,
             },
         }
     }
@@ -180,6 +204,21 @@ fn eval_for_player(position: &GameState, player: Player, weights: &EvalWeights) 
     // developed pieces (Nf3→e1 regression in v0.4.3). The narrowing fix
     // (root-capture protection) addresses hanging pieces through search instead.
 
+    // --- Stage 17: Variant-aware eval components ---
+    let dkw_pen = dkw::dkw_proximity_penalty(board, player, &statuses, weights);
+    let ffa_strat = ffa_strategy::ffa_strategy_eval(
+        player,
+        &position.scores(),
+        &statuses,
+        position.game_mode(),
+        weights,
+    );
+    let terrain_bonus = if position.terrain_mode() {
+        terrain::terrain_eval(board, player, &statuses, weights)
+    } else {
+        0
+    };
+
     // Combine with saturating arithmetic to avoid i16 overflow.
     mat.saturating_add(pos)
         .saturating_add(dev)
@@ -189,6 +228,9 @@ fn eval_for_player(position: &GameState, player: Player, weights: &EvalWeights) 
         .saturating_add(lead)
         .saturating_add(ffa)
         .saturating_add(rel_mat)
+        .saturating_sub(dkw_pen)
+        .saturating_add(ffa_strat)
+        .saturating_add(terrain_bonus)
         .clamp(-30_000, 30_000)
 }
 

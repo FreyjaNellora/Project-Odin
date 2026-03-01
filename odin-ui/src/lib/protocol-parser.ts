@@ -100,14 +100,16 @@ function parseInfoData(line: string): InfoData {
         }
         break;
       case 'v1': {
-        const v1 = parseInt(tokens[++i], 10);
+        // parseFloat handles both BRS integer centipawns (4443) and
+        // MCTS float win probabilities (0.753).
+        const v1 = parseFloat(tokens[++i]);
         // Expect v2, v3, v4 to follow
         i++; // skip 'v2'
-        const v2 = parseInt(tokens[++i], 10);
+        const v2 = parseFloat(tokens[++i]);
         i++; // skip 'v3'
-        const v3 = parseInt(tokens[++i], 10);
+        const v3 = parseFloat(tokens[++i]);
         i++; // skip 'v4'
-        const v4 = parseInt(tokens[++i], 10);
+        const v4 = parseFloat(tokens[++i]);
         data.values = [v1, v2, v3, v4];
         break;
       }

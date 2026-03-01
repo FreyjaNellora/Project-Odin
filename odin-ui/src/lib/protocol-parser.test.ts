@@ -164,4 +164,29 @@ describe('parseEngineOutput', () => {
     const msg = parseEngineOutput('');
     expect(msg).toEqual({ type: 'unknown', raw: '' });
   });
+
+  // --- MCTS float values ---
+
+  it('parses MCTS info with float v1-v4 values', () => {
+    const line = 'info depth 4 score cp 4442 v1 0.753 v2 0.752 v3 0.751 v4 0.750 nodes 1992 nps 515 time 3866 pv k2k4 phase mcts';
+    const msg = parseEngineOutput(line);
+    expect(msg.type).toBe('info');
+    if (msg.type === 'info') {
+      expect(msg.data.values).toEqual([0.753, 0.752, 0.751, 0.750]);
+      expect(msg.data.phase).toBe('mcts');
+      expect(msg.data.ffaScores).toBeUndefined();
+    }
+  });
+
+  // --- FFA scores ---
+
+  it('parses info with FFA game scores (s1-s4)', () => {
+    const line = 'info depth 8 score cp 4391 v1 4443 v2 4443 v3 4443 v4 4443 s1 0 s2 1 s3 6 s4 5 nodes 17308 nps 7050 time 2455 pv k2k4 phase brs';
+    const msg = parseEngineOutput(line);
+    expect(msg.type).toBe('info');
+    if (msg.type === 'info') {
+      expect(msg.data.values).toEqual([4443, 4443, 4443, 4443]);
+      expect(msg.data.ffaScores).toEqual([0, 1, 6, 5]);
+    }
+  });
 });

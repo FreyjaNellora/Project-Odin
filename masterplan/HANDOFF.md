@@ -1,75 +1,84 @@
 # HANDOFF — Last Session Summary
 
 **Date:** 2026-02-28
-**Stage:** Stage 16 (NNUE Integration) — IMPLEMENTATION COMPLETE. Code audit in progress.
-**Next:** Finish audit, then commit + tag `stage-16-complete` / `v1.16`.
+**Stage:** Stage 17 (Game Mode Variant Tuning) — IMPLEMENTATION COMPLETE.
+**Next:** Human review, then commit + tag `stage-17-complete` / `v1.17`.
 
 ## What Was Done This Session
 
-### Stage 15 — Committed & Tagged
+### Stage 17: Game Mode Variant Tuning (Claude.T implementation)
 
-- Restored `observer/config.json` max_ply from 40 → 200.
-- Added `__pycache__/` and `*.pyc` to `.gitignore`.
-- Committed 25 files as `8986992`. Tagged `stage-15-complete` / `v1.15`.
+#### Chess960 Position Generator (Steps 1a-1e)
 
-### Stage 16: NNUE Integration (Claude.T implementation)
+1. **`board_struct.rs` — `castling_starts` field** — Added `[(Square, Square, Square); PLAYER_COUNT]` to Board storing (king_start, ks_rook, qs_rook) per player. Initialized in both `Board::empty()` and `Board::starting_position()` with standard values. Accessors `castling_starts()` and `set_castling_starts()`.
 
-1. **`odin-engine/src/protocol/types.rs` (MODIFIED)** — Added `nnue_file: Option<String>` to `EngineOptions`. (Done in prior session, verified.)
+2. **`moves.rs` — Castling refactored** — `castling_config(player, board)` reads from `board.castling_starts()`. `castling_empty_squares()` fully rewritten: computes union of king-to-destination + rook-to-destination paths, minus start squares. `castling_king_path()` updated with board param. `walk_path_inclusive()` helper added. **Critical Chess960 fix:** make/unmake castling uses atomic remove-both-then-place pattern (prevents "square already occupied" panic when king destination overlaps rook start).
 
-2. **`odin-engine/src/protocol/mod.rs` (MODIFIED)** — `NnueFile` setoption handler, passes `nnue_path` to `HybridController::new()`. (Done in prior session, verified.)
+3. **`generate.rs`** — `generate_castling()` passes `board` to all castling helpers.
 
-3. **`odin-engine/src/search/hybrid.rs` (MODIFIED)** — `HybridController::new(profile, nnue_path)` loads `NnueWeights` via `Arc`, passes to both `BrsSearcher::new()` and `MctsSearcher::new()`.
+4. **`chess960.rs` (CREATED)** — `generate_back_rank(seed)`: standard Chess960 placement algorithm using SplitMix64. `is_valid_chess960()`: validation function.
 
-4. **`odin-engine/src/search/brs.rs` (MODIFIED)** — Added `acc_stack: Option<AccumulatorStack>` + `nnue_weights: Option<Arc<NnueWeights>>` to `BrsSearcher` and `BrsContext`. Push/pop at all 4 make/unmake sites (MAX, MIN, qsearch MAX, qsearch MIN). `nnue_eval_scalar()` helper replaces `eval_scalar` at root seed, info line, quiescence stand-pat. Null move pruning: no push/pop (correct). Debug tracing: periodic correctness check + root NNUE/bootstrap comparison + stack depth assertion.
+5. **`board_struct.rs` — `chess960_position(seed)`** — Generates Chess960 starting position for all 4 players. Red/Green use array as-is, Blue/Yellow use reversed array. KS/QS rook identification via `determine_ks_qs_rook()` helper.
 
-5. **`odin-engine/src/search/mcts.rs` (MODIFIED)** — Added `acc_stack` + `nnue_weights` to `MctsSearcher`. `run_simulation()` accepts acc_stack/weights params. Push before each `gs.apply_move()`, elimination-aware refresh (`needs_refresh = [true; 4]`), `forward_pass()` replaces `eval_4vec()` at leaf, pop all pushes after backpropagation.
+6. **`protocol/` — Chess960 option** — `chess960: bool` in EngineOptions, `setoption name Chess960 value true/false`, `handle_position_startpos` uses `Board::chess960_position()` when enabled.
 
-6. **`odin-engine/tests/stage_16_nnue_integration.rs` (CREATED)** — 10 tests (T1-T10).
+#### DKW Awareness (Steps 3a-3c)
 
-7. **Existing test files updated** — `stage_07_brs.rs`, `stage_08_brs_hybrid.rs`, `stage_09_tt_ordering.rs`, `stage_10_mcts.rs`, `stage_11_hybrid.rs`, `stage_12_regression.rs`, `stage_13_time_mgmt.rs` — added `None` for `nnue_weights`/`nnue_path` in constructor calls.
+7. **`brs.rs` — Dead piece capture ordering** — `order_moves()` checks `PieceStatus::Alive` on captured piece. Dead captures get `victim_val = 1` (minimal, sorts after alive captures).
 
-8. **Documentation** — audit_log_stage_16.md, downstream_log_stage_16.md, STATUS.md, HANDOFF.md, session note.
+8. **`mcts.rs` — Dead piece priors** — `compute_priors()` signature changed to accept `board: &Board`. Dead captures get `victim_val = 1.0`. All 3 call sites + 2 test call sites updated.
 
-### Code Audit (human + agent review)
+9. **`eval/dkw.rs` (CREATED)** — DKW proximity penalty: 20cp when a Dead King Walking is within Manhattan distance 3 of player's king.
 
-Completed review of:
-- ✅ **brs.rs** — All 4 push/pop sites verified (correct ordering: push before make_move, pop after unmake_move). `nnue_eval_scalar` helper correct with fallback. Null move correctly has no push/pop. Debug tracing every 1024 nodes with full-recompute comparison. Root NNUE vs bootstrap comparison. Stack depth assertion ≤ 64.
-- ✅ **mcts.rs** — Simulation lifecycle correct. Push before each `apply_move`. Elimination-aware refresh sets `needs_refresh = [true; 4]` when eliminations occur. Leaf eval swap: `forward_pass` replaces `eval_4vec`, eliminated players overridden to 0.001. Pop-all after backprop (`for _ in 0..depth`). All 3 constructor variants updated.
-- ✅ **hybrid.rs** — Constructor loads `NnueWeights` via `Arc`, clones for BRS + MCTS. Error handling falls back to bootstrap with warning. Clean.
-- ✅ **stage_16_nnue_integration.rs** — 10 tests with solid coverage: incremental vs full recompute (T1), MCTS depth tracking (T2), bootstrap fallback (T3), perft invariants (T4), non-degenerate eval (T5), BRS+NNUE (T6), MCTS+NNUE (T7), Hybrid+NNUE via temp file (T8), self-play no-crash (T9), speed comparison (T10).
+#### FFA Strategy (Step 4)
 
-**NOT yet done:**
-- 🔲 Verify existing test file updates (None params in stage_07 through stage_13)
-- 🔲 Run `cargo test -p odin-engine` + `cargo clippy -p odin-engine`
-- 🔲 Review documentation files (audit_log_stage_16.md, downstream_log_stage_16.md, session note)
+10. **`eval/ffa_strategy.rs` (CREATED)** — Claim-win urgency bonus (50cp Standard, 100cp Aggressive) when player has 15+ point lead with 2 active players. Opponent claim-win threat penalty. Gated on `GameMode::FreeForAll`.
+
+#### Terrain Evaluation (Step 5)
+
+11. **`eval/terrain.rs` (CREATED)** — King wall bonus (20cp × adjacent terrain, max 2), trap penalty (30cp at 3+ adjacent), fortress bonus (15cp per piece adjacent to terrain), outpost bonus (10cp for knight/bishop). Gated on `terrain_mode()`.
+
+#### EvalWeights Expansion (Step 6)
+
+12. **`eval/mod.rs`** — 5 new fields: `terrain_fortress_bonus`, `terrain_king_wall_bonus`, `terrain_king_trap_penalty`, `dkw_proximity_penalty`, `claim_win_urgency_bonus`. Both Standard and Aggressive profiles configured. DKW/FFA/Terrain integrated into `eval_for_player()`.
+
+13. **`lib.rs`** — `mod variants` → `pub mod variants` (for test access).
+
+14. **`stage_17_variant_tuning.rs` (CREATED)** — 18 acceptance tests (T1-T18).
+
+### Build Verification
+
+- `cargo build` — 0 errors, 0 warnings
+- `cargo clippy -p odin-engine` — 0 warnings
+- `cargo test -p odin-engine` — 557 tests (308 unit + 249 integration, 6 ignored), 0 failures
+- perft(1-4) unchanged: 20/395/7800/152050
+
+### Bugs Found & Fixed During Implementation
+
+1. **Board::empty() castling_starts = zeros** — Square 0 maps to invalid corner (0,0). FEN4-loaded boards start from empty, triggering `castling_config` with invalid squares → panic in `walk_path_inclusive`. Fix: initialize with standard values.
+
+2. **Chess960 castling "square already occupied"** — Standard `move_piece(from, to)` fails when king destination = rook start (or vice versa). Fix: atomic remove-both-then-place pattern for both make_move and unmake_move castling.
 
 ---
 
 ## What's Next — Priority-Ordered
 
-### 1. Finish Audit + Tag Stage 16
+### 1. Review + Tag Stage 17
 
-Complete the three remaining audit items above. If all pass, commit + tag `stage-16-complete` / `v1.16`.
+Human reviews Stage 17 changes, commits, tags `stage-17-complete` / `v1.17`.
 
-### 2. Run Gen-0 Pipeline (if not done yet)
+### 2. Self-Play Validation (Optional)
 
-Stage 15 Gen-0 pipeline produces trained weights:
-```bash
-cd observer && node match.mjs datagen_config.json
-cd ../odin-engine && cargo run --release -- --datagen --input ../observer/training_data_gen0.jsonl --output ../odin-nnue/training_data_gen0.bin
-cd ../odin-nnue && pip install -r requirements.txt && python train.py
-python export.py best_model.pt weights_gen0.onnue
-```
+Using `observer/match.mjs`:
+- FFA: default vs. tuned weights (50+ games)
+- LKS: default vs. tuned weights (50+ games)
+- Terrain: terrain-aware vs. naive (50+ games)
 
-Test with NNUE:
-```bash
-cd odin-engine && cargo run --release
-# In engine: setoption name NnueFile value ../odin-nnue/weights_gen0.onnue
-# position startpos
-# go depth 6
-```
+### 3. Gen-0 Pipeline (If Not Done)
 
-### 3. Begin Stage 17 (Game Mode Variant Tuning)
+Stage 15 Gen-0 pipeline produces trained NNUE weights.
+
+### 4. Begin Stage 18 (Full UI)
 
 Per MASTERPLAN.
 
@@ -77,39 +86,43 @@ Per MASTERPLAN.
 
 ## Known Issues
 
-- **W18 (carried):** King moves mark `needs_refresh` even without king bucketing. Profile in Stage 19.
-- **W19 (carried):** EP/castling fall back to full refresh. Profile in Stage 19.
-- **W20 (carried):** `serde` + `serde_json` in engine. Scoped to datagen CLI path only.
-- **W23 (new):** Opponent move selection still uses `BootstrapEvaluator`, not NNUE. By design.
-- **W24 (new):** MCTS root expansion doesn't track accumulator. By design.
-- **W25 (new):** Constructor signatures changed for `BrsSearcher`, `MctsSearcher`, `HybridController`.
-- **W15 (carried):** `PositionType::Endgame` triggers at `piece_count() <= 16`.
-- **W16 (carried):** `limits_to_budget()` takes `current_player: Option<Player>`.
-- **W13 (carried):** MCTS score 9999 (max) — unchanged.
+- **W26 (new):** DKW chance nodes in MCTS skipped — negligible impact.
+- **W27 (new):** FFA self-stalemate detection skipped — too complex for marginal gain.
+- **W28 (new):** Chess960 FEN notation not addressed — `position startpos` only.
+- **W29 (new):** Castling make/unmake uses atomic remove-both-then-place for Chess960.
+- **W30 (new):** Board::empty() initializes castling_starts with standard values.
+- **W18 (carried):** King moves mark `needs_refresh` even without king bucketing.
+- **W19 (carried):** EP/castling fall back to full refresh.
+- **W20 (carried):** `serde` + `serde_json` in engine (datagen CLI path only).
+- **W13 (carried):** MCTS score 9999 (max) in some positions.
 - **Pondering not implemented:** Deferred from Stage 13.
 
 ## Files Created/Modified This Session
 
-- `odin-engine/src/search/hybrid.rs` — MODIFIED (NnueWeights loading, constructor change)
-- `odin-engine/src/search/brs.rs` — MODIFIED (AccumulatorStack, push/pop, nnue_eval_scalar, debug tracing)
-- `odin-engine/src/search/mcts.rs` — MODIFIED (AccumulatorStack, simulation lifecycle, elimination-aware refresh)
-- `odin-engine/tests/stage_16_nnue_integration.rs` — CREATED (10 tests)
-- `odin-engine/tests/stage_07_brs.rs` — MODIFIED (None for nnue_weights)
-- `odin-engine/tests/stage_08_brs_hybrid.rs` — MODIFIED (None for nnue_weights)
-- `odin-engine/tests/stage_09_tt_ordering.rs` — MODIFIED (None for nnue_weights)
-- `odin-engine/tests/stage_10_mcts.rs` — MODIFIED (None for nnue_weights)
-- `odin-engine/tests/stage_11_hybrid.rs` — MODIFIED (None for nnue_path)
-- `odin-engine/tests/stage_12_regression.rs` — MODIFIED (None for nnue_path)
-- `odin-engine/tests/stage_13_time_mgmt.rs` — MODIFIED (None for nnue_path)
-- `masterplan/audit_log_stage_16.md` — FILLED
-- `masterplan/downstream_log_stage_16.md` — FILLED
+- `odin-engine/src/lib.rs` — MODIFIED (`pub mod variants`)
+- `odin-engine/src/variants/mod.rs` — MODIFIED (`pub mod chess960`)
+- `odin-engine/src/variants/chess960.rs` — CREATED
+- `odin-engine/src/board/board_struct.rs` — MODIFIED (castling_starts, chess960_position, determine_ks_qs_rook)
+- `odin-engine/src/movegen/moves.rs` — MODIFIED (castling refactor, Chess960-safe make/unmake)
+- `odin-engine/src/movegen/generate.rs` — MODIFIED (pass board to castling helpers)
+- `odin-engine/src/search/brs.rs` — MODIFIED (dead piece ordering fix)
+- `odin-engine/src/search/mcts.rs` — MODIFIED (compute_priors board param, dead piece fix)
+- `odin-engine/src/eval/mod.rs` — MODIFIED (3 modules, EvalWeights expansion, eval_for_player integration)
+- `odin-engine/src/eval/dkw.rs` — CREATED
+- `odin-engine/src/eval/ffa_strategy.rs` — CREATED
+- `odin-engine/src/eval/terrain.rs` — CREATED
+- `odin-engine/src/protocol/types.rs` — MODIFIED (chess960 field)
+- `odin-engine/src/protocol/mod.rs` — MODIFIED (Chess960 setoption, startpos handling)
+- `odin-engine/tests/stage_17_variant_tuning.rs` — CREATED (18 tests)
+- `masterplan/audit_log_stage_17.md` — FILLED
+- `masterplan/downstream_log_stage_17.md` — FILLED
 - `masterplan/STATUS.md` — UPDATED
 - `masterplan/HANDOFF.md` — REWRITTEN (this file)
-- `masterplan/sessions/Session-2026-02-28-Stage16-NNUE-Integration.md` — CREATED
+- `masterplan/sessions/Session-2026-02-28-Stage17-Variant-Tuning.md` — CREATED
 
 ## Test Counts
 
-- Engine: 536 (305 unit + 231 integration, 6 ignored)
+- Engine: 557 (308 unit + 249 integration, 6 ignored)
 - Python: 8 (pytest)
 - UI Vitest: 54
 - Total: 0 failures, 0 clippy warnings

@@ -98,6 +98,9 @@ pub struct EngineOptions {
     // --- NNUE (Stage 16) ---
     /// Path to .onnue weight file. None = use bootstrap eval.
     pub nnue_file: Option<String>,
+    // --- Chess960 (Stage 17) ---
+    /// Enable Chess960 (Fischer Random) starting positions.
+    pub chess960: bool,
 }
 
 impl Default for EngineOptions {
@@ -113,6 +116,7 @@ impl Default for EngineOptions {
             mcts_default_sims: None,
             brs_max_depth: None,
             nnue_file: None,
+            chess960: false,
         }
     }
 }

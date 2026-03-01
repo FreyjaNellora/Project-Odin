@@ -8,7 +8,7 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use crate::board::Player;
+use crate::board::{Board, PieceStatus, Player};
 use crate::eval::nnue::accumulator::AccumulatorStack;
 use crate::eval::nnue::{forward_pass, weights::NnueWeights};
 use crate::eval::{Evaluator, PIECE_EVAL_VALUES};
@@ -118,7 +118,8 @@ fn softmax(scores: &[f64], temperature: f64) -> Vec<f32> {
 
 /// Compute move priors using softmax over MVV-LVA ordering scores.
 /// Pre-NNUE: captures scored by victim - attacker/10 + 100; quiets at 10.
-pub(crate) fn compute_priors(moves: &[Move], temperature: f32) -> Vec<f32> {
+/// Dead (DKW) pieces get minimal capture value (1.0) instead of full material.
+pub(crate) fn compute_priors(moves: &[Move], temperature: f32, board: &Board) -> Vec<f32> {
     if moves.is_empty() {
         return Vec::new();
     }
@@ -126,10 +127,17 @@ pub(crate) fn compute_priors(moves: &[Move], temperature: f32) -> Vec<f32> {
         .iter()
         .map(|mv| {
             if mv.is_capture() {
-                let victim_val = mv
-                    .captured()
-                    .map(|pt| PIECE_EVAL_VALUES[pt.index()] as f64)
-                    .unwrap_or(0.0);
+                let is_dead = board
+                    .piece_at(mv.to_sq())
+                    .map(|p| p.status != PieceStatus::Alive)
+                    .unwrap_or(false);
+                let victim_val = if is_dead {
+                    1.0
+                } else {
+                    mv.captured()
+                        .map(|pt| PIECE_EVAL_VALUES[pt.index()] as f64)
+                        .unwrap_or(0.0)
+                };
                 let attacker_val = PIECE_EVAL_VALUES[mv.piece_type().index()] as f64;
                 victim_val - attacker_val / 10.0 + 100.0
             } else {
@@ -246,7 +254,7 @@ fn expand_node(node: &mut MctsNode, gs: &mut GameState, prior_temperature: f32) 
         node.is_expanded = true;
         return;
     }
-    let priors = compute_priors(&legal_moves, prior_temperature);
+    let priors = compute_priors(&legal_moves, prior_temperature, gs.board());
     node.total_children = legal_moves.len() as u16;
 
     // Create indexed pairs sorted by prior descending
@@ -663,10 +671,10 @@ impl Searcher for MctsSearcher {
             if ext.len() == legal_moves.len() {
                 ext
             } else {
-                compute_priors(&legal_moves, self.prior_temperature)
+                compute_priors(&legal_moves, self.prior_temperature, position.board())
             }
         } else {
-            compute_priors(&legal_moves, self.prior_temperature)
+            compute_priors(&legal_moves, self.prior_temperature, position.board())
         };
         for (i, &mv) in legal_moves.iter().enumerate() {
             let mut child_gs = position.clone();
@@ -935,7 +943,7 @@ mod tests {
         // Use the GameState to get actual legal moves.
         let mut gs = GameState::new_standard_ffa();
         let moves = gs.legal_moves();
-        let priors = compute_priors(&moves, MCTS_PRIOR_TEMPERATURE);
+        let priors = compute_priors(&moves, MCTS_PRIOR_TEMPERATURE, gs.board());
         let sum: f32 = priors.iter().sum();
         assert!(
             (sum - 1.0).abs() < 0.01,
@@ -948,7 +956,7 @@ mod tests {
     fn test_all_priors_positive() {
         let mut gs = GameState::new_standard_ffa();
         let moves = gs.legal_moves();
-        let priors = compute_priors(&moves, MCTS_PRIOR_TEMPERATURE);
+        let priors = compute_priors(&moves, MCTS_PRIOR_TEMPERATURE, gs.board());
         for (i, &p) in priors.iter().enumerate() {
             assert!(p > 0.0, "prior[{}] = {} (must be > 0)", i, p);
         }

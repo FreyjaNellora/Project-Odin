@@ -534,11 +534,11 @@ export function useGameState(
           setLatestInfo(msg.data);
           latestInfoRef.current = msg.data;
           // Use FFA game scores for the scoreboard (capture points, checkmate bonuses).
-          // Falls back to eval values only if FFA scores aren't available yet.
+          // Only update when ffaScores is explicitly present — MCTS info lines omit
+          // s1-s4 tokens and their float v1-v4 values (win probabilities) would
+          // parseInt to 0, wiping the scoreboard.
           if (msg.data.ffaScores) {
             setScores(msg.data.ffaScores);
-          } else if (msg.data.values) {
-            setScores(msg.data.values);
           }
           break;
         }

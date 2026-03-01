@@ -1139,10 +1139,18 @@ fn order_moves(
             continue;
         }
         if mv.is_capture() {
-            let victim_val = mv
-                .captured()
-                .map(|pt| PIECE_EVAL_VALUES[pt.index()])
-                .unwrap_or(0);
+            // Dead (DKW) pieces are worth minimal capture value — sort after alive captures.
+            let is_dead = board
+                .piece_at(mv.to_sq())
+                .map(|p| p.status != crate::board::PieceStatus::Alive)
+                .unwrap_or(false);
+            let victim_val = if is_dead {
+                1_i16
+            } else {
+                mv.captured()
+                    .map(|pt| PIECE_EVAL_VALUES[pt.index()])
+                    .unwrap_or(0)
+            };
             let attacker_val = PIECE_EVAL_VALUES[mv.piece_type().index()];
             let mvv_lva = victim_val * 10 - attacker_val;
             if see(board, mv, player, 0) {
