@@ -19,7 +19,7 @@
 - **`MctsSearcher::with_seed(evaluator, nnue_weights, seed)`** — deterministic constructor with NNUE option.
 - **`MctsSearcher::with_info_callback(evaluator, nnue_weights, cb)`** — callback constructor with NNUE option.
 - **`HybridController::new(profile, nnue_path: Option<&str>)`** — loads `.onnue` from disk, creates `Arc<NnueWeights>` shared between BRS and MCTS.
-- **`setoption name NnueFile value <path>`** — protocol-level NNUE file setting. Changes invalidate the current searcher (recreated on next `go`).
+- **`EngineOptions::nnue_file: Option<String>`** — stores the .onnue path in engine config. Set via `setoption name NnueFile value <path>`. Changes invalidate the current searcher (recreated on next `go`).
 - **BrsContext::nnue_eval_scalar(player)** — internal helper. Uses NNUE if available, falls back to bootstrap.
 
 ### Key Constants
