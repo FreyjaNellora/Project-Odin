@@ -1,12 +1,12 @@
 {
   "mode": "datagen",
   "engine_a": "../target/release/odin-engine.exe",
-  "games": 1000,
+  "games": 5,
   "depth": 8,
   "sample_interval": 4,
-  "output_file": "training_data_gen0.jsonl",
+  "output_file": "training_data_test.jsonl",
   "game_mode": "ffa",
-  "eval_profile": "aggressive",
+  "eval_profile": "standard",
   "stop_at": {
     "max_ply": 200,
     "on_gameover": true
