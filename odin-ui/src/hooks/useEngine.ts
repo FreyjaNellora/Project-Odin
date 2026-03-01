@@ -12,6 +12,12 @@ const MAX_LOG_LINES = 1000;
 /** Lines to drop when log exceeds maximum. */
 const DROP_LINES = 200;
 
+/** Payload shape emitted by the Rust reader thread (tagged with engine generation). */
+interface EngineOutputPayload {
+  line: string;
+  gen: number;
+}
+
 export interface UseEngineResult {
   isConnected: boolean;
   engineName: string;
@@ -30,11 +36,18 @@ export function useEngine(): UseEngineResult {
   const [rawLog, setRawLog] = useState<string[]>([]);
   const [lastMessage, setLastMessage] = useState<EngineMessage | null>(null);
   const messageHandlerRef = useRef<((msg: EngineMessage) => void) | null>(null);
+  // Engine generation: set from the Rust return value of spawn_engine.
+  // Events from old engine processes carry a stale gen and are discarded.
+  const engineGenRef = useRef(0);
 
   // Listen for engine output events
   useEffect(() => {
-    const unlisten = listen<string>('engine-output', (event) => {
-      const line = event.payload;
+    const unlisten = listen<EngineOutputPayload>('engine-output', (event) => {
+      const { line, gen } = event.payload;
+
+      // Discard output from a previous engine process whose reader thread
+      // is still draining buffered stdout after the process was killed.
+      if (gen !== engineGenRef.current) return;
 
       // Add to raw log
       setRawLog((prev) => {
@@ -60,8 +73,13 @@ export function useEngine(): UseEngineResult {
       }
     });
 
-    const unlistenExit = listen<number>('engine-exit', () => {
-      setIsConnected(false);
+    const unlistenExit = listen<number>('engine-exit', (event) => {
+      const gen = event.payload;
+      // Only mark disconnected if this exit is from the current engine.
+      // Old engine exits carry a stale generation and are ignored.
+      if (gen === engineGenRef.current) {
+        setIsConnected(false);
+      }
     });
 
     return () => {
@@ -71,16 +89,13 @@ export function useEngine(): UseEngineResult {
   }, []);
 
   const spawnEngine = useCallback(async () => {
-    try {
-      await invoke('spawn_engine');
-      setIsConnected(true);
-      // Send initialization sequence
-      await invoke('send_command', { cmd: 'odin' });
-      await invoke('send_command', { cmd: 'isready' });
-    } catch (e) {
-      setIsConnected(false);
-      throw e;
-    }
+    // invoke returns the Rust generation number assigned to this engine instance.
+    const gen = await invoke<number>('spawn_engine');
+    engineGenRef.current = gen;
+    setIsConnected(true);
+    // Send initialization sequence
+    await invoke('send_command', { cmd: 'odin' });
+    await invoke('send_command', { cmd: 'isready' });
   }, []);
 
   const sendCommand = useCallback(async (cmd: string) => {

@@ -14,9 +14,9 @@ struct AppState {
     engine: EngineManager,
 }
 
-/// Spawn the engine child process.
+/// Spawn the engine child process. Returns the engine generation number.
 #[tauri::command]
-fn spawn_engine(state: State<Mutex<AppState>>, app: tauri::AppHandle) -> Result<(), String> {
+fn spawn_engine(state: State<Mutex<AppState>>, app: tauri::AppHandle) -> Result<u64, String> {
     let mut state = state.lock().map_err(|e| e.to_string())?;
     state.engine.spawn(app)
 }

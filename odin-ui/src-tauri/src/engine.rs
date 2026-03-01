@@ -9,10 +9,22 @@ use std::process::{Child, Command, Stdio};
 use std::thread;
 use tauri::Emitter;
 
+/// Payload for engine-output events, tagged with the engine generation
+/// so the frontend can discard stale output from a killed process.
+#[derive(Clone, serde::Serialize)]
+pub struct EngineOutputPayload {
+    pub line: String,
+    pub gen: u64,
+}
+
 /// Manages the lifecycle of the engine child process.
 pub struct EngineManager {
     child: Option<Child>,
     stdin: Option<BufWriter<std::process::ChildStdin>>,
+    /// Monotonically increasing generation counter. Bumped on every spawn()
+    /// so the reader thread from a killed engine emits events with a stale
+    /// generation that the frontend can filter out.
+    generation: u64,
 }
 
 impl EngineManager {
@@ -20,15 +32,20 @@ impl EngineManager {
         Self {
             child: None,
             stdin: None,
+            generation: 0,
         }
     }
 
     /// Spawn the engine process and start the stdout reader thread.
-    pub fn spawn(&mut self, app: tauri::AppHandle) -> Result<(), String> {
+    /// Returns the engine generation number for stale-event filtering.
+    pub fn spawn(&mut self, app: tauri::AppHandle) -> Result<u64, String> {
         // Kill any existing engine first
         if self.child.is_some() {
             self.kill()?;
         }
+
+        self.generation += 1;
+        let gen = self.generation;
 
         let engine_path = Self::resolve_engine_path()?;
 
@@ -49,26 +66,30 @@ impl EngineManager {
             .take()
             .ok_or_else(|| "Failed to capture engine stdout".to_string())?;
 
-        // Spawn a thread to read stdout line-by-line and emit events
+        // Spawn a thread to read stdout line-by-line and emit events.
+        // The thread captures `gen` so every event is tagged with the engine
+        // instance that produced it. When the engine is killed and respawned,
+        // a new generation is assigned, and the frontend ignores events
+        // from the old reader thread that are still draining the pipe.
         let app_handle = app.clone();
         thread::spawn(move || {
             let reader = BufReader::new(stdout);
             for line in reader.lines() {
                 match line {
                     Ok(line) => {
-                        let _ = app_handle.emit("engine-output", &line);
+                        let _ = app_handle.emit("engine-output", EngineOutputPayload { line, gen });
                     }
                     Err(_) => break,
                 }
             }
             // Engine stdout closed — process likely exited
-            let _ = app_handle.emit("engine-exit", 0);
+            let _ = app_handle.emit("engine-exit", gen);
         });
 
         self.stdin = Some(BufWriter::new(stdin));
         self.child = Some(child);
 
-        Ok(())
+        Ok(gen)
     }
 
     /// Send a command line to the engine's stdin.

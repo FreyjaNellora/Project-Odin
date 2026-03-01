@@ -28,7 +28,17 @@ use super::{SearchBudget, SearchResult, Searcher};
 // ---------------------------------------------------------------------------
 
 /// Moves within this many centipawns of the best BRS score survive for MCTS.
-const TACTICAL_MARGIN: i16 = 150;
+const TACTICAL_MARGIN: i16 = 75;
+
+/// When BRS's best root move leads the 2nd-best by at least this margin (cp),
+/// skip MCTS and trust BRS directly. Prevents MCTS (with limited sims and
+/// untrained eval) from overriding clear tactical decisions.
+const BRS_CONFIDENCE_MARGIN: i16 = 25;
+
+/// After MCTS runs, if its pick is more than this many cp worse than BRS's
+/// best move (in BRS scoring), reject MCTS and use BRS instead. This is a
+/// safety net: MCTS with untrained eval can pick moves BRS knows are bad.
+const MCTS_OVERRIDE_TOLERANCE: i16 = 30;
 
 /// Softmax temperature for converting BRS scores to MCTS priors (ADR-016).
 const PRIOR_TEMPERATURE: f64 = 50.0;
@@ -375,6 +385,9 @@ impl Searcher for HybridController {
         // Edge case: single legal move — return immediately (Stage 13: forced move).
         if legal_moves.len() == 1 {
             self.time_context = None; // consume any pending time context
+            if let Some(ref mut cb) = self.info_cb {
+                cb("info string stop_reason forced".to_string());
+            }
             self.last_score = Some(0);
             return SearchResult {
                 best_move: legal_moves[0],
@@ -430,6 +443,9 @@ impl Searcher for HybridController {
                 }
                 let result = self.brs.search(position, effective_budget);
                 self.info_cb = self.brs.take_info_callback();
+                if let Some(ref mut cb) = self.info_cb {
+                    cb("info string stop_reason time_pressure".to_string());
+                }
                 self.last_score = Some(result.score);
                 return result;
             }
@@ -461,6 +477,23 @@ impl Searcher for HybridController {
             legal_moves.iter().map(|&m| (m, 0i16)).collect()
         };
 
+        // Compute BRS confidence: gap between best and 2nd-best root moves.
+        // Used below to bypass MCTS when BRS has a clear tactical winner.
+        let brs_gap = if let Some(scores) = root_scores {
+            if scores.len() >= 2 {
+                let mut vals: Vec<i16> = scores.iter().map(|(_, s)| *s).collect();
+                vals.sort_unstable_by(|a, b| b.cmp(a));
+                Some(vals[0] - vals[1])
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        // Save owned copy of root scores for post-MCTS validation.
+        let root_scores_owned: Option<Vec<(Move, i16)>> = root_scores.map(|s| s.to_vec());
+
         // If only one survivor, return immediately.
         if survivors.len() == 1 {
             self.last_score = Some(survivors[0].1);
@@ -482,12 +515,40 @@ impl Searcher for HybridController {
         let margin = self.effective_tactical_margin();
         if let Some(ref mut cb) = self.info_cb {
             cb(format!(
-                "info string hybrid phase1 done survivors {} threshold {}cp spread {}cp time {}ms",
+                "info string hybrid phase1 done survivors {} threshold {}cp spread {}cp gap {}cp time {}ms",
                 survivors.len(),
                 margin,
                 best_survivor_score - worst_survivor_score,
+                brs_gap.unwrap_or(0),
                 brs_elapsed_ms,
             ));
+            // Emit surviving move list with scores (Stage 18: UI debug panel).
+            let brs_moves_str = survivors
+                .iter()
+                .map(|(m, s)| format!("{}:{}", m.to_algebraic(), s))
+                .collect::<Vec<_>>()
+                .join(" ");
+            cb(format!(
+                "info string brs_moves {}",
+                brs_moves_str,
+            ));
+        }
+
+        // BRS confidence bypass: when BRS's best move clearly dominates the
+        // 2nd-best by >= BRS_CONFIDENCE_MARGIN, trust BRS's depth-8 tactical
+        // judgment over shallow MCTS (which has limited sims and untrained eval).
+        if let Some(gap) = brs_gap {
+            if gap >= BRS_CONFIDENCE_MARGIN {
+                if let Some(ref mut cb) = self.info_cb {
+                    cb(format!(
+                        "info string hybrid brs_confidence gap {}cp >= {}cp — skipping MCTS",
+                        gap, BRS_CONFIDENCE_MARGIN
+                    ));
+                    cb("info string stop_reason brs_confidence".to_string());
+                }
+                self.last_score = Some(brs_result.score);
+                return brs_result;
+            }
         }
 
         // ---------------------------------------------------------------
@@ -516,14 +577,76 @@ impl Searcher for HybridController {
         let mcts_result = self.mcts.search(position, mcts_budget);
         self.info_cb = self.mcts.take_info_callback();
 
-        // Combine results: use MCTS's best move but include BRS nodes in total.
-        let result = SearchResult {
-            best_move: mcts_result.best_move,
-            score: mcts_result.score,
-            depth: mcts_result.depth,
-            nodes: brs_result.nodes + mcts_result.nodes,
-            pv: mcts_result.pv,
+        // Validate MCTS pick against BRS scoring.
+        // Reject MCTS if: (a) BRS found a mate, or (b) MCTS picked a move
+        // that BRS scores significantly worse than BRS's own best.
+        let total_nodes = brs_result.nodes + mcts_result.nodes;
+        let use_brs = if mcts_result.best_move == brs_result.best_move {
+            false // MCTS confirms BRS — agreement
+        } else if brs_result.score >= 9000 {
+            // BRS found a winning/mate line — always trust BRS.
+            if let Some(ref mut cb) = self.info_cb {
+                cb(format!(
+                    "info string hybrid mcts_rejected reason=brs_mate score={} brs={} mcts={} — using BRS",
+                    brs_result.score, brs_result.best_move, mcts_result.best_move,
+                ));
+            }
+            true
+        } else if let Some(ref scores) = root_scores_owned {
+            let brs_best_score = scores.iter().map(|(_, s)| *s).max().unwrap_or(0);
+            let mcts_pick_brs_score = scores
+                .iter()
+                .find(|(m, _)| *m == mcts_result.best_move)
+                .map(|(_, s)| *s)
+                .unwrap_or(brs_best_score); // not in BRS scores = don't reject
+            let deficit = brs_best_score - mcts_pick_brs_score;
+            if deficit > MCTS_OVERRIDE_TOLERANCE {
+                if let Some(ref mut cb) = self.info_cb {
+                    cb(format!(
+                        "info string hybrid mcts_rejected deficit={}cp brs={} mcts={} — using BRS",
+                        deficit, brs_result.best_move, mcts_result.best_move,
+                    ));
+                }
+                true
+            } else {
+                false
+            }
+        } else {
+            false
         };
+
+        let result = if use_brs {
+            SearchResult {
+                best_move: brs_result.best_move,
+                score: brs_result.score,
+                depth: brs_result.depth,
+                nodes: total_nodes,
+                pv: brs_result.pv,
+            }
+        } else {
+            SearchResult {
+                best_move: mcts_result.best_move,
+                score: mcts_result.score,
+                depth: mcts_result.depth,
+                nodes: total_nodes,
+                pv: mcts_result.pv,
+            }
+        };
+
+        // Emit stop reason based on what budget limit was active (Stage 18).
+        if let Some(ref mut cb) = self.info_cb {
+            let reason = if effective_budget.max_time_ms.is_some() {
+                "time"
+            } else if effective_budget.max_depth.is_some() {
+                "depth"
+            } else if effective_budget.max_nodes.is_some() {
+                "nodes"
+            } else {
+                "complete"
+            };
+            cb(format!("info string stop_reason {reason}"));
+        }
+
         self.last_score = Some(result.score);
         result
     }

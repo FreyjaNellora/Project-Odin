@@ -15,7 +15,15 @@ import {
   squareFrom,
 } from '../lib/board-constants';
 
-export type PlayMode = 'manual' | 'semi-auto' | 'full-auto';
+export type SlotRole = 'human' | 'engine';
+export type SlotConfig = Record<Player, SlotRole>;
+
+export const DEFAULT_SLOT_CONFIG: SlotConfig = {
+  Red: 'human',
+  Blue: 'engine',
+  Yellow: 'engine',
+  Green: 'engine',
+};
 
 export type GameMode = 'ffa' | 'lks';
 
@@ -43,19 +51,20 @@ export interface UseGameStateResult {
   currentPlayer: Player;
   scores: [number, number, number, number];
   isGameOver: boolean;
+  gameWinner: Player | null;
   selectedSquare: number | null;
   lastMoveFrom: number | null;
   lastMoveTo: number | null;
   latestInfo: InfoData | null;
   error: string | null;
-  playMode: PlayMode;
-  humanPlayer: Player | null;
+  slotConfig: SlotConfig;
   engineDelay: number;
   isPaused: boolean;
   gameInProgress: boolean;
   gameMode: GameMode;
   evalProfile: EvalProfileSetting;
   terrainMode: boolean;
+  chess960: boolean;
   maxRounds: number;
   resolvedEvalProfile: 'standard' | 'aggressive';
   pendingPromotion: PendingPromotion | null;
@@ -63,16 +72,20 @@ export interface UseGameStateResult {
   requestEngineMove: () => void;
   newGame: () => void;
   handleEngineMessage: (msg: EngineMessage) => void;
-  setPlayMode: (mode: PlayMode) => void;
-  setHumanPlayer: (player: Player | null) => void;
+  setSlotConfig: (config: SlotConfig) => void;
   setEngineDelay: (ms: number) => void;
   setGameMode: (mode: GameMode) => void;
   setEvalProfile: (profile: EvalProfileSetting) => void;
   setTerrainMode: (on: boolean) => void;
+  setChess960: (on: boolean) => void;
   setMaxRounds: (n: number) => void;
   togglePause: () => void;
   resolvePromotion: (piece: PromotionChoice) => void;
   cancelPromotion: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  undo: () => void;
+  redo: () => void;
 }
 
 export function useGameState(
@@ -84,15 +97,15 @@ export function useGameState(
   const [currentPlayer, setCurrentPlayer] = useState<Player>('Red');
   const [scores, setScores] = useState<[number, number, number, number]>([0, 0, 0, 0]);
   const [isGameOver, setIsGameOver] = useState(false);
+  const [gameWinner, setGameWinner] = useState<Player | null>(null);
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
   const [lastMoveFrom, setLastMoveFrom] = useState<number | null>(null);
   const [lastMoveTo, setLastMoveTo] = useState<number | null>(null);
   const [latestInfo, setLatestInfo] = useState<InfoData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Play mode state
-  const [playMode, setPlayModeState] = useState<PlayMode>('manual');
-  const [humanPlayer, setHumanPlayerState] = useState<Player | null>(null);
+  // Per-slot player configuration (Stage 18)
+  const [slotConfig, setSlotConfigState] = useState<SlotConfig>(DEFAULT_SLOT_CONFIG);
   const [engineDelay, setEngineDelayState] = useState(500);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -103,10 +116,12 @@ export function useGameState(
   const [gameMode, setGameModeState] = useState<GameMode>('ffa');
   const [evalProfile, setEvalProfileState] = useState<EvalProfileSetting>('standard');
   const [terrainMode, setTerrainModeState] = useState(false);
+  const [chess960, setChess960State] = useState(false);
   const [maxRounds, setMaxRoundsState] = useState(0); // 0 = unlimited
   const gameModeRef = useRef<GameMode>('ffa');
   const evalProfileRef = useRef<EvalProfileSetting>('standard');
   const terrainModeRef = useRef(false);
+  const chess960Ref = useRef(false);
   const maxRoundsRef = useRef(0);
 
   // Track pending move validation state
@@ -116,9 +131,8 @@ export function useGameState(
   const moveListRef = useRef<string[]>([]);
   // Auto-play: when true, engine plays continuously
   const autoPlayRef = useRef(false);
-  // Ref mirrors for play mode settings (accessed in async/timeout callbacks)
-  const playModeRef = useRef<PlayMode>('manual');
-  const humanPlayerRef = useRef<Player | null>(null);
+  // Ref mirror for slot config (accessed in async/timeout callbacks)
+  const slotConfigRef = useRef<SlotConfig>(DEFAULT_SLOT_CONFIG);
   const engineDelayRef = useRef(500);
   // Track current player in a ref for async access
   const currentPlayerRef = useRef<Player>('Red');
@@ -130,22 +144,21 @@ export function useGameState(
   const latestInfoRef = useRef<InfoData | null>(null);
   // Mirror of board state for synchronous access in async callbacks (piece notation lookup).
   const boardRef = useRef<(Piece | null)[]>(startingPosition());
+  // Undo/redo stacks (Stage 18). Redo stores {move, historyEntry} pairs.
+  const redoMovesRef = useRef<string[]>([]);
+  const redoHistoryRef = useRef<MoveEntry[]>([]);
+  // When true, the next bestmove (and its preceding nextturn/info) should be discarded.
+  // Set when newGame() is called while a search is in flight — the engine's stale bestmove
+  // from the old search must not be processed as a move in the new game.
+  const ignoreNextBestmoveRef = useRef(false);
 
-  // Setters that sync state + ref
-  const setPlayMode = useCallback((mode: PlayMode) => {
-    setPlayModeState(mode);
-    playModeRef.current = mode;
-    // Stop any in-flight auto-play when mode changes
+  // Setter that syncs state + ref (Stage 18: per-slot config)
+  const setSlotConfig = useCallback((config: SlotConfig) => {
+    setSlotConfigState(config);
+    slotConfigRef.current = config;
+    // Stop any in-flight auto-play when config changes
     autoPlayRef.current = false;
     setIsPaused(false);
-  }, []);
-
-  const setHumanPlayer = useCallback((player: Player | null) => {
-    setHumanPlayerState(player);
-    humanPlayerRef.current = player;
-    // Stop any in-flight engine chain so it doesn't play through the newly-selected
-    // player's turn. The chain resumes naturally on the next maybeChainEngineMove call.
-    autoPlayRef.current = false;
   }, []);
 
   const setEngineDelay = useCallback((ms: number) => {
@@ -166,6 +179,11 @@ export function useGameState(
   const setTerrainMode = useCallback((on: boolean) => {
     setTerrainModeState(on);
     terrainModeRef.current = on;
+  }, []);
+
+  const setChess960 = useCallback((on: boolean) => {
+    setChess960State(on);
+    chess960Ref.current = on;
   }, []);
 
   const setMaxRounds = useCallback((n: number) => {
@@ -191,13 +209,7 @@ export function useGameState(
 
   /** Check if the engine should auto-play the given player's turn. */
   const shouldEnginePlay = useCallback((player: Player): boolean => {
-    if (playModeRef.current === 'full-auto') return true;
-    if (
-      playModeRef.current === 'semi-auto' &&
-      humanPlayerRef.current !== null &&
-      humanPlayerRef.current !== player
-    ) return true;
-    return false;
+    return slotConfigRef.current[player] === 'engine';
   }, []);
 
   /** Send position + go using the ref-based move list (for auto-play chains). */
@@ -317,8 +329,16 @@ export function useGameState(
       // Diagonal means BOTH file and rank changed (handles all 4 orientations).
       const isDiagonal = fileOf(from) !== fileOf(to) && rankOf(from) !== rankOf(to);
       if (piece.pieceType === 'Pawn' && isDiagonal && prev[to] === null) {
-        const capturedSq = squareFrom(fileOf(to), rankOf(from));
-        next[capturedSq] = null;
+        // In 4-player chess the captured pawn can be on either adjacent square:
+        // (toFile, fromRank) — vertical-moving pawn (Red/Yellow captured by Blue/Green)
+        // (fromFile, toRank) — lateral-moving pawn (Blue/Green captured by Red/Yellow)
+        const cand1 = squareFrom(fileOf(to), rankOf(from));
+        const cand2 = squareFrom(fileOf(from), rankOf(to));
+        if (prev[cand1]?.pieceType === 'Pawn' && prev[cand1]?.owner !== piece.owner) {
+          next[cand1] = null;
+        } else if (prev[cand2]?.pieceType === 'Pawn' && prev[cand2]?.owner !== piece.owner) {
+          next[cand2] = null;
+        }
       }
 
       boardRef.current = next;
@@ -335,15 +355,10 @@ export function useGameState(
       if (isGameOver) return;
       setError(null);
 
-      // In full-auto mode, clicking stops auto-play but doesn't allow manual moves
-      if (playMode === 'full-auto') {
+      // If current player is engine-controlled, clicking pauses auto-play
+      if (slotConfig[currentPlayer] === 'engine') {
         autoPlayRef.current = false;
         setIsPaused(true);
-        return;
-      }
-
-      // In semi-auto mode, only allow clicks on the human player's turn
-      if (playMode === 'semi-auto' && humanPlayer !== null && currentPlayer !== humanPlayer) {
         return;
       }
 
@@ -394,7 +409,7 @@ export function useGameState(
         setSelectedSquare(null);
       }
     },
-    [selectedSquare, board, isGameOver, sendCommand, playMode, humanPlayer, currentPlayer],
+    [selectedSquare, board, isGameOver, sendCommand, slotConfig, currentPlayer],
   );
 
   /** Resolve a pending promotion by appending the chosen piece suffix and sending. */
@@ -462,6 +477,13 @@ export function useGameState(
   /** Start a new game. Reads game settings from state and sends commands in strict order. */
   const newGame = useCallback(
     () => {
+      // If a search is in flight, send `stop` so the engine finishes quickly.
+      // Mark the upcoming stale bestmove (and its nextturn/info) for discard.
+      if (awaitingBestmoveRef.current) {
+        ignoreNextBestmoveRef.current = true;
+        sendCommand('stop').catch(() => {});
+      }
+
       const freshBoard = startingPosition();
       setBoard(freshBoard);
       boardRef.current = freshBoard;
@@ -472,6 +494,7 @@ export function useGameState(
       currentPlayerRef.current = 'Red';
       setScores([0, 0, 0, 0]);
       setIsGameOver(false);
+      setGameWinner(null);
       setSelectedSquare(null);
       setLastMoveFrom(null);
       setLastMoveTo(null);
@@ -484,16 +507,20 @@ export function useGameState(
       eliminatedPlayersRef.current = new Set();
       pendingNextTurnRef.current = null;
       latestInfoRef.current = null;
+      redoMovesRef.current = [];
+      redoHistoryRef.current = [];
       setPendingPromotion(null);
 
-      // Send settings in strict order: gamemode -> evalprofile -> terrain -> position -> isready
+      // Send settings in strict order: gamemode -> evalprofile -> terrain -> chess960 -> position -> isready
       const mode = gameModeRef.current;
       const profile = evalProfileRef.current;
       const terrain = terrainModeRef.current;
+      const c960 = chess960Ref.current;
 
       sendCommand(`setoption name GameMode value ${mode}`)
         .then(() => sendCommand(`setoption name EvalProfile value ${profile}`))
         .then(() => sendCommand(`setoption name Terrain value ${terrain ? 'true' : 'false'}`))
+        .then(() => sendCommand(`setoption name Chess960 value ${c960 ? 'true' : 'false'}`))
         .then(() => sendCommand('position startpos'))
         .then(() => sendCommand('isready'))
         .then(() => {
@@ -531,6 +558,8 @@ export function useGameState(
           break;
         }
         case 'info': {
+          // Discard stale info from a stopped search (new game in progress).
+          if (ignoreNextBestmoveRef.current) break;
           setLatestInfo(msg.data);
           latestInfoRef.current = msg.data;
           // Use FFA game scores for the scoreboard (capture points, checkmate bonuses).
@@ -551,6 +580,9 @@ export function useGameState(
             const newMoves = [...moveListRef.current, move];
             moveListRef.current = newMoves;
             setMoveList(newMoves);
+            // New move branches — clear redo stack
+            redoMovesRef.current = [];
+            redoHistoryRef.current = [];
             // Snapshot player + board NOW, before applyMoveToBoard and advancePlayer
             // update the refs. React 18 batching defers the updater, so reading refs
             // inside the updater would see the post-update values (wrong player, wrong board).
@@ -588,22 +620,34 @@ export function useGameState(
           break;
         }
         case 'nextturn': {
+          // Discard stale nextturn from a stopped search (new game in progress).
+          if (ignoreNextBestmoveRef.current) break;
           // Store the engine's authoritative next-turn so bestmove can sync to it.
           pendingNextTurnRef.current = msg.player;
           break;
         }
         case 'gameover': {
           setIsGameOver(true);
+          setGameWinner(msg.winner);
           autoPlayRef.current = false;
           break;
         }
         case 'bestmove': {
+          // Discard stale bestmove from a stopped search (new game in progress).
+          // Don't touch awaitingBestmoveRef — it may have been set by a new sendGoFromRef.
+          if (ignoreNextBestmoveRef.current) {
+            ignoreNextBestmoveRef.current = false;
+            break;
+          }
           if (awaitingBestmoveRef.current) {
             awaitingBestmoveRef.current = false;
             const engineMove = msg.move;
             const newMoves = [...moveListRef.current, engineMove];
             moveListRef.current = newMoves;
             setMoveList(newMoves);
+            // New move branches — clear redo stack
+            redoMovesRef.current = [];
+            redoHistoryRef.current = [];
             // Capture the latest info snapshot with this move.
             // Also snapshot player + board NOW, before applyMoveToBoard and the
             // nextPlayer assignment update the refs. React 18 batching defers the
@@ -613,6 +657,7 @@ export function useGameState(
               : null;
             const movingPlayer = currentPlayerRef.current;
             const movingBoard = boardRef.current.slice();
+
             setMoveHistory((prev) => [
               ...prev,
               { move: formatMoveForDisplay(engineMove, movingBoard), player: movingPlayer, info: infoSnapshot },
@@ -642,6 +687,123 @@ export function useGameState(
     [sendCommand, applyMoveToBoard, advancePlayer, sendGoFromRef, shouldEnginePlay, maybeChainEngineMove],
   );
 
+  /** Undo the last move. Rebuilds board by replaying remaining moves. */
+  const undo = useCallback(() => {
+    if (moveListRef.current.length === 0) return;
+    if (awaitingBestmoveRef.current) return; // Don't undo during search
+
+    // Stop auto-play
+    autoPlayRef.current = false;
+    setIsPaused(false);
+
+    // Pop last move + history entry onto redo stacks
+    const moves = [...moveListRef.current];
+    const poppedMove = moves.pop()!;
+    redoMovesRef.current = [...redoMovesRef.current, poppedMove];
+
+    // Pop last history entry
+    setMoveHistory((prev) => {
+      const popped = prev[prev.length - 1];
+      if (popped) {
+        redoHistoryRef.current = [...redoHistoryRef.current, popped];
+      }
+      return prev.slice(0, -1);
+    });
+
+    // Update move list
+    moveListRef.current = moves;
+    setMoveList(moves);
+
+    // Rebuild board from scratch
+    const freshBoard = startingPosition();
+    let builtBoard = freshBoard;
+    for (const m of moves) {
+      builtBoard = replayMoveOnBoard(builtBoard, m);
+    }
+    setBoard(builtBoard);
+    boardRef.current = builtBoard;
+
+    // Determine current player: the player who made the undone move
+    // (it's now their turn again). Use moveHistory to find who moved.
+    // Since we set moveHistory via setState (async), use the ref-based move count.
+    // With N moves remaining, player index = N % 4 (R=0, B=1, Y=2, G=3).
+    const playerIdx = moves.length % 4;
+    const nextPlayer = PLAYERS[playerIdx];
+    currentPlayerRef.current = nextPlayer;
+    setCurrentPlayer(nextPlayer);
+
+    // Update last move highlight
+    if (moves.length > 0) {
+      const lastMove = moves[moves.length - 1];
+      const parsed = parseMoveString(lastMove);
+      if (parsed) {
+        setLastMoveFrom(parseSquare(parsed.from));
+        setLastMoveTo(parseSquare(parsed.to));
+      }
+    } else {
+      setLastMoveFrom(null);
+      setLastMoveTo(null);
+    }
+
+    // Clear game-over state (undoing from a finished game)
+    setIsGameOver(false);
+    setGameWinner(null);
+    setSelectedSquare(null);
+    setError(null);
+
+    // Sync engine position
+    const posCmd = moves.length > 0
+      ? `position startpos moves ${moves.join(' ')}`
+      : 'position startpos';
+    sendCommand(posCmd)
+      .then(() => sendCommand('isready'))
+      .catch(() => setError('Failed to sync engine after undo'));
+  }, [sendCommand]);
+
+  /** Redo a previously undone move. */
+  const redo = useCallback(() => {
+    if (redoMovesRef.current.length === 0) return;
+    if (awaitingBestmoveRef.current) return;
+
+    autoPlayRef.current = false;
+    setIsPaused(false);
+
+    // Pop from redo stacks
+    const redoMoves = [...redoMovesRef.current];
+    const redoHistory = [...redoHistoryRef.current];
+    const move = redoMoves.pop()!;
+    const histEntry = redoHistory.pop();
+    redoMovesRef.current = redoMoves;
+    redoHistoryRef.current = redoHistory;
+
+    // Push to move list
+    const newMoves = [...moveListRef.current, move];
+    moveListRef.current = newMoves;
+    setMoveList(newMoves);
+
+    if (histEntry) {
+      setMoveHistory((prev) => [...prev, histEntry]);
+    }
+
+    // Apply to board
+    applyMoveToBoard(move);
+
+    // Advance player
+    const playerIdx = newMoves.length % 4;
+    const nextPlayer = PLAYERS[playerIdx];
+    currentPlayerRef.current = nextPlayer;
+    setCurrentPlayer(nextPlayer);
+
+    // Sync engine position
+    const posCmd = `position startpos moves ${newMoves.join(' ')}`;
+    sendCommand(posCmd)
+      .then(() => sendCommand('isready'))
+      .catch(() => setError('Failed to sync engine after redo'));
+  }, [sendCommand, applyMoveToBoard]);
+
+  const canUndo = moveList.length > 0 && !awaitingBestmoveRef.current;
+  const canRedo = redoMovesRef.current.length > 0 && !awaitingBestmoveRef.current;
+
   return {
     board,
     moveList,
@@ -649,19 +811,20 @@ export function useGameState(
     currentPlayer,
     scores,
     isGameOver,
+    gameWinner,
     selectedSquare,
     lastMoveFrom,
     lastMoveTo,
     latestInfo,
     error,
-    playMode,
-    humanPlayer,
+    slotConfig,
     engineDelay,
     isPaused,
     gameInProgress: moveList.length > 0,
     gameMode,
     evalProfile,
     terrainMode,
+    chess960,
     maxRounds,
     resolvedEvalProfile,
     pendingPromotion,
@@ -669,16 +832,20 @@ export function useGameState(
     requestEngineMove,
     newGame,
     handleEngineMessage,
-    setPlayMode,
-    setHumanPlayer,
+    setSlotConfig,
     setEngineDelay,
     setGameMode,
     setEvalProfile,
     setTerrainMode,
+    setChess960,
     setMaxRounds,
     togglePause,
     resolvePromotion,
     cancelPromotion,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
   };
 }
 
@@ -762,4 +929,71 @@ function findRookForCastle(
     }
   }
   return -1;
+}
+
+/** Pure-function board replay: apply a single move and return the new board.
+ *  Used by undo to rebuild the board from startingPosition + remaining moves.
+ *  Mirrors applyMoveToBoard logic but operates on a plain array, no React state. */
+function replayMoveOnBoard(board: (Piece | null)[], moveStr: string): (Piece | null)[] {
+  const parsed = parseMoveString(moveStr);
+  if (!parsed) return board;
+  const from = parseSquare(parsed.from);
+  const to = parseSquare(parsed.to);
+  if (from === -1 || to === -1) return board;
+
+  const next = [...board];
+  const piece = next[from];
+  if (!piece) return next;
+
+  next[from] = null;
+
+  if (parsed.promo) {
+    const promotionType = charToPieceType(parsed.promo);
+    next[to] = promotionType ? { pieceType: promotionType, owner: piece.owner } : piece;
+  } else {
+    next[to] = piece;
+  }
+
+  // Castling
+  if (piece.pieceType === 'King') {
+    const isVertical = piece.owner === 'Red' || piece.owner === 'Yellow';
+    const moveDist = isVertical
+      ? fileOf(to) - fileOf(from)
+      : rankOf(to) - rankOf(from);
+    if (Math.abs(moveDist) >= 2) {
+      if (isVertical) {
+        const rank = rankOf(from);
+        if (moveDist > 0) {
+          const rookFrom = findRookForCastle(next, piece.owner, rank, true);
+          if (rookFrom !== -1) { next[squareFrom(fileOf(to) - 1, rank)] = next[rookFrom]; next[rookFrom] = null; }
+        } else {
+          const rookFrom = findRookForCastle(next, piece.owner, rank, false);
+          if (rookFrom !== -1) { next[squareFrom(fileOf(to) + 1, rank)] = next[rookFrom]; next[rookFrom] = null; }
+        }
+      } else {
+        const file = fileOf(from);
+        if (moveDist > 0) {
+          const rookFrom = findRookForCastle(next, piece.owner, rankOf(from), true);
+          if (rookFrom !== -1) { next[squareFrom(file, rankOf(to) - 1)] = next[rookFrom]; next[rookFrom] = null; }
+        } else {
+          const rookFrom = findRookForCastle(next, piece.owner, rankOf(from), false);
+          if (rookFrom !== -1) { next[squareFrom(file, rankOf(to) + 1)] = next[rookFrom]; next[rookFrom] = null; }
+        }
+      }
+    }
+  }
+
+  // En passant
+  const isDiagonal = fileOf(from) !== fileOf(to) && rankOf(from) !== rankOf(to);
+  if (piece.pieceType === 'Pawn' && isDiagonal && board[to] === null) {
+    const cand1 = squareFrom(fileOf(to), rankOf(from));
+    const cand2 = squareFrom(fileOf(from), rankOf(to));
+    if (board[cand1]?.pieceType === 'Pawn' && board[cand1]?.owner !== piece.owner) {
+      next[cand1] = null;
+    } else if (board[cand2]?.pieceType === 'Pawn' && board[cand2]?.owner !== piece.owner) {
+      next[cand2] = null;
+    }
+  }
+
+  return next;
 }

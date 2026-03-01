@@ -2,7 +2,7 @@
 //
 // Tests cover:
 //   AC1: Hybrid finds captures at least as well as standalone BRS
-//   AC2: Survivor filtering with 150cp threshold + minimum 2 survivors
+//   AC2: Survivor filtering with 75cp threshold + minimum 2 survivors
 //   AC3: MCTS best move is always from the survivor set
 //   AC4: Adaptive time split — tactical vs quiet positions
 //   AC5: No crashes under time pressure (tiny budgets)
@@ -116,6 +116,48 @@ fn make_free_capture_position() -> GameState {
     GameState::new(board, GameMode::FreeForAll, false)
 }
 
+/// Build a position where Red can capture Blue's unprotected rook.
+/// Red: King d2, Rook g7
+/// Blue: King b11, Rook g11 (hanging — Rg7xg11 is free, ~500cp gain)
+/// Yellow/Green: kings only
+/// Unlike make_free_capture_position() where Red's queen dominates so much
+/// that ALL moves score equally, a rook capture is uniquely best because
+/// quiet rook moves don't carry the same board domination.
+fn make_rook_capture_position() -> GameState {
+    use odin_engine::board::square_from;
+
+    let mut board = Board::empty();
+    board.set_side_to_move(Player::Red);
+    board.set_castling_rights(0);
+
+    board.place_piece(
+        square_from(3, 1).unwrap(), // d2
+        Piece::new(PieceType::King, Player::Red),
+    );
+    board.place_piece(
+        square_from(6, 6).unwrap(), // g7
+        Piece::new(PieceType::Rook, Player::Red),
+    );
+    board.place_piece(
+        square_from(1, 10).unwrap(), // b11
+        Piece::new(PieceType::King, Player::Blue),
+    );
+    board.place_piece(
+        square_from(6, 10).unwrap(), // g11
+        Piece::new(PieceType::Rook, Player::Blue),
+    );
+    board.place_piece(
+        square_from(10, 12).unwrap(), // k13
+        Piece::new(PieceType::King, Player::Yellow),
+    );
+    board.place_piece(
+        square_from(13, 6).unwrap(), // n7
+        Piece::new(PieceType::King, Player::Green),
+    );
+
+    GameState::new(board, GameMode::FreeForAll, false)
+}
+
 /// Build a position where Red has only one legal move.
 /// Red: King e1 — constrained by Blue rooks on d3 and f3.
 /// d1/d2 attacked by Rd3 (same file), f1/f2 attacked by Rf3 (same file).
@@ -223,7 +265,7 @@ fn test_hybrid_vs_brs_finds_capture() {
 #[test]
 fn test_survivor_filtering_threshold() {
     // Run hybrid on starting position and verify BRS produces root_move_scores.
-    // After BRS completes, survivors should respect TACTICAL_MARGIN (150cp).
+    // After BRS completes, survivors should respect TACTICAL_MARGIN (75cp).
     let gs = starting_gs();
     let mut brs = make_brs();
     let _result = brs.search(&gs, depth_budget(4));
@@ -615,6 +657,75 @@ fn test_protocol_go_movetime_hybrid() {
         elapsed.as_millis() < 2_000,
         "movetime=500ms hybrid took {:.2?}",
         elapsed
+    );
+}
+
+// ---------------------------------------------------------------------------
+// BRS confidence bypass — skip MCTS when BRS has a clear winner
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_brs_confidence_bypass_does_not_fire_on_captures() {
+    // In endgame-like positions with few pieces, BRS scores all moves from the
+    // stronger side similarly (the piece itself provides the advantage, not its
+    // specific location). Verify the confidence bypass correctly does NOT fire
+    // here and MCTS still runs.
+    let gs = make_rook_capture_position();
+
+    let info_lines: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+    let info_clone = Arc::clone(&info_lines);
+
+    let mut hybrid = make_hybrid();
+    hybrid.set_info_callback(Box::new(move |line: String| {
+        info_clone.lock().unwrap().push(line);
+    }));
+    let result = hybrid.search(&gs, depth_budget(8));
+
+    assert_legal(&gs, result.best_move);
+    assert!(
+        result.score > 0,
+        "should have positive score with rook advantage, got {}",
+        result.score
+    );
+
+    let lines = info_lines.lock().unwrap();
+    let has_confidence = lines.iter().any(|l| l.contains("brs_confidence"));
+
+    // In simplified positions, BRS scores are compressed — all moves are
+    // roughly equal because the piece advantage is the main factor.
+    // Confidence bypass should NOT fire (gap < 100cp).
+    assert!(
+        !has_confidence,
+        "endgame positions should not trigger confidence bypass (scores too close)"
+    );
+}
+
+#[test]
+fn test_brs_confidence_bypass_does_not_fire_on_even_position() {
+    // Starting position: all initial moves are roughly equal — BRS gap should
+    // be small (< 100cp), so MCTS should still run.
+    let gs = starting_gs();
+
+    let info_lines: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+    let info_clone = Arc::clone(&info_lines);
+
+    let mut hybrid = make_hybrid();
+    hybrid.set_info_callback(Box::new(move |line: String| {
+        info_clone.lock().unwrap().push(line);
+    }));
+    let _result = hybrid.search(&gs, depth_budget(4));
+
+    let lines = info_lines.lock().unwrap();
+    let has_confidence = lines.iter().any(|l| l.contains("brs_confidence"));
+    let has_mcts = lines.iter().any(|l| l.contains("phase mcts"));
+
+    assert!(
+        !has_confidence,
+        "starting position should NOT trigger confidence bypass"
+    );
+    assert!(
+        has_mcts,
+        "starting position should still run MCTS (moves are close)"
     );
 }
 
