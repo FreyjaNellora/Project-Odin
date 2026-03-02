@@ -10,6 +10,7 @@
 
 pub mod accumulator;
 pub mod features;
+pub mod simd;
 pub mod weights;
 
 use std::cell::RefCell;
@@ -43,14 +44,6 @@ const OUTPUT_SCALE: i32 = features::OUTPUT_SCALE;
 // Forward pass
 // ---------------------------------------------------------------------------
 
-/// SCReLU activation: clamp(x, 0, QA)^2.
-/// Returns i32 to accommodate QA^2 = 65,025.
-#[inline]
-fn screlu(x: i16) -> i32 {
-    let clamped = x.clamp(0, QA) as i32;
-    clamped * clamped
-}
-
 /// Quantized forward pass through the network.
 ///
 /// Takes the current accumulator (all 4 perspectives) and the root player,
@@ -63,29 +56,28 @@ pub fn forward_pass(
     weights: &NnueWeights,
     player: Player,
 ) -> (i16, [f64; 4]) {
-    // Step 1: SCReLU activation on each perspective's accumulator.
+    // Step 1: SCReLU activation on each perspective's accumulator (SIMD-accelerated).
     // Order: root player first, then CW opponents in turn order.
     let mut activated = [0i32; FT_OUT * 4];
     for p in 0..4 {
         let pidx = (player.index() + p) % 4;
-        for j in 0..FT_OUT {
-            activated[p * FT_OUT + j] = screlu(acc.values[pidx][j]);
-        }
+        simd::screlu_activate(&acc.values[pidx], &mut activated, p * FT_OUT);
     }
 
-    // Step 2: Hidden layer (1024 → 32).
-    // int8 weights × (i32 activated / QA) → int32 accumulation + ClippedReLU.
+    // Step 2: Hidden layer (1024 → 32), SIMD-accelerated.
+    // Convert activated i32 → u8 by dividing by QA (values in [0, 255]).
     let qa = QA as i32;
-    let mut hidden = [0i32; HIDDEN_SIZE];
-    for h in 0..HIDDEN_SIZE {
-        hidden[h] = weights.hidden_biases[h];
-        for i in 0..(FT_OUT * 4) {
-            let w = weights.hidden_weights[i * HIDDEN_SIZE + h] as i32;
-            hidden[h] += w * (activated[i] / qa);
-        }
-        // ClippedReLU
-        hidden[h] = hidden[h].max(0);
+    let mut activated_u8 = [0u8; FT_OUT * 4];
+    for i in 0..(FT_OUT * 4) {
+        activated_u8[i] = (activated[i] / qa) as u8;
     }
+    let mut hidden = [0i32; HIDDEN_SIZE];
+    simd::hidden_layer_forward(
+        &weights.hidden_weights_t,
+        &activated_u8,
+        &weights.hidden_biases,
+        &mut hidden,
+    );
 
     // Step 3: BRS scalar head (32 → 1).
     let mut brs_raw: i32 = weights.brs_bias;

@@ -1,7 +1,7 @@
 # PROJECT ODIN — STATUS
 
 **Last Updated:** 2026-03-01
-**Updated By:** Claude Opus 4.6 (Stage 18: Full UI implementation)
+**Updated By:** Claude Opus 4.6 (Stage 19: Optimization & Hardening — Phases 1-4 complete, Phase 5 in progress)
 
 ---
 
@@ -9,11 +9,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 18 (Full UI) — IMPLEMENTATION COMPLETE. Pending human review and tag. |
-| **Current Build-Order Step** | Stage 19 (Optimization & Hardening) — not started. |
-| **Build Compiles** | Yes — `cargo build` passes, 0 warnings; `tsc --noEmit` clean |
-| **Tests Pass** | Yes — engine: 308 unit + 249 integration = 557 total (6 ignored); Python: 8 pytest; UI: 63 Vitest. |
-| **Blocking Issues** | None blocking implementation. Gen-0 pipeline run (Stage 15) still needed for trained weights. P2 UI features (move arrows, check highlight, terrain styling, FEN4 parser) intentionally deferred to web platform. |
+| **Current Stage** | Stage 19 (Optimization & Hardening) — Phases 1-4 complete, Phase 5 (stress test) in progress. |
+| **Current Build-Order Step** | Stage 19 Phase 5: 10K self-play stress test (1K/batch, 500/sitting). |
+| **Build Compiles** | Yes — `cargo build --release` passes with LTO, 0 warnings |
+| **Tests Pass** | Yes — engine: 316 unit + 251 integration = 567 total (6 ignored); Python: 8 pytest; UI: 63 Vitest. |
+| **Blocking Issues** | None blocking. Phase 5 stress testing in progress (batch 1/10, sitting 1/2 running). Gen-0 pipeline run (Stage 15) still needed for trained weights. |
 
 ---
 
@@ -40,7 +40,7 @@
 | 16 | NNUE Integration | complete | post-audit done | — | 536 tests. AccumulatorStack wired into BRS+MCTS. Pending tag. |
 | 17 | Game Mode Variant Tuning | complete | post-audit done | — | Chess960, DKW/FFA/Terrain eval, dead piece ordering. 557 tests. Pending tag. |
 | 18 | Full UI | complete | post-audit done | — | Engine protocol extensions, per-slot config, self-play dashboard, undo/redo. P2 deferred to web. Pending tag. |
-| 19 | Optimization & Hardening | not-started | — | — | |
+| 19 | Optimization & Hardening | in-progress | — | — | Phases 1-4 done (SIMD 40.8x, mem 2.46x). Phase 5 stress test running. |
 
 **Status values:** `not-started` | `in-progress` | `complete` | `blocked`
 **Audited values:** `—` (not applicable) | `pre-audit done` | `post-audit done` | `audit-failed`
@@ -66,11 +66,10 @@
 ## What the Next Session Should Do First
 
 1. Read STATUS.md + HANDOFF.md
-2. Human reviews Stage 17 + Stage 18 changes, tags both
-3. Manual smoke test: `cd odin-ui && cargo tauri dev`, verify slot config, self-play dashboard, undo/redo
-4. Run self-play AC4 test: 100+ games without crashes
-5. Run Gen-0 datagen pipeline — see [[Pattern-Kaggle-Training-Pipeline]]
-6. Begin Stage 19 (Optimization & Hardening) per AGENT_CONDUCT.md Section 1.1
+2. Check if stress test batch is still running or completed (task output / observer/reports/)
+3. If sitting 1 completed: review results for crashes, run sitting 2 (another 500 games)
+4. If batch 1 complete (1K games): start batch 2
+5. After all 10K games: Phase 6 (fuzz testing), Phase 7 (error hardening), post-audit
 
 ---
 

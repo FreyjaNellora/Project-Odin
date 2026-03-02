@@ -62,10 +62,10 @@ impl Accumulator {
         for &feat_raw in &features[..count] {
             let feat = feat_raw as usize;
             let col_offset = ft_base + feat * FT_OUT;
-            for j in 0..FT_OUT {
-                self.values[pidx][j] =
-                    self.values[pidx][j].saturating_add(weights.ft_weights[col_offset + j]);
-            }
+            super::simd::accumulator_add(
+                &mut self.values[pidx],
+                &weights.ft_weights[col_offset..col_offset + FT_OUT],
+            );
         }
 
         self.needs_refresh[pidx] = false;
@@ -82,10 +82,10 @@ impl Accumulator {
         let pidx = perspective.index();
         let col_offset =
             pidx * FEATURES_PER_PERSPECTIVE * FT_OUT + feat_idx as usize * FT_OUT;
-        for j in 0..FT_OUT {
-            self.values[pidx][j] =
-                self.values[pidx][j].saturating_add(weights.ft_weights[col_offset + j]);
-        }
+        super::simd::accumulator_add(
+            &mut self.values[pidx],
+            &weights.ft_weights[col_offset..col_offset + FT_OUT],
+        );
     }
 
     /// Incrementally remove a feature (piece left a square).
@@ -99,10 +99,10 @@ impl Accumulator {
         let pidx = perspective.index();
         let col_offset =
             pidx * FEATURES_PER_PERSPECTIVE * FT_OUT + feat_idx as usize * FT_OUT;
-        for j in 0..FT_OUT {
-            self.values[pidx][j] =
-                self.values[pidx][j].saturating_sub(weights.ft_weights[col_offset + j]);
-        }
+        super::simd::accumulator_sub(
+            &mut self.values[pidx],
+            &weights.ft_weights[col_offset..col_offset + FT_OUT],
+        );
     }
 }
 

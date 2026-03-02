@@ -1,121 +1,98 @@
 # HANDOFF — Last Session Summary
 
 **Date:** 2026-03-01
-**Stage:** Stage 18 — Full UI (implementation complete)
-**Next:** Human review + tag. Manual smoke test (slot config, self-play, undo/redo). Then Stage 19.
+**Stage:** Stage 19 — Optimization & Hardening (Phases 1-4 complete, Phase 5 in progress)
+**Next:** Phase 5 batch completion → Phase 6-7 → Post-audit
 
-## What Was Done This Session
+## What Was Done This Session (Continuation)
 
-### 1. Engine Protocol Extensions (P0-A — Permanent Investment)
+### Phase 5: Stress Test Setup
+- Benchmarked per-game times: depth 4 hybrid = ~3-4 min/game (too slow for 1K batches)
+- Added generic `engine_options` support to `observer/match.mjs` — any setoption can now be passed via config
+- Reduced search budget: depth 2 + mcts_default_sims=100 → ~1.3 min/game
+- User approved: 500 games/sitting, 2 sittings per 1K batch, ~10-11 hrs per sitting (runs overnight)
+- **Batch 1, sitting 1:** 500 games launched, running in background
 
-Added 4 new `info string` emissions to the engine. These benefit any future frontend, not just the Tauri dev tool:
-
-- **`info string in_check <color>`** — Emitted after position set / move applied, when the next player is in check. Uses existing `is_in_check()` call. File: `protocol/mod.rs`.
-- **`info string brs_moves <move:score> [...]`** — Emitted after BRS phase 1 completes with the surviving move list and scores. File: `hybrid.rs`.
-- **`info string mcts_visits <move:visits> [...]`** — Emitted before bestmove with top-5 root children by visit count. File: `mcts.rs`.
-- **`info string stop_reason <reason>`** — Emitted before bestmove with why the search stopped (time, depth, nodes, forced, complete, time_pressure, brs_confidence). File: `hybrid.rs` (5 return paths).
-
-TypeScript parser updated to handle all new emissions. 7 new Vitest tests (63 total, was 56).
-
-### 2. Per-Slot Player Configuration (P0-B)
-
-Replaced the 3-mode system (`manual`/`semi-auto`/`full-auto` + `humanPlayer`) with per-slot toggles:
-
-```typescript
-SlotConfig = Record<Player, 'human' | 'engine'>
-// Default: { Red: 'human', Blue: 'engine', Yellow: 'engine', Green: 'engine' }
-```
-
-Quick presets: "Play as Red" | "Watch" (all engine) | "Hot Seat" (all human). `shouldEnginePlay()` simplified to single ref check. `handleSquareClick` consolidated from 3-branch logic to engine/human check.
-
-### 3. Self-Play Dashboard (P0-C)
-
-New `useSelfPlay` hook + `SelfPlayDashboard` component. Features:
-- Configurable game count and speed (fast/normal/slow)
-- Progress bar with game counter
-- Per-color win rate bars
-- Avg game length (moves), avg duration, avg time/move
-- Start/Stop/Reset controls
-- Saves and restores user's original slot config + delay
-
-### 4. Undo/Redo (P1-A)
-
-Undo pops last move, rebuilds board from scratch via `replayMoveOnBoard()` (pure function mirror of `applyMoveToBoard`), syncs engine position. Redo replays the undone move. Redo stack cleared on any new move (branch point). Both disabled during active search.
-
-### 5. Debug Panel Enhancements (P1-B)
-
-EngineInternals now shows: BRS surviving moves with scores, MCTS top-5 visit counts, stop reason. AnalysisPanel shows stop reason inline with depth: "d8 (time)".
-
-### 6. P2 Features Deferred
-
-Move arrows, check highlight, terrain styling, FEN4 parser — all deferred to the web platform build. The Tauri UI is a dev tool; these visual features have low ROI and will be rebuilt. **Future agents: this is intentional, not a regression.**
+### Stress Test Plan (10K total)
+- 1K games per batch × 10 batches = 10K total
+- Each 1K batch = 2 sittings of 500 games (~10-11 hrs each)
+- 2 batches per day × 5 days = 10K
+- Config: `observer/stress_test_config.json` (depth 2, 100 MCTS sims, FFA Standard, 200 ply cap)
+- After all 10K: proceed to Phase 6 (fuzz), Phase 7 (hardening), post-audit
 
 ## What's Next — Priority-Ordered
 
-### 1. Manual Smoke Test
+### 1. Check Batch 1 Sitting 1 Results
+When the 500-game run completes, check `observer/reports/` for:
+- Any crashes or panics (would cause match.mjs to error out)
+- Game results in match_summary.json and all_games.json
+- Then run sitting 2 (another 500 games) to complete batch 1
 
-```bash
-cd odin-ui && cargo tauri dev
-```
-- Toggle slot configs, verify engine auto-plays correct slots
-- Run self-play 100+ games (AC4)
-- Test undo/redo with and without eliminations
+### 2. Continue Stress Testing (batches 2-10)
+Repeat 1K game batches (2 sittings each) twice daily until 10K total.
 
-### 2. Tag Stages
+### 3. Phase 6: Fuzz Testing (after 10K games complete)
+Create `odin-engine/tests/stage_19_fuzz.rs`:
+- Protocol fuzzing (go before position, invalid FEN4, etc.)
+- Position fuzzing (0-3 kings, all eliminated, max pieces)
+- Search boundary fuzzing (depth 0/1/MAX, 0 sims, 0ms time)
+- NNUE boundary (all-zero/all-max accumulator)
 
-Human reviews and tags:
-- `stage-17-complete` / `v1.17`
-- `stage-18-complete` / `v1.18`
+### 4. Phase 7: Error Handling Hardening
+- `protocol/mod.rs` lines 281-322: 6 `unwrap()` → safe patterns
+- `accumulator.rs`: `assert!()` → `debug_assert!()` + graceful fallback
+- Systematic `unwrap()` audit via `cargo clippy -- -W clippy::unwrap_used`
 
-### 3. Gen-0 Data Generation
-
-See [[Pattern-Kaggle-Training-Pipeline]] for full steps.
-
-### 4. Begin Stage 19 (Optimization & Hardening)
-
-Per MASTERPLAN.
+### 5. Post-Audit + Tag
+Complete audit_log_stage_19.md post-audit. Tag `stage-19-complete` / `v1.19`.
 
 ---
 
 ## Known Issues
 
-- **W31:** `gameWinner` null ambiguity (no game over vs draw). Disambiguated by `isGameOver`.
+- **W18 (carried):** King moves mark `needs_refresh` — profiled, negligible impact.
+- **W19 (carried):** EP/castling fall back to full refresh — profiled, negligible impact.
+- **W31:** `gameWinner` null ambiguity — disambiguated by `isGameOver`.
 - **W32:** Undo past eliminations doesn't restore eliminated player state.
-- **W26-W30, W13, W18-W20:** Carried from Stage 17 (see downstream_log_stage_18.md).
 - **Pondering not implemented:** Deferred from Stage 13.
+- **NPS targets:** BRS depth 6 at 25.3ms → ~400K NPS (close to 500K pass threshold). Stretch goals (1M NPS, 10K sims/sec) likely need tree parallelism.
 
 ## Files Created/Modified This Session
 
 ### Engine (Rust)
-- `odin-engine/src/search/hybrid.rs` — MODIFIED (brs_moves, stop_reason)
-- `odin-engine/src/search/mcts.rs` — MODIFIED (mcts_visits)
-- `odin-engine/src/protocol/mod.rs` — MODIFIED (in_check)
-- `odin-engine/tests/stage_10_mcts.rs` — MODIFIED (test fix)
+- `odin-engine/benches/engine_bench.rs` — CREATED (Criterion benchmarks)
+- `odin-engine/src/eval/nnue/simd.rs` — CREATED (AVX2 SIMD + scalar fallback)
+- `odin-engine/src/eval/nnue/mod.rs` — MODIFIED (SIMD dispatch in forward_pass)
+- `odin-engine/src/eval/nnue/accumulator.rs` — MODIFIED (SIMD add/sub/compute)
+- `odin-engine/src/eval/nnue/weights.rs` — MODIFIED (hidden_weights_t transpose)
+- `odin-engine/src/movegen/generate.rs` — MODIFIED (MoveBuffer trait, _into variants)
+- `odin-engine/src/movegen/mod.rs` — MODIFIED (re-exports)
+- `odin-engine/src/search/brs.rs` — MODIFIED (ArrayVec movegen, order_moves, Arc game_history)
+- `odin-engine/src/gamestate/mod.rs` — MODIFIED (position_history_arc)
+- `odin-engine/Cargo.toml` — MODIFIED (arrayvec, criterion)
+- `Cargo.toml` (workspace root) — MODIFIED ([profile.release] LTO)
 
-### UI (TypeScript/React)
-- `odin-ui/src/types/protocol.ts` — MODIFIED
-- `odin-ui/src/lib/protocol-parser.ts` — MODIFIED
-- `odin-ui/src/lib/protocol-parser.test.ts` — MODIFIED (+7 tests)
-- `odin-ui/src/hooks/useGameState.ts` — MODIFIED (slot config, undo/redo, gameWinner)
-- `odin-ui/src/hooks/useSelfPlay.ts` — CREATED
-- `odin-ui/src/components/GameControls.tsx` — MODIFIED
-- `odin-ui/src/components/SelfPlayDashboard.tsx` — CREATED
-- `odin-ui/src/components/EngineInternals.tsx` — MODIFIED
-- `odin-ui/src/components/AnalysisPanel.tsx` — MODIFIED
-- `odin-ui/src/App.tsx` — MODIFIED
-- `odin-ui/src/styles/GameControls.css` — MODIFIED
-- `odin-ui/src/styles/SelfPlayDashboard.css` — CREATED
-- `odin-ui/src/styles/EngineInternals.css` — MODIFIED
+### Observer/Infra
+- `observer/match.mjs` — MODIFIED (generic engine_options config support)
+- `observer/stress_test_config.json` — CREATED (500 games, depth 2, 100 MCTS sims)
 
 ### Documentation
-- `masterplan/audit_log_stage_18.md` — WRITTEN
-- `masterplan/downstream_log_stage_18.md` — WRITTEN
-- `masterplan/sessions/Session-2026-03-01-Stage18-Full-UI.md` — CREATED
-- `masterplan/STATUS.md` — UPDATED
+- `masterplan/audit_log_stage_19.md` — UPDATED (pre-audit + Phase 1-4 progress)
+- `masterplan/STATUS.md` — needs update (Phase 5 in-progress)
 - `masterplan/HANDOFF.md` — UPDATED (this file)
 
 ## Test Counts
 
-- Engine: 557 (308 unit + 249 integration, 6 ignored) — unchanged
-- UI Vitest: 63 (was 56, +7 protocol parser tests)
-- TypeScript: compiles clean (`tsc --noEmit`)
+- Engine: 567 (316 unit + 251 integration, 6 ignored) — +8 SIMD tests, +2 misc
+- UI Vitest: 63 — unchanged
+
+## Performance Results (Phases 1-4)
+
+| Metric | Baseline | Final | Improvement |
+|--------|---------|-------|-------------|
+| forward_pass | 55.9 µs | 1.37 µs | 40.8x |
+| full_init | 9.6 µs | 3.78 µs | 2.5x |
+| incremental_push | 948 ns | 798 ns | 1.2x |
+| BRS depth 4 | 3.5 ms | 3.18 ms | 1.1x |
+| BRS depth 6 | 62.3 ms | 25.3 ms | 2.46x |
+| MCTS 1000 sims | 133.7 ms | 124.9 ms | 1.07x |

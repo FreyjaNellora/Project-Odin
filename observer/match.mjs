@@ -52,6 +52,11 @@ async function playMatchGame(engineAPath, engineBPath, gameNum) {
   for (const eng of [engineA, engineB]) {
     if (config.game_mode) eng.send(`setoption name gamemode value ${config.game_mode}`);
     if (config.eval_profile) eng.send(`setoption name evalprofile value ${config.eval_profile}`);
+    if (config.engine_options) {
+      for (const [name, value] of Object.entries(config.engine_options)) {
+        eng.send(`setoption name ${name} value ${value}`);
+      }
+    }
   }
 
   const engines = { A: engineA, B: engineB };

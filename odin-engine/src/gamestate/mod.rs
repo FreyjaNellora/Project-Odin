@@ -197,6 +197,11 @@ impl GameState {
         &self.position_history
     }
 
+    /// Arc-wrapped position history for zero-cost sharing with search.
+    pub fn position_history_arc(&self) -> &Arc<Vec<u64>> {
+        &self.position_history
+    }
+
     /// Check if position is a draw by 50-move rule.
     pub fn is_draw_by_fifty_moves(&self) -> bool {
         is_draw_by_fifty_moves(self.board.halfmove_clock())

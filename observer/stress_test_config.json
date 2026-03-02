@@ -1,0 +1,23 @@
+{
+  "engine_a": "../target/release/odin-engine.exe",
+  "engine_b": "../target/release/odin-engine.exe",
+  "games": 500,
+  "depth": 2,
+  "time_control": null,
+  "game_mode": "ffa",
+  "eval_profile": "standard",
+  "engine_options": {
+    "mcts_default_sims": 100
+  },
+  "stop_at": {
+    "max_ply": 200,
+    "on_gameover": true
+  },
+  "output_dir": "./reports",
+  "sprt": {
+    "elo0": 0,
+    "elo1": 5,
+    "alpha": 0.05,
+    "beta": 0.05
+  }
+}

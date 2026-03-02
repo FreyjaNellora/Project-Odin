@@ -4,6 +4,8 @@
 // if they leave the king in check. Legal filtering applies each move
 // and verifies the king's safety.
 
+use arrayvec::ArrayVec;
+
 use crate::board::{
     file_of, is_valid_square, rank_of, square_from, Board, PieceType, Player, Square,
 };
@@ -15,6 +17,29 @@ use super::moves::{
 use super::tables::{global_attack_tables, AttackTables, NUM_DIRECTIONS};
 
 use crate::board::BOARD_SIZE;
+
+/// Maximum moves per position. 256 is safe for 4-player 14×14 chess.
+pub const MAX_MOVES: usize = 256;
+
+/// Trait for push-compatible move buffers (Vec<Move> and ArrayVec<Move, N>).
+/// Monomorphized at compile time — zero runtime cost.
+pub trait MoveBuffer {
+    fn push_move(&mut self, mv: Move);
+}
+
+impl MoveBuffer for Vec<Move> {
+    #[inline]
+    fn push_move(&mut self, mv: Move) {
+        self.push(mv);
+    }
+}
+
+impl MoveBuffer for ArrayVec<Move, MAX_MOVES> {
+    #[inline]
+    fn push_move(&mut self, mv: Move) {
+        self.push(mv);
+    }
+}
 
 /// Check if (file, rank) is within board bounds.
 #[inline]
@@ -42,31 +67,34 @@ const PAWN_CONFIG: [(u8, u8, u8); 4] = [
 
 /// Generate all pseudo-legal moves for the current side to move.
 pub fn generate_pseudo_legal(board: &Board) -> Vec<Move> {
+    let mut moves = Vec::new();
+    generate_pseudo_legal_generic(board, &mut moves);
+    moves
+}
+
+/// Generate pseudo-legal moves into any MoveBuffer (Vec or ArrayVec).
+fn generate_pseudo_legal_generic(board: &Board, moves: &mut impl MoveBuffer) {
     let tables = global_attack_tables();
     let player = board.side_to_move();
-    let mut moves = Vec::new();
 
     for &(piece_type, sq) in board.piece_list(player) {
         match piece_type {
-            PieceType::Pawn => generate_pawn_moves(board, player, sq, &mut moves),
-            PieceType::Knight => generate_knight_moves(board, player, sq, tables, &mut moves),
+            PieceType::Pawn => generate_pawn_moves(board, player, sq, moves),
+            PieceType::Knight => generate_knight_moves(board, player, sq, tables, moves),
             PieceType::Bishop => generate_sliding_moves(
-                board, player, sq, piece_type, tables, &mut moves, true, false,
+                board, player, sq, piece_type, tables, moves, true, false,
             ),
             PieceType::Rook => generate_sliding_moves(
-                board, player, sq, piece_type, tables, &mut moves, false, true,
+                board, player, sq, piece_type, tables, moves, false, true,
             ),
             PieceType::Queen | PieceType::PromotedQueen => generate_sliding_moves(
-                board, player, sq, piece_type, tables, &mut moves, true, true,
+                board, player, sq, piece_type, tables, moves, true, true,
             ),
-            PieceType::King => generate_king_moves(board, player, sq, tables, &mut moves),
+            PieceType::King => generate_king_moves(board, player, sq, tables, moves),
         }
     }
 
-    // Castling
-    generate_castling(board, player, &mut moves);
-
-    moves
+    generate_castling(board, player, moves);
 }
 
 /// Generate all legal moves for the current side to move.
@@ -91,8 +119,41 @@ pub fn generate_legal(board: &mut Board) -> Vec<Move> {
     legal
 }
 
+/// Generate all legal moves into a stack-allocated ArrayVec (zero heap allocation).
+pub fn generate_legal_into(board: &mut Board, out: &mut ArrayVec<Move, MAX_MOVES>) {
+    let mut pseudo = ArrayVec::<Move, MAX_MOVES>::new();
+    generate_pseudo_legal_generic(board, &mut pseudo);
+    let player = board.side_to_move();
+
+    for mv in pseudo {
+        let undo = make_move(board, mv);
+        if !is_in_check(player, board) {
+            out.push(mv);
+        }
+        unmake_move(board, mv, undo);
+    }
+}
+
+/// Generate only legal capture moves into a stack-allocated ArrayVec (for quiescence search).
+pub fn generate_legal_captures_into(board: &mut Board, out: &mut ArrayVec<Move, MAX_MOVES>) {
+    let mut pseudo = ArrayVec::<Move, MAX_MOVES>::new();
+    generate_pseudo_legal_generic(board, &mut pseudo);
+    let player = board.side_to_move();
+
+    for mv in pseudo {
+        if !mv.is_capture() {
+            continue;
+        }
+        let undo = make_move(board, mv);
+        if !is_in_check(player, board) {
+            out.push(mv);
+        }
+        unmake_move(board, mv, undo);
+    }
+}
+
 /// Generate pawn moves for a single pawn.
-fn generate_pawn_moves(board: &Board, player: Player, sq: Square, moves: &mut Vec<Move>) {
+fn generate_pawn_moves(board: &Board, player: Player, sq: Square, moves: &mut impl MoveBuffer) {
     let tables = global_attack_tables();
     let pidx = player.index();
     let (df, dr) = PAWN_FORWARD[pidx];
@@ -128,18 +189,18 @@ fn generate_pawn_moves(board: &Board, player: Player, sq: Square, moves: &mut Ve
 
             if is_promotion {
                 // In FFA: promote to PromotedQueen (1-pt queen)
-                moves.push(Move::new_promotion(
+                moves.push_move(Move::new_promotion(
                     sq,
                     fwd_sq,
                     None,
                     PieceType::PromotedQueen,
                 ));
                 // Also allow underpromotion to knight, bishop, rook
-                moves.push(Move::new_promotion(sq, fwd_sq, None, PieceType::Knight));
-                moves.push(Move::new_promotion(sq, fwd_sq, None, PieceType::Rook));
-                moves.push(Move::new_promotion(sq, fwd_sq, None, PieceType::Bishop));
+                moves.push_move(Move::new_promotion(sq, fwd_sq, None, PieceType::Knight));
+                moves.push_move(Move::new_promotion(sq, fwd_sq, None, PieceType::Rook));
+                moves.push_move(Move::new_promotion(sq, fwd_sq, None, PieceType::Bishop));
             } else {
-                moves.push(Move::new(sq, fwd_sq, PieceType::Pawn));
+                moves.push_move(Move::new(sq, fwd_sq, PieceType::Pawn));
             }
 
             // Double step (only if forward square is empty and pawn is on starting position)
@@ -149,7 +210,7 @@ fn generate_pawn_moves(board: &Board, player: Player, sq: Square, moves: &mut Ve
                 if in_bounds(dbl_file, dbl_rank) {
                     let dbl_sq = square_from(dbl_file as u8, dbl_rank as u8).unwrap();
                     if is_valid_square(dbl_sq) && board.piece_at(dbl_sq).is_none() {
-                        moves.push(Move::new_double_push(sq, dbl_sq));
+                        moves.push_move(Move::new_double_push(sq, dbl_sq));
                     }
                 }
             }
@@ -171,32 +232,32 @@ fn generate_pawn_moves(board: &Board, player: Player, sq: Square, moves: &mut Ve
                 };
 
                 if is_promotion {
-                    moves.push(Move::new_promotion(
+                    moves.push_move(Move::new_promotion(
                         sq,
                         target_sq,
                         Some(target_piece.piece_type),
                         PieceType::PromotedQueen,
                     ));
-                    moves.push(Move::new_promotion(
+                    moves.push_move(Move::new_promotion(
                         sq,
                         target_sq,
                         Some(target_piece.piece_type),
                         PieceType::Knight,
                     ));
-                    moves.push(Move::new_promotion(
+                    moves.push_move(Move::new_promotion(
                         sq,
                         target_sq,
                         Some(target_piece.piece_type),
                         PieceType::Rook,
                     ));
-                    moves.push(Move::new_promotion(
+                    moves.push_move(Move::new_promotion(
                         sq,
                         target_sq,
                         Some(target_piece.piece_type),
                         PieceType::Bishop,
                     ));
                 } else {
-                    moves.push(Move::new_capture(
+                    moves.push_move(Move::new_capture(
                         sq,
                         target_sq,
                         PieceType::Pawn,
@@ -209,7 +270,7 @@ fn generate_pawn_moves(board: &Board, player: Player, sq: Square, moves: &mut Ve
         // En passant capture
         if let Some(ep_sq) = board.en_passant() {
             if target_sq == ep_sq {
-                moves.push(Move::new_en_passant(sq, ep_sq));
+                moves.push_move(Move::new_en_passant(sq, ep_sq));
             }
         }
     }
@@ -221,13 +282,13 @@ fn generate_knight_moves(
     player: Player,
     sq: Square,
     tables: &AttackTables,
-    moves: &mut Vec<Move>,
+    moves: &mut impl MoveBuffer,
 ) {
     for &target in tables.knight_destinations(sq) {
         match board.piece_at(target) {
-            None => moves.push(Move::new(sq, target, PieceType::Knight)),
+            None => moves.push_move(Move::new(sq, target, PieceType::Knight)),
             Some(piece) if piece.is_terrain() => {} // Terrain — impassable
-            Some(piece) if piece.owner != player => moves.push(Move::new_capture(
+            Some(piece) if piece.owner != player => moves.push_move(Move::new_capture(
                 sq,
                 target,
                 PieceType::Knight,
@@ -246,7 +307,7 @@ fn generate_sliding_moves(
     sq: Square,
     piece_type: PieceType,
     tables: &AttackTables,
-    moves: &mut Vec<Move>,
+    moves: &mut impl MoveBuffer,
     diagonals: bool,
     orthogonals: bool,
 ) {
@@ -261,10 +322,10 @@ fn generate_sliding_moves(
 
         for &target in tables.ray(sq, dir) {
             match board.piece_at(target) {
-                None => moves.push(Move::new(sq, target, piece_type)),
+                None => moves.push_move(Move::new(sq, target, piece_type)),
                 Some(piece) if piece.is_terrain() => break, // Terrain — blocks ray
                 Some(piece) if piece.owner != player => {
-                    moves.push(Move::new_capture(sq, target, piece_type, piece.piece_type));
+                    moves.push_move(Move::new_capture(sq, target, piece_type, piece.piece_type));
                     break; // Can't go past a capture
                 }
                 _ => break, // Own piece — blocked
@@ -279,13 +340,13 @@ fn generate_king_moves(
     player: Player,
     sq: Square,
     tables: &AttackTables,
-    moves: &mut Vec<Move>,
+    moves: &mut impl MoveBuffer,
 ) {
     for &target in tables.king_destinations(sq) {
         match board.piece_at(target) {
-            None => moves.push(Move::new(sq, target, PieceType::King)),
+            None => moves.push_move(Move::new(sq, target, PieceType::King)),
             Some(piece) if piece.is_terrain() => {} // Terrain — impassable
-            Some(piece) if piece.owner != player => moves.push(Move::new_capture(
+            Some(piece) if piece.owner != player => moves.push_move(Move::new_capture(
                 sq,
                 target,
                 PieceType::King,
@@ -297,7 +358,7 @@ fn generate_king_moves(
 }
 
 /// Generate castling moves.
-fn generate_castling(board: &Board, player: Player, moves: &mut Vec<Move>) {
+fn generate_castling(board: &Board, player: Player, moves: &mut impl MoveBuffer) {
     let rights = board.castling_rights();
     let (
         king_sq,
@@ -328,7 +389,7 @@ fn generate_castling(board: &Board, player: Player, moves: &mut Vec<Move>) {
             });
 
         if path_safe {
-            moves.push(Move::new_castle_king(king_sq, king_target_ks));
+            moves.push_move(Move::new_castle_king(king_sq, king_target_ks));
         }
     }
 
@@ -347,7 +408,7 @@ fn generate_castling(board: &Board, player: Player, moves: &mut Vec<Move>) {
             });
 
         if path_safe {
-            moves.push(Move::new_castle_queen(king_sq, king_target_qs));
+            moves.push_move(Move::new_castle_queen(king_sq, king_target_qs));
         }
     }
 }

@@ -31,8 +31,10 @@ use crate::eval::{Evaluator, PIECE_EVAL_VALUES};
 use crate::eval::nnue::accumulator::AccumulatorStack;
 use crate::eval::nnue::{forward_pass, weights::NnueWeights};
 use crate::gamestate::{GameState, PlayerStatus};
+use arrayvec::ArrayVec;
 use crate::movegen::{
-    generate_legal, is_in_check, is_square_attacked_by, make_move, unmake_move, Move,
+    generate_legal, generate_legal_captures_into, generate_legal_into, is_in_check,
+    is_square_attacked_by, make_move, unmake_move, Move, MAX_MOVES,
 };
 
 use super::board_scanner::{scan_board, select_hybrid_reply, BoardContext};
@@ -245,7 +247,8 @@ struct BrsContext<'a> {
     /// Pre-search board context (Stage 8 hybrid scoring).
     board_ctx: BoardContext,
     /// Snapshot of position_history at search start. Used for repetition detection.
-    game_history: Vec<u64>,
+    /// Arc-shared with GameState — O(1) clone, no heap copy.
+    game_history: Arc<Vec<u64>>,
     /// Path-local stack of Zobrist hashes pushed as we descend the tree.
     /// Combined with game_history to count repetitions without modifying GameState.
     rep_stack: Vec<u64>,
@@ -305,7 +308,7 @@ impl<'a> BrsContext<'a> {
             best_score: 0,
             best_depth: 0,
             board_ctx,
-            game_history: position.position_history().to_vec(),
+            game_history: Arc::clone(position.position_history_arc()),
             rep_stack: Vec::with_capacity(64),
             tt,
             killers: [[None; 2]; MAX_DEPTH],
@@ -625,7 +628,8 @@ impl<'a> BrsContext<'a> {
             return score;
         }
 
-        let moves = generate_legal(self.gs.board_mut());
+        let mut moves = ArrayVec::<Move, MAX_MOVES>::new();
+        generate_legal_into(self.gs.board_mut(), &mut moves);
 
         // No legal moves: checkmate or stalemate.
         if moves.is_empty() {
@@ -652,9 +656,9 @@ impl<'a> BrsContext<'a> {
             compressed_tt_move.and_then(|c| TranspositionTable::decompress_move(c, &moves));
 
         let score = if current == self.root_player {
-            self.max_node(depth, alpha, beta, ply, moves, tt_move)
+            self.max_node(depth, alpha, beta, ply, &moves, tt_move)
         } else {
-            self.min_node(depth, alpha, beta, ply, current, moves)
+            self.min_node(depth, alpha, beta, ply, current, &moves)
         };
 
         // TT store. Skip if search was aborted (score may be partial).
@@ -689,7 +693,7 @@ impl<'a> BrsContext<'a> {
         mut alpha: i16,
         beta: i16,
         ply: usize,
-        moves: Vec<Move>,
+        moves: &[Move],
         tt_move: Option<Move>,
     ) -> i16 {
         // Null move pruning: skip root player's turn and check if the position
@@ -828,7 +832,7 @@ impl<'a> BrsContext<'a> {
         beta: i16,
         ply: usize,
         opponent: Player,
-        moves: Vec<Move>,
+        moves: &[Move],
     ) -> i16 {
         // Stage 8 hybrid reply selection: uses board context + move classifier
         // + progressive narrowing to pick the opponent reply that is both
@@ -917,10 +921,11 @@ impl<'a> BrsContext<'a> {
                 return alpha;
             }
 
-            let all_moves = generate_legal(self.gs.board_mut());
-            let captures: Vec<Move> = all_moves.into_iter().filter(|m| m.is_capture()).collect();
+            let mut captures = ArrayVec::<Move, MAX_MOVES>::new();
+            generate_legal_captures_into(self.gs.board_mut(), &mut captures);
 
-            for mv in captures {
+            for mv in &captures {
+                let mv = *mv;
                 if let (Some(ref mut s), Some(w)) = (&mut self.acc_stack, self.nnue_weights) {
                     s.push(mv, self.gs.board(), w);
                 }
@@ -949,8 +954,8 @@ impl<'a> BrsContext<'a> {
                 return stand_pat;
             }
 
-            let all_moves = generate_legal(self.gs.board_mut());
-            let captures: Vec<Move> = all_moves.into_iter().filter(|m| m.is_capture()).collect();
+            let mut captures = ArrayVec::<Move, MAX_MOVES>::new();
+            generate_legal_captures_into(self.gs.board_mut(), &mut captures);
 
             if captures.is_empty() {
                 return stand_pat;
@@ -1107,15 +1112,14 @@ fn order_moves(
     countermove: Option<Move>,
     history: &[[[i32; TOTAL_SQUARES]; PIECE_TYPE_COUNT]; PLAYER_COUNT],
     player: Player,
-) -> Vec<Move> {
+) -> ArrayVec<Move, MAX_MOVES> {
     let player_idx = player.index();
-    let mut ordered = Vec::with_capacity(moves.len());
-    // Track which moves have been placed to avoid duplicates.
-    // Use a small bitmask if move count is bounded, or a simple contains check.
-    let mut placed = vec![false; moves.len()];
+    let mut ordered = ArrayVec::<Move, MAX_MOVES>::new();
+    // Track which moves have been placed to avoid duplicates (stack-allocated).
+    let mut placed = [false; MAX_MOVES];
 
     // Helper: find the index of `mv` in `moves` and mark it placed.
-    let find_and_mark = |mv: Move, placed: &mut Vec<bool>| -> Option<usize> {
+    let find_and_mark = |mv: Move, placed: &mut [bool; MAX_MOVES]| -> Option<usize> {
         moves.iter().position(|&m| m == mv).inspect(|&i| {
             placed[i] = true;
         })
@@ -1129,10 +1133,10 @@ fn order_moves(
     }
 
     // --- Classify remaining moves (captures vs quiet) ---
-    let mut win_caps: Vec<(usize, i16)> = Vec::new(); // (index, mvv-lva score)
-    let mut lose_caps: Vec<(usize, i16)> = Vec::new();
-    let mut promotions: Vec<usize> = Vec::new();
-    let mut quiets: Vec<(usize, i32)> = Vec::new(); // (index, history score)
+    let mut win_caps = ArrayVec::<(usize, i16), MAX_MOVES>::new();
+    let mut lose_caps = ArrayVec::<(usize, i16), MAX_MOVES>::new();
+    let mut promotions = ArrayVec::<usize, MAX_MOVES>::new();
+    let mut quiets = ArrayVec::<(usize, i32), MAX_MOVES>::new();
 
     for (i, &mv) in moves.iter().enumerate() {
         if placed[i] {
@@ -1199,7 +1203,7 @@ fn order_moves(
     if let Some(cm) = countermove {
         if let Some(i) = moves.iter().position(|&m| m == cm) {
             if !placed[i] {
-                placed[i] = true;
+                // No need to set placed[i] — no more checks after this.
                 quiets.retain(|(qi, _)| *qi != i);
                 ordered.push(moves[i]);
             }

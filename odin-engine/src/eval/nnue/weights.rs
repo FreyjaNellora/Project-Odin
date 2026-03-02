@@ -64,6 +64,10 @@ pub struct NnueWeights {
 
     /// MCTS value head biases: [4 outputs].
     pub mcts_biases: Vec<i32>,
+
+    /// Hidden layer weights transposed: [32 neurons][1024 inputs].
+    /// Stored flat: neuron * 1024 + input. Computed at load time for SIMD.
+    pub hidden_weights_t: Vec<i8>,
 }
 
 /// Error type for .onnue loading.
@@ -138,6 +142,7 @@ impl NnueWeights {
             .map(|_| rng.next_i32() % 256)
             .collect();
 
+        let hidden_weights_t = Self::transpose_hidden(&hidden_weights);
         Self {
             ft_weights,
             ft_biases,
@@ -147,7 +152,20 @@ impl NnueWeights {
             brs_bias,
             mcts_weights,
             mcts_biases,
+            hidden_weights_t,
         }
+    }
+
+    /// Transpose hidden weights from [1024 inputs][32 neurons] to [32 neurons][1024 inputs].
+    fn transpose_hidden(src: &[i8]) -> Vec<i8> {
+        let input_size = PLAYER_COUNT * FT_OUT; // 1024
+        let mut dst = vec![0i8; HIDDEN_SIZE * input_size];
+        for i in 0..input_size {
+            for h in 0..HIDDEN_SIZE {
+                dst[h * input_size + i] = src[i * HIDDEN_SIZE + h];
+            }
+        }
+        dst
     }
 
     /// Total parameter count.
@@ -269,6 +287,7 @@ impl NnueWeights {
         let mcts_weights = read_i8_vec(&data, &mut offset, Self::MCTS_WEIGHT_COUNT);
         let mcts_biases = read_i32_vec(&data, &mut offset, Self::MCTS_BIAS_COUNT);
 
+        let hidden_weights_t = Self::transpose_hidden(&hidden_weights);
         Ok(Self {
             ft_weights,
             ft_biases,
@@ -278,6 +297,7 @@ impl NnueWeights {
             brs_bias,
             mcts_weights,
             mcts_biases,
+            hidden_weights_t,
         })
     }
 
