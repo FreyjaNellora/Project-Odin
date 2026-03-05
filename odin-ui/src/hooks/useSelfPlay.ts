@@ -5,8 +5,6 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import type { Player } from '../types/board';
 import type { SlotConfig, UseGameStateResult } from './useGameState';
 
-export type SelfPlaySpeed = 'fast' | 'normal' | 'slow';
-
 export interface GameResult {
   winner: Player | null;  // null = draw
   moveCount: number;
@@ -19,8 +17,6 @@ export interface UseSelfPlayResult {
   setTargetGames: (n: number) => void;
   completedGames: number;
   gameResults: GameResult[];
-  speed: SelfPlaySpeed;
-  setSpeed: (s: SelfPlaySpeed) => void;
   start: () => void;
   stop: () => void;
   reset: () => void;
@@ -29,19 +25,11 @@ export interface UseSelfPlayResult {
   avgDurationMs: number;
 }
 
-const SPEED_DELAY: Record<SelfPlaySpeed, number> = {
-  fast: 0,
-  normal: 200,
-  slow: 500,
-};
-
 export function useSelfPlay(game: UseGameStateResult): UseSelfPlayResult {
   const [isRunning, setIsRunning] = useState(false);
   const [targetGames, setTargetGamesState] = useState(10);
   const [completedGames, setCompletedGames] = useState(0);
   const [gameResults, setGameResults] = useState<GameResult[]>([]);
-  const [speed, setSpeedState] = useState<SelfPlaySpeed>('fast');
-
   // Refs for async/effect access
   const isRunningRef = useRef(false);
   const targetGamesRef = useRef(10);
@@ -55,10 +43,6 @@ export function useSelfPlay(game: UseGameStateResult): UseSelfPlayResult {
   const setTargetGames = useCallback((n: number) => {
     setTargetGamesState(n);
     targetGamesRef.current = n;
-  }, []);
-
-  const setSpeed = useCallback((s: SelfPlaySpeed) => {
-    setSpeedState(s);
   }, []);
 
   // When a game ends during self-play, record result and start next
@@ -104,7 +88,7 @@ export function useSelfPlay(game: UseGameStateResult): UseSelfPlayResult {
 
     // Force all-engine + set speed delay
     game.setSlotConfig({ Red: 'engine', Blue: 'engine', Yellow: 'engine', Green: 'engine' });
-    game.setEngineDelay(SPEED_DELAY[speed]);
+    game.setEngineDelay(0);
 
     setIsRunning(true);
     isRunningRef.current = true;
@@ -117,7 +101,7 @@ export function useSelfPlay(game: UseGameStateResult): UseSelfPlayResult {
     setTimeout(() => {
       game.newGame();
     }, 50);
-  }, [game, speed]);
+  }, [game]);
 
   const stop = useCallback(() => {
     setIsRunning(false);
@@ -182,8 +166,6 @@ export function useSelfPlay(game: UseGameStateResult): UseSelfPlayResult {
     setTargetGames,
     completedGames,
     gameResults,
-    speed,
-    setSpeed,
     start,
     stop,
     reset,

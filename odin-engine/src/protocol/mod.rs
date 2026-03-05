@@ -278,14 +278,14 @@ impl OdinEngine {
             self.send(&format_error("no position set, send 'position' first"));
             return;
         }
-        if self.game_state.as_ref().unwrap().is_game_over() {
+        if self.game_state.as_ref().expect("game_state is Some: checked by is_none() guard above").is_game_over() {
             self.send(&format_error("game is already over"));
             return;
         }
 
         // Handle checkmate/stalemate: current player has no legal moves.
-        if self.game_state.as_mut().unwrap().legal_moves().is_empty() {
-            let move_result = self.game_state.as_mut().unwrap().handle_no_legal_moves();
+        if self.game_state.as_mut().expect("game_state is Some: checked by is_none() guard above").legal_moves().is_empty() {
+            let move_result = self.game_state.as_mut().expect("game_state is Some: checked by is_none() guard above").handle_no_legal_moves();
 
             for (player, reason) in &move_result.eliminations {
                 let reason_str = match reason {
@@ -299,16 +299,16 @@ impl OdinEngine {
                 ));
             }
 
-            if self.game_state.as_ref().unwrap().is_game_over() {
+            if self.game_state.as_ref().expect("game_state is Some: checked by is_none() guard above").is_game_over() {
                 let winner_str = self
                     .game_state
                     .as_ref()
-                    .unwrap()
+                    .expect("game_state is Some: checked by is_none() guard above")
                     .winner()
                     .map_or("none", player_color);
                 self.send(&format!("info string gameover {winner_str}"));
             } else {
-                let next = self.game_state.as_ref().unwrap().current_player();
+                let next = self.game_state.as_ref().expect("game_state is Some: checked by is_none() guard above").current_player();
                 self.send(&format!("info string nextturn {}", player_color(next)));
                 // Recurse: chain eliminations handled by recursion; ultimately produces
                 // a bestmove for the first player found to have legal moves.
@@ -319,7 +319,7 @@ impl OdinEngine {
 
         // Normal path: clone position, search, apply to get post-move state.
         // Clone so the mutable borrow of self.game_state is released before send().
-        let position = self.game_state.as_ref().unwrap().clone();
+        let position = self.game_state.as_ref().expect("game_state is Some: checked by is_none() guard above").clone();
         let current_player = position.current_player();
 
         let budget = Self::limits_to_budget(limits, Some(current_player));

@@ -161,7 +161,7 @@ impl AccumulatorStack {
     /// `board_before` is the board state BEFORE make_move is called.
     /// The move tells us what changed.
     pub fn push(&mut self, mv: Move, board_before: &Board, weights: &NnueWeights) {
-        assert!(
+        debug_assert!(
             self.current + 1 < MAX_STACK_DEPTH,
             "accumulator stack overflow"
         );
@@ -238,7 +238,7 @@ impl AccumulatorStack {
 
     /// Pop: restore to previous depth. Zero computation (copy-on-push design).
     pub fn pop(&mut self) {
-        assert!(self.current > 0, "accumulator stack underflow");
+        debug_assert!(self.current > 0, "accumulator stack underflow");
         self.current -= 1;
     }
 

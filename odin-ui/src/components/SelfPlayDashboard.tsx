@@ -3,7 +3,7 @@
 import type { Player } from '../types/board';
 import { PLAYERS } from '../types/board';
 import { PLAYER_COLORS } from '../lib/board-constants';
-import type { UseSelfPlayResult, SelfPlaySpeed } from '../hooks/useSelfPlay';
+import type { UseSelfPlayResult } from '../hooks/useSelfPlay';
 import '../styles/SelfPlayDashboard.css';
 
 interface SelfPlayDashboardProps {
@@ -48,19 +48,7 @@ export default function SelfPlayDashboard({ selfPlay, engineConnected }: SelfPla
             disabled={isRunning}
           />
         </div>
-        <div className="sp-config-item">
-          <span className="sp-label">Speed</span>
-          <select
-            className="sp-select"
-            value={speed}
-            onChange={(e) => setSpeed(e.target.value as SelfPlaySpeed)}
-            disabled={isRunning}
-          >
-            <option value="fast">Fast</option>
-            <option value="normal">Normal</option>
-            <option value="slow">Slow</option>
-          </select>
-        </div>
+
       </div>
 
       {/* Action buttons */}

@@ -353,9 +353,11 @@ pub fn make_move(board: &mut Board, mv: Move) -> MoveUndo {
     match mv.flags() {
         FLAG_EN_PASSANT => {
             // Remove the captured pawn (not on the target square).
-            // The pushing player is the one who just moved (before us).
-            let pushing_player = player.prev();
-            let captured_pawn_sq = en_passant_captured_sq(to, pushing_player);
+            // find_ep_captured_pawn_sq returns None only if generate.rs
+            // let an invalid EP move through — should not happen after the
+            // validation gate added in generate.rs, but guard defensively.
+            let captured_pawn_sq = find_ep_captured_pawn_sq(board, to, player)
+                .expect("make_move EP: no enemy pawn near ep_target (invalid EP move generated)");
             captured_piece = Some(board.remove_piece(captured_pawn_sq));
             board.move_piece(from, to);
         }
@@ -444,10 +446,10 @@ pub fn unmake_move(board: &mut Board, mv: Move, undo: MoveUndo) {
         FLAG_EN_PASSANT => {
             // Move pawn back
             board.move_piece(to, from);
-            // Restore captured pawn at the pushing player's landing square
-            let pushing_player = player.prev();
-            let captured_pawn_sq = en_passant_captured_sq(to, pushing_player);
+            // Restore captured pawn — use the captured piece's owner (the real pusher),
+            // not player.prev() which fails when a player has been eliminated.
             if let Some(cap) = undo.captured_piece {
+                let captured_pawn_sq = en_passant_captured_sq(to, cap.owner);
                 board.place_piece(captured_pawn_sq, cap);
             }
         }
@@ -513,14 +515,45 @@ const PAWN_FORWARD: [(i8, i8); 4] = [
 /// Compute the square of the pawn captured by en passant.
 /// The captured pawn is the one that double-stepped PAST the ep target.
 /// Its location is: ep_target + pushing_player's forward direction.
-///
-/// In 4PC, the pushing player is always prev_player(capturing_player)
-/// because EP only lasts one turn.
 fn en_passant_captured_sq(ep_target: Square, pushing_player: Player) -> Square {
     let file = file_of(ep_target) as i8;
     let rank = rank_of(ep_target) as i8;
     let (df, dr) = PAWN_FORWARD[pushing_player.index()];
     square_from((file + df) as u8, (rank + dr) as u8).unwrap()
+}
+
+/// Find the square of the pawn captured by en passant by scanning the board.
+/// Returns None if no capturable enemy pawn exists near ep_target — this
+/// can happen when the current player itself pushed the pawn (self-EP, invalid)
+/// or when ep_sq is stale.
+///
+/// Made pub so generate.rs can use it to validate before generating EP moves.
+pub fn find_ep_captured_pawn_sq(
+    board: &Board,
+    ep_target: Square,
+    capturing_player: Player,
+) -> Option<Square> {
+    let file = file_of(ep_target) as i8;
+    let rank = rank_of(ep_target) as i8;
+    for pidx in 0..4 {
+        let candidate = Player::from_index(pidx).unwrap();
+        if candidate == capturing_player {
+            continue;
+        }
+        let (df, dr) = PAWN_FORWARD[candidate.index()];
+        let cf = file + df;
+        let cr = rank + dr;
+        if cf >= 0 && cf < 14 && cr >= 0 && cr < 14 {
+            if let Some(sq) = square_from(cf as u8, cr as u8) {
+                if let Some(piece) = board.piece_at(sq) {
+                    if piece.piece_type == PieceType::Pawn && piece.owner == candidate {
+                        return Some(sq);
+                    }
+                }
+            }
+        }
+    }
+    None
 }
 
 /// Update castling rights based on piece movement.

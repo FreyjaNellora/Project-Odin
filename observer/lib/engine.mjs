@@ -15,6 +15,8 @@ export class Engine {
   #rl;
   #lineQueue = [];
   #lineResolve = null;
+  #dead = false;
+  #stderrBuf = '';
 
   constructor(enginePath) {
     this.#proc = spawn(enginePath, [], {
@@ -23,6 +25,22 @@ export class Engine {
     this.#proc.on('error', (err) => {
       console.error(`Engine failed to start: ${err.message}`);
       process.exit(1);
+    });
+    this.#proc.on('exit', (code, signal) => {
+      this.#dead = true;
+      if (code !== 0 && code !== null) {
+        console.error(`\n[ENGINE CRASH] exit code=${code} signal=${signal}`);
+        if (this.#stderrBuf) console.error(`[ENGINE STDERR] ${this.#stderrBuf}`);
+      }
+      // Unblock any pending readLine
+      if (this.#lineResolve) {
+        const r = this.#lineResolve;
+        this.#lineResolve = null;
+        r(null);
+      }
+    });
+    this.#proc.stderr.on('data', (chunk) => {
+      this.#stderrBuf += chunk.toString();
     });
     this.#rl = createInterface({ input: this.#proc.stdout });
     this.#rl.on('line', (line) => {
@@ -36,12 +54,17 @@ export class Engine {
     });
   }
 
+  get dead() { return this.#dead; }
+  get stderrOutput() { return this.#stderrBuf; }
+
   send(cmd) {
+    if (this.#dead) return;
     this.#proc.stdin.write(cmd + '\n');
   }
 
   async readLine() {
     if (this.#lineQueue.length > 0) return this.#lineQueue.shift();
+    if (this.#dead) return null;
     return new Promise((resolve) => { this.#lineResolve = resolve; });
   }
 

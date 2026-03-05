@@ -74,7 +74,7 @@ pub fn generate_dkw_move(board: &mut Board, player: Player, seed: &mut u64) -> O
     // Filter to king-only moves
     let king_moves: Vec<Move> = legal
         .into_iter()
-        .filter(|m| m.piece_type() == PieceType::King && !m.is_castle())
+        .filter(|m| m.piece_type() == PieceType::King && !m.is_castle() && !m.is_capture())
         .collect();
 
     if king_moves.is_empty() {

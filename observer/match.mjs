@@ -102,6 +102,13 @@ async function playMatchGame(engineAPath, engineBPath, gameNum) {
 
     while (true) {
       const line = await engine.readLine();
+      if (line === null) {
+        // Engine process died
+        console.error(`\n[CRASH] Engine ${engineLabel} died at ply ${ply}`);
+        if (engine.stderrOutput) console.error(`[STDERR] ${engine.stderrOutput}`);
+        gameOver = true;
+        break;
+      }
       rawLines.push(line);
       const p = parseLine(line);
 

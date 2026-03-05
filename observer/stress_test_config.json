@@ -1,7 +1,7 @@
 {
   "engine_a": "../target/release/odin-engine.exe",
   "engine_b": "../target/release/odin-engine.exe",
-  "games": 500,
+  "games": 3000,
   "depth": 2,
   "time_control": null,
   "game_mode": "ffa",

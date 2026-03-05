@@ -12,7 +12,8 @@ use crate::board::{
 
 use super::attacks::{is_in_check, is_square_attacked_by};
 use super::moves::{
-    castling_empty_squares, castling_king_path, get_castling_config, make_move, unmake_move, Move,
+    castling_empty_squares, castling_king_path, find_ep_captured_pawn_sq, get_castling_config,
+    make_move, unmake_move, Move,
 };
 use super::tables::{global_attack_tables, AttackTables, NUM_DIRECTIONS};
 
@@ -267,9 +268,13 @@ fn generate_pawn_moves(board: &Board, player: Player, sq: Square, moves: &mut im
             }
         }
 
-        // En passant capture
+        // En passant capture: only generate if an enemy pawn actually exists
+        // near ep_target. This prevents an invalid self-capture when the player
+        // who just double-pushed is later tested for checkmate in
+        // check_elimination_chain (their own pawn set ep_sq, but the scan
+        // skips the current player, finds nothing, and the fallback crashes).
         if let Some(ep_sq) = board.en_passant() {
-            if target_sq == ep_sq {
+            if target_sq == ep_sq && find_ep_captured_pawn_sq(board, ep_sq, player).is_some() {
                 moves.push_move(Move::new_en_passant(sq, ep_sq));
             }
         }
