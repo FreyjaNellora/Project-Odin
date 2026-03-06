@@ -1,82 +1,59 @@
-# HANDOFF -- Stage 19 Complete
+# HANDOFF -- Stage 20 In Progress
 
 **Date:** 2026-03-05
-**Stage:** Stage 19 -- Optimization \& Hardening (COMPLETE)
-**Next:** Stage 20 -- Gen-0 NNUE Training Run (GPU required)
+**Stage:** Stage 20 -- Gen-0 NNUE Training Run (IN PROGRESS)
+**Next:** Continue Stage 20 after datagen completes
 
 ---
 
-## Stage 19 Summary
+## What Was Done This Session
 
-All 7 phases complete, post-audit done, tagged stage-19-complete / v1.19.
+1. **Stage entry protocol complete** -- Read all upstream audit/downstream logs for Stages 14-16. Build and test verified clean (594 passed, 0 failed, 6 ignored).
 
-### What Was Built
+2. **Stage 20 spec written** -- Added formal Stage 20 specification to MASTERPLAN.md (line 1391). Tier 5 (Learn), depends on Stages 15 and 19. Five acceptance criteria defined.
 
-**Phase 1 -- Benchmarking Baseline**
-Criterion benchmarks in odin-engine/benches/engine_bench.rs. Established baselines for all key metrics.
+3. **Pre-audit complete** -- Created audit_log_stage_20.md with full pre-audit section covering upstream findings, risks, and build state.
 
-**Phase 1.5 -- Release Profile Tuning**
-LTO fat, opt-level 3, codegen-units 1 in workspace Cargo.toml.
+4. **STATUS.md updated** -- Stage 19 marked complete, Stage 20 in-progress.
 
-**Phase 2 -- SIMD NNUE**
-odin-engine/src/eval/nnue/simd.rs: AVX2 accumulator add/sub, SCReLU activation, hidden layer MatVec. Runtime AVX2 detection via OnceLock. 8 scalar-vs-SIMD correctness tests. Result: 40.8x NNUE speedup (55.9us -> 1.37us forward pass).
-
-**Phase 3 -- Memory Optimization**
-ArrayVec MoveBuffer trait + zero-heap movegen variants. BRS alphabeta/quiescence converted. Move ordering alloc eliminated. Arc<Vec<u64>> game history for O(1) clone. Result: 2.46x BRS depth 6 speedup (62.3ms -> 25.3ms).
-
-**Phase 4 -- Bitboard (SKIPPED)**
-Profiling showed board scanning was not the dominant cost after Phase 2-3. 14x14 board needs u256 bitboards (non-standard). Correctly deferred.
-
-**Phase 5 -- Stress Testing (AC1)**
-EP V2 crash found (~1/430 games) and fixed. find_ep_captured_pawn_sq: replaced wrong fallback with correct scan of all 3 candidate squares. Verified with 500-game reproduction run. 3000-game clean run confirmed fix. Total crash-free games: ~11,500. AC1 PASS.
-
-**Phase 6 -- Fuzz Testing (AC2)**
-27 fuzz tests in odin-engine/tests/stage_19_fuzz.rs covering: protocol (7), position (6), search boundary (8), NNUE boundary (6). All pass. AC2 PASS.
-
-**Phase 7 -- Error Handling Hardening**
-accumulator.rs: assert\! -> debug_assert\! for stack overflow/underflow.
-protocol/mod.rs: 6 bare unwrap() -> expect() with invariant messages in handle_go.
-
-**Post-Audit**
-AC4/AC5 NPS targets revised: original 500K/1M NPS spec borrowed from 2-player chess and does not apply to 4-player (4x NNUE perspectives, depth-8 = 2 full rotations). Meaningful metric is latency. BRS depth 6 = 25.3ms, MCTS 1000 sims = 124.9ms -- both improvements confirmed, both practical for play.
-
-**UI Cleanup (this session)**
-Removed unused Speed controls from SelfPlayDashboard (setSpeed, SPEED_DELAY constant, dropdown). Self-play always runs at 0ms UI delay (engine-limited in practice).
+5. **Datagen launched** -- 1000 games at depth 4 (full board rotation), FFA mode, sample interval 4. Running via `node match.mjs datagen_gen0_config.json` in observer/. Output: `observer/training_data_gen0.jsonl`. Estimated ~33 hours to complete.
 
 ---
 
-## Final Test Counts
+## What Was NOT Completed
 
-- Engine: 600 (573 prior + 27 fuzz, 6 ignored), 0 failures
-- UI Vitest: 63, 0 failures
+- JSONL -> binary conversion (waiting for datagen)
+- Kaggle upload and GPU training
+- T13 integration test
+- Post-audit
 
-## Final Performance Numbers
+---
 
-| Metric | Baseline | Final | Improvement |
-|--------|---------|-------|-------------|
-| forward_pass | 55.9 us | 1.37 us | 40.8x |
-| full_init | 9.6 us | 3.78 us | 2.5x |
-| incremental_push | 948 ns | 798 ns | 1.2x |
-| BRS depth 4 | 3.5 ms | 3.18 ms | 1.1x |
-| BRS depth 6 | 62.3 ms | 25.3 ms | 2.46x |
-| MCTS 1000 sims | 133.7 ms | 124.9 ms | 1.07x |
+## Files Modified
+
+- `masterplan/MASTERPLAN.md` -- Added Stage 20 spec (line 1391)
+- `masterplan/STATUS.md` -- Stage 19 complete, Stage 20 in-progress
+- `masterplan/audit_log_stage_20.md` -- NEW, pre-audit complete
+- `observer/datagen_gen0_config.json` -- NEW, depth 4 config for Gen-0
 
 ---
 
 ## What the Next Session Should Do First
 
-1. Read STATUS.md + HANDOFF.md
-2. Begin Stage 20 entry protocol (AGENT_CONDUCT 1.1)
-3. Run Gen-0 NNUE training pipeline on GPU (see Stage 15 spec and downstream_log_stage_15.md)
-
-Gen-0 requires: Kaggle GPU notebook (odin-nnue/kaggle/), self-play data generation, training run, weight export, integration test.
+1. Check if datagen is done: look for `observer/training_data_gen0.jsonl` (should have ~35K lines)
+2. If done, convert: `./target/release/odin-engine.exe --datagen --input observer/training_data_gen0.jsonl --output observer/training_data_gen0.bin`
+3. Upload `.bin` to Kaggle as a dataset
+4. Open `odin-nnue/kaggle_train.ipynb` on Kaggle, enable GPU, configure `BIN_PATH` to point at uploaded dataset, run all cells
+5. Download `weights_gen0.onnue` from Kaggle output
+6. Run T13: `cargo test -- test_load_exported_weights --ignored`
+7. Run 10+ self-play games with NNUE weights to verify AC4
 
 ---
 
-## Deferred Issues (non-blocking)
+## Deferred Issues (non-blocking, carried)
 
-- EP rule correctness: ep_sq cleared too eagerly -- eligible players denied window in multi-player EP scenarios. Low impact.
-- TT EP flag: compress_move drops EP flag; potential stale TT replay.
-- W18/W19 (carried): King/EP refresh overhead -- profiled, negligible.
-- Pondering: Deferred from Stage 13.
-- NPS stretch goals: Require tree parallelism.
+- EP rule correctness: ep_sq cleared too eagerly
+- TT EP flag: compress_move drops EP flag
+- W21: Null v1-v4 positions excluded from training data
+- Pondering: Deferred from Stage 13
+- NPS stretch goals: Require tree parallelism

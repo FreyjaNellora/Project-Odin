@@ -89,6 +89,7 @@ Single source of truth for all `[[wikilink]]` targets in the vault. Before creat
 | `[[audit_log_stage_17]]` | `audit_logs/audit_log_stage_17.md` | Stage 17 audit findings |
 | `[[audit_log_stage_18]]` | `audit_logs/audit_log_stage_18.md` | Stage 18 audit findings |
 | `[[audit_log_stage_19]]` | `audit_logs/audit_log_stage_19.md` | Stage 19 audit findings |
+| `[[audit_log_stage_20]]` | `audit_log_stage_20.md` | Stage 20 audit findings |
 
 ## Downstream Logs
 
@@ -177,6 +178,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Session-2026-02-27-PreStage10-Cleanup]]` | `sessions/Session-2026-02-27-PreStage10-Cleanup.md` | Pre-Stage-10 cleanup: audit fixes, eval mitigations, Vec clone retrofit |
 | `[[Session-2026-02-27-BRS-ScoreCap-PawnStructure]]` | `sessions/Session-2026-02-27-BRS-ScoreCap-PawnStructure.md` | BRS score cap, connected pawn bonus, development bonus, depth 8 |
 | `[[Session-2026-02-26-BRS-Architecture-Investigation]]` | `sessions/Session-2026-02-26-BRS-Architecture-Investigation.md` | Narrowing fix, hanging penalty revert, BRS architecture investigation |
+| `[[Session-2026-03-05-Stage-20-Entry]]` | `sessions/Session-2026-03-05-Stage-20-Entry.md` | Stage 20 entry: spec written, pre-audit, datagen launched |
 
 ### Issues
 
@@ -187,6 +189,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Issue-Huginn-Gates-Unwired]]` | `issues/Issue-Huginn-Gates-Unwired.md` | Stages 1-6 Huginn gates not wired (resolved - Huginn retired Stage 8) |
 | `[[Issue-DKW-Halfmove-Clock]]` | `issues/Issue-DKW-Halfmove-Clock.md` | DKW instant moves increment halfmove clock (open) |
 | `[[Issue-DKW-Invisible-Moves-UI]]` | `issues/Issue-DKW-Invisible-Moves-UI.md` | DKW king instant moves not visible in UI (open) |
+| `[[Issue-UI-React-Hooks-Queue-Error]]` | `issues/Issue-UI-React-Hooks-Queue-Error.md` | React hooks queue error on UI load (note) |
 | `[[Issue-UI-EP-False-Positive]]` | `issues/Issue-UI-EP-False-Positive.md` | En passant false positive for Blue/Green UI display (resolved) |
 | `[[Issue-UI-Castling-Blue-Green]]` | `issues/Issue-UI-Castling-Blue-Green.md` | Castling display broken for Blue/Green UI (resolved) |
 | `[[Issue-UI-AdvancePlayer-React-Batching]]` | `issues/Issue-UI-AdvancePlayer-React-Batching.md` | advancePlayer wrong player from React 18 batching (resolved) |

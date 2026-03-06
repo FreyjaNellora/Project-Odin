@@ -24,6 +24,7 @@ _None._
 - [[Issue-Bootstrap-Eval-Lead-Penalty-Tactical-Mismatch]] -- Lead-penalty heuristic causes BRS to prefer checks over captures in some positions; Stage 8 to fix
 - [[Issue-DKW-Halfmove-Clock]] -- DKW instant moves increment halfmove_clock via make_move; may cause premature 50-move rule triggers in DKW games
 - [[Issue-DKW-Invisible-Moves-UI]] -- DKW king instant moves not visible in UI rendering cache; visual desync after DKW events
+- [[Issue-UI-React-Hooks-Queue-Error]] -- React hooks queue error on UI load; likely Vite HMR artifact, refresh fixes it
 
 ## Recently Resolved
 

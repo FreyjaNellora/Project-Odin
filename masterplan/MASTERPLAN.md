@@ -1388,6 +1388,56 @@ impl AccumulatorStack {
 
 ---
 
+### STAGE 20: Gen-0 NNUE Training Run
+
+**Tier:** 5 — Learn (completes the NNUE training cycle from Stage 15)
+**Dependencies:** Stage 15 ([[stage_15_nnue_pipeline]]) (training pipeline), Stage 19 ([[stage_19_optimization]]) (optimized engine for data generation)
+
+**The problem:** The NNUE training pipeline (Stage 15) is fully built but has never been run with real data. The engine uses bootstrap eval (piece-square tables). This stage generates self-play training data, runs the first GPU training iteration, exports trained weights, and verifies end-to-end integration. Gen-0 weights will be weak (bootstrapped from random play), but they prove the pipeline works and establish the foundation for iterative improvement.
+
+**What you're building:**
+
+1. **Self-play training data.** Generate games using the bootstrap evaluator via the observer's datagen mode (). Output: JSONL file with positions, BRS eval targets, MCTS value targets, and game results. Convert to binary format via .
+
+2. **Kaggle GPU training environment.** Set up a free Kaggle account, upload the binary training data as a dataset, configure  with correct paths.
+
+3. **Gen-0 training run.** Execute the training notebook on Kaggle GPU. Monitor loss convergence across epochs. Export  and .
+
+4. **End-to-end integration verification.** Load exported  weights in the Rust engine. Run T13 (). Verify the engine plays complete games with NNUE eval without crashes.
+
+5. **Optional: A/B evaluation.** Self-play tournament comparing NNUE eval vs bootstrap eval to measure any strength difference.
+
+**Build order:**
+1. Kaggle account setup and environment preparation
+2. Self-play data generation (datagen mode, 1000+ games)
+3. JSONL to binary conversion ()
+4. Upload binary data to Kaggle as dataset
+5. GPU training run (kaggle_train.ipynb)
+6. Download and integrate  weights
+7. Run T13 integration test + self-play verification
+8. Optional A/B tournament (NNUE vs bootstrap)
+
+**What you DON'T need:**
+- Gen-1 or iterative training. One training iteration is sufficient for this stage.
+- Hyperparameter tuning. Use the defaults from Stage 15 (lr=0.01, batch=4096, epochs=20).
+- Distributed training. Single Kaggle GPU is sufficient.
+- Strong play from Gen-0. Weights bootstrapped from random self-play will be weak. That's expected.
+
+**Tracing points (this stage):**
+- Data generation: total games, total samples, samples per game, output file size
+- Training: per-epoch loss (BRS, MCTS, result, combined), validation loss, early stopping trigger
+- Weight export: file size, architecture hash, CRC32
+- Integration: T13 pass/fail, forward pass output range, self-play game completion rate
+
+**Acceptance criteria:**
+- AC1: Training data generated (1000+ games, 10K+ samples in binary  format)
+- AC2: Training loss decreases across epochs (convergence, not divergence)
+- AC3: Exported  file loads in Rust engine (T13 passes)
+- AC4: Engine plays 10+ complete games using NNUE weights without crashes
+- AC5: All prior tests still pass (no regressions)
+
+---
+
 ## 4.1 MAINTENANCE INVARIANTS
 
 These rules apply to every stage after the feature is introduced. They are not stage-specific -- they are permanent.

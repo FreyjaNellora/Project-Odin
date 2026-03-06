@@ -9,8 +9,8 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 19 (Optimization & Hardening) -- Phases 1-7 complete. Pending post-audit + tag. |
-| **Current Build-Order Step** | Stage 19 complete. Next: Stage 20 (Gen-0 NNUE training run on GPU). |
+| **Current Stage** | Stage 20 (Gen-0 NNUE Training Run) -- Stage entry protocol started. |
+| **Current Build-Order Step** | Stage 20, Step 1: Kaggle account setup and environment preparation. |
 | **Build Compiles** | Yes -- cargo build --release passes with LTO, 0 warnings |
 | **Tests Pass** | Yes -- engine: 600 total (573 unit+integration + 27 fuzz, 6 ignored); UI: 63 Vitest. |
 | **Blocking Issues** | None. Gen-0 pipeline run (Stage 15) still needed for trained NNUE weights. |
@@ -40,7 +40,8 @@
 | 16 | NNUE Integration | complete | post-audit done | -- | Pending tag. |
 | 17 | Game Mode Variant Tuning | complete | post-audit done | -- | Pending tag. |
 | 18 | Full UI | complete | post-audit done | -- | Pending tag. |
-| 19 | Optimization & Hardening | in-progress | -- | -- | Phases 1-7 done. Pending post-audit + tag. |
+| 19 | Optimization & Hardening | complete | post-audit done | stage-19-complete / v1.19 | All phases done. |
+| 20 | Gen-0 NNUE Training Run | in-progress | -- | -- | Stage entry protocol started. |
 
 ---
 
