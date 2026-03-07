@@ -275,7 +275,7 @@ fn test_load_exported_weights() {
     // BRS eval should produce a value in valid range
     let brs_score = evaluator.eval_scalar(&gs, Player::Red);
     assert!(
-        brs_score > -30000 && brs_score < 30000,
+        brs_score >= -30000 && brs_score <= 30000,
         "BRS score {} out of valid range",
         brs_score
     );

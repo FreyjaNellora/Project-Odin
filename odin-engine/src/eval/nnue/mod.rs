@@ -80,18 +80,18 @@ pub fn forward_pass(
     );
 
     // Step 3: BRS scalar head (32 → 1).
-    let mut brs_raw: i32 = weights.brs_bias;
+    let mut brs_raw: i64 = weights.brs_bias as i64;
     for h in 0..HIDDEN_SIZE {
-        brs_raw += hidden[h] * weights.brs_weights[h] as i32;
+        brs_raw += hidden[h] as i64 * weights.brs_weights[h] as i64;
     }
-    let brs_cp = (brs_raw / OUTPUT_SCALE).clamp(-30_000, 30_000) as i16;
+    let brs_cp = ((brs_raw / OUTPUT_SCALE as i64) as i32).clamp(-30_000, 30_000) as i16;
 
     // Step 4: MCTS value head (32 → 4, per-player sigmoid).
     let mut mcts_values = [0.0f64; 4];
     for v in 0..MCTS_OUTPUT {
-        let mut raw: i32 = weights.mcts_biases[v];
+        let mut raw: i64 = weights.mcts_biases[v] as i64;
         for h in 0..HIDDEN_SIZE {
-            raw += hidden[h] * weights.mcts_weights[h * MCTS_OUTPUT + v] as i32;
+            raw += hidden[h] as i64 * weights.mcts_weights[h * MCTS_OUTPUT + v] as i64;
         }
         // Per-player sigmoid: 1 / (1 + exp(-x / SIGMOID_K))
         let x = raw as f64 / OUTPUT_SCALE as f64;
