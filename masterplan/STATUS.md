@@ -1,7 +1,7 @@
 # PROJECT ODIN -- STATUS
 
-**Last Updated:** 2026-03-05
-**Updated By:** Claude Sonnet 4.6 (Stage 19: Optimization & Hardening -- Phases 1-7 complete)
+**Last Updated:** 2026-03-06
+**Updated By:** Claude Opus 4.6 (Stage 20: Gen-0 NNUE Training Run -- Complete)
 
 ---
 
@@ -9,11 +9,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Current Stage** | Stage 20 (Gen-0 NNUE Training Run) -- Stage entry protocol started. |
-| **Current Build-Order Step** | Stage 20, Step 1: Kaggle account setup and environment preparation. |
+| **Current Stage** | Stage 20 complete. Next: Gen-1 cycle or bootstrap removal. |
+| **Current Build-Order Step** | Post-audit done. Pipeline proven end-to-end. |
 | **Build Compiles** | Yes -- cargo build --release passes with LTO, 0 warnings |
-| **Tests Pass** | Yes -- engine: 600 total (573 unit+integration + 27 fuzz, 6 ignored); UI: 63 Vitest. |
-| **Blocking Issues** | None. Gen-0 pipeline run (Stage 15) still needed for trained NNUE weights. |
+| **Tests Pass** | Yes -- engine: 600 total (573 unit+integration + 27 fuzz, 6 ignored); UI: 63 Vitest. T13 passes. |
+| **Blocking Issues** | None. Gen0 weights functional but crude (BRS saturates). |
 
 ---
 
@@ -36,20 +36,20 @@
 | 12 | Self-Play & Regression Testing | complete | post-audit done | -- | Pending tag. |
 | 13 | Time Management | complete | post-audit done | -- | Pending tag. |
 | 14 | NNUE Feature Design & Architecture | complete | post-audit done | -- | Pending tag. |
-| 15 | NNUE Training Pipeline | complete | post-audit done | -- | Pending Gen-0 run + T13 + tag. |
+| 15 | NNUE Training Pipeline | complete | post-audit done | -- | Gen-0 run complete. Pending tag. |
 | 16 | NNUE Integration | complete | post-audit done | -- | Pending tag. |
 | 17 | Game Mode Variant Tuning | complete | post-audit done | -- | Pending tag. |
 | 18 | Full UI | complete | post-audit done | -- | Pending tag. |
 | 19 | Optimization & Hardening | complete | post-audit done | stage-19-complete / v1.19 | All phases done. |
-| 20 | Gen-0 NNUE Training Run | in-progress | -- | -- | Stage entry protocol started. |
+| 20 | Gen-0 NNUE Training Run | complete | post-audit done | -- | Pipeline proven. AC4 deferred. |
 
 ---
 
 ## What the Next Session Should Do First
 
 1. Read STATUS.md + HANDOFF.md
-2. Begin Stage 20 entry protocol (AGENT_CONDUCT 1.1)
-3. Run Gen-0 NNUE training pipeline on GPU (see Stage 15 spec)
+2. Decide: Gen-1 training cycle or bootstrap eval removal
+3. Update README.md (stale: says Stage 19, wrong test counts)
 
 ---
 
@@ -63,6 +63,8 @@ None. All tests pass (600 engine + 63 UI Vitest).
 - TT EP flag: compress_move drops EP flag; decompress_move re-derives. Potential stale TT replay in edge cases.
 - Pondering: Deferred from Stage 13.
 - NPS stretch goals (1M NPS, 10K sims/sec): Require tree parallelism, deferred.
+- W26: Gen0 BRS head saturates at +/-30000. Expected, resolves with gen1+ training.
+- AC4: Self-play verification with NNUE weights deferred to gen1.
 
 ---
 

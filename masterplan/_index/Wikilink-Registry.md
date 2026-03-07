@@ -179,6 +179,7 @@ These sections grow as agents create notes during development. Add entries here 
 | `[[Session-2026-02-27-BRS-ScoreCap-PawnStructure]]` | `sessions/Session-2026-02-27-BRS-ScoreCap-PawnStructure.md` | BRS score cap, connected pawn bonus, development bonus, depth 8 |
 | `[[Session-2026-02-26-BRS-Architecture-Investigation]]` | `sessions/Session-2026-02-26-BRS-Architecture-Investigation.md` | Narrowing fix, hanging penalty revert, BRS architecture investigation |
 | `[[Session-2026-03-05-Stage-20-Entry]]` | `sessions/Session-2026-03-05-Stage-20-Entry.md` | Stage 20 entry: spec written, pre-audit, datagen launched |
+| [[Session-2026-03-06-Stage-20-Gen0-Complete]] | sessions/Session-2026-03-06-Stage-20-Gen0-Complete.md | Session note |
 
 ### Issues
 
