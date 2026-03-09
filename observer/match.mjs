@@ -283,10 +283,18 @@ async function runDatagen() {
   console.log(`[datagen] Output: ${outputFile}`);
   console.log('');
 
-  // Clear output file
-  writeFileSync(outputFile, '');
+  // Append to existing file (preserve progress across restarts)
+  if (!existsSync(outputFile)) writeFileSync(outputFile, '');
 
+  // Count existing samples to resume progress tracking
   let totalSamples = 0;
+  if (existsSync(outputFile)) {
+    const existing = readFileSync(outputFile, 'utf8').trim();
+    if (existing.length > 0) {
+      totalSamples = existing.split(String.fromCharCode(10)).length;
+      console.log('[datagen] Resuming: found ' + totalSamples + ' existing samples');
+    }
+  }
 
   for (let i = 1; i <= totalGames; i++) {
     process.stdout.write(`[datagen] Game ${i}/${totalGames} ... `);

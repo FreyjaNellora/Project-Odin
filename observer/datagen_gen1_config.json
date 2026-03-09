@@ -1,0 +1,17 @@
+{
+  "mode": "datagen",
+  "engine_a": "../target/release/odin-engine.exe",
+  "games": 1000,
+  "depth": 4,
+  "sample_interval": 4,
+  "output_file": "training_data_gen1.jsonl",
+  "game_mode": "ffa",
+  "eval_profile": "standard",
+  "options": {
+    "nnue_file": "../odin-nnue/weights_gen0.onnue"
+  },
+  "stop_at": {
+    "max_ply": 200,
+    "on_gameover": true
+  }
+}
