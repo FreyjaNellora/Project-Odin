@@ -1,5 +1,9 @@
 # Project Odin
 
+<p align="center">
+  <img src="assets/odin-cover.png" alt="Odin at Mímisbrunnr — sacrificing his eye for wisdom at the Well of Knowledge beneath Yggdrasil" width="600" />
+</p>
+
 A four-player chess engine for 14x14 boards (160 playable squares, R/B/Y/G). NNUE evaluation with AVX2 SIMD, BRS/Paranoid hybrid search, Gumbel MCTS strategic planning, and a React/Tauri desktop UI.
 
 --- built with Claude. I don't care to nitpick about its silly naming at times. I got other things to worry about :)
