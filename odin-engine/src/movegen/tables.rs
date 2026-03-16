@@ -132,7 +132,10 @@ impl AttackTables {
             while f >= 0 && f < BOARD_SIZE as i8 && r >= 0 && r < BOARD_SIZE as i8 {
                 let target = square_from(f as u8, r as u8).unwrap();
                 if !is_valid_square(target) {
-                    break; // Stop ray at invalid corner squares
+                    // Skip invalid corner squares — diagonal continues on the other side
+                    f += df;
+                    r += dr;
+                    continue;
                 }
                 ray.push(target);
                 f += df;
@@ -300,15 +303,81 @@ mod tests {
     }
 
     #[test]
-    fn test_ray_stops_at_corner() {
+    fn test_ray_skips_corner_no_valid_squares_beyond() {
         let tables = AttackTables::new();
-        // d4 (file 3, rank 3) — southwest ray should stop before hitting corner
+        // d4 (file 3, rank 3) — SW ray: c3, b2, a1 all invalid corner, then off-board.
+        // Ray correctly skips invalid squares but finds nothing valid beyond.
         let sq = square_from(3, 3).unwrap();
         let sw_ray = tables.ray(sq, DIR_SOUTHWEST);
-        // SW from d4: c3 (file 2, rank 2) is INVALID (corner)
         assert!(
             sw_ray.is_empty(),
-            "SW ray from d4 should stop at corner boundary"
+            "SW ray from d4 should be empty — all SW squares are invalid corners"
+        );
+    }
+
+    #[test]
+    fn test_ray_crosses_corner_diagonally() {
+        let tables = AttackTables::new();
+        // d1 (file 3, rank 0) — NW ray: c2 (2,1) invalid, b3 (1,2) invalid, a4 (0,3) VALID.
+        // The ray must skip the 2 invalid corner squares and reach a4.
+        let sq = square_from(3, 0).unwrap();
+        let nw_ray = tables.ray(sq, DIR_NORTHWEST);
+        assert!(
+            !nw_ray.is_empty(),
+            "NW ray from d1 should cross the corner and reach a4"
+        );
+        assert_eq!(nw_ray[0], square_from(0, 3).unwrap(), "first valid square should be a4");
+    }
+
+    #[test]
+    fn test_ray_crosses_top_left_corner() {
+        let tables = AttackTables::new();
+        // d14 (file 3, rank 13) — SW ray: c13 (2,12) invalid, b12 (1,11) invalid, a11 (0,10) VALID.
+        let sq = square_from(3, 13).unwrap();
+        let sw_ray = tables.ray(sq, DIR_SOUTHWEST);
+        assert!(
+            !sw_ray.is_empty(),
+            "SW ray from d14 should cross the top-left corner and reach a11"
+        );
+        assert_eq!(sw_ray[0], square_from(0, 10).unwrap(), "first valid square should be a11");
+    }
+
+    #[test]
+    fn test_ray_crosses_bottom_right_corner() {
+        let tables = AttackTables::new();
+        // k1 (file 10, rank 0) — NE ray: l2 (11,1) invalid, m3 (12,2) invalid, n4 (13,3) VALID.
+        let sq = square_from(10, 0).unwrap();
+        let ne_ray = tables.ray(sq, DIR_NORTHEAST);
+        assert!(
+            !ne_ray.is_empty(),
+            "NE ray from k1 should cross the bottom-right corner and reach n4"
+        );
+        assert_eq!(ne_ray[0], square_from(13, 3).unwrap(), "first valid square should be n4");
+    }
+
+    #[test]
+    fn test_ray_crosses_top_right_corner() {
+        let tables = AttackTables::new();
+        // k14 (file 10, rank 13) — SE ray: l13 (11,12) invalid, m12 (12,11) invalid, n11 (13,10) VALID.
+        let sq = square_from(10, 13).unwrap();
+        let se_ray = tables.ray(sq, DIR_SOUTHEAST);
+        assert!(
+            !se_ray.is_empty(),
+            "SE ray from k14 should cross the top-right corner and reach n11"
+        );
+        assert_eq!(se_ray[0], square_from(13, 10).unwrap(), "first valid square should be n11");
+    }
+
+    #[test]
+    fn test_orthogonal_ray_does_not_cross_corner() {
+        let tables = AttackTables::new();
+        // c4 (file 2, rank 3) — South ray: c3 (2,2) invalid, c2 (2,1) invalid, c1 (2,0) invalid.
+        // Orthogonal rays also skip invalid squares, but should find nothing if all are invalid.
+        let sq = square_from(2, 3).unwrap();
+        let south_ray = tables.ray(sq, DIR_SOUTH);
+        assert!(
+            south_ray.is_empty(),
+            "South ray from c4 into the corner should be empty"
         );
     }
 
