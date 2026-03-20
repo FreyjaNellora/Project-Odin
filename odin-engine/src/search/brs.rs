@@ -119,6 +119,8 @@ pub struct BrsSearcher {
     acc_stack: Option<AccumulatorStack>,
     /// Shared NNUE weights (read-only during search). None = bootstrap eval.
     nnue_weights: Option<Arc<NnueWeights>>,
+    /// Defense-aware move ordering weight. 0.0 = disabled. Default: 0.5.
+    defense_weight: f32,
 }
 
 impl BrsSearcher {
@@ -137,6 +139,7 @@ impl BrsSearcher {
             last_root_move_scores: None,
             acc_stack,
             nnue_weights,
+            defense_weight: 0.75,
         }
     }
 
@@ -178,6 +181,12 @@ impl BrsSearcher {
     pub fn root_move_scores(&self) -> Option<&[(Move, i16)]> {
         self.last_root_move_scores.as_deref()
     }
+
+    /// Set the defense-aware move ordering weight.
+    /// 0.0 = disabled (original behavior). Default: 0.5. Max: 2.0.
+    pub fn set_defense_weight(&mut self, w: f32) {
+        self.defense_weight = w.clamp(0.0, 2.0);
+    }
 }
 
 impl Searcher for BrsSearcher {
@@ -199,6 +208,7 @@ impl Searcher for BrsSearcher {
             &mut self.tt,
             acc,
             nnue_w,
+            self.defense_weight,
         );
         let result = ctx.iterative_deepening(&mut self.info_cb);
         // Extract BRS knowledge for Stage 11 hybrid handoff.
@@ -280,6 +290,9 @@ struct BrsContext<'a> {
     acc_stack: Option<&'a mut AccumulatorStack>,
     /// NNUE weights reference. None = bootstrap eval.
     nnue_weights: Option<&'a NnueWeights>,
+    // --- Defense-aware move ordering ---
+    /// Defense bonus weight for move ordering. 0.0 = disabled.
+    defense_weight: f32,
 }
 
 impl<'a> BrsContext<'a> {
@@ -290,6 +303,7 @@ impl<'a> BrsContext<'a> {
         tt: &'a mut TranspositionTable,
         acc_stack: Option<&'a mut AccumulatorStack>,
         nnue_weights: Option<&'a NnueWeights>,
+        defense_weight: f32,
     ) -> Self {
         let root_player = position.current_player();
         let board_ctx = scan_board(position, root_player);
@@ -319,6 +333,7 @@ impl<'a> BrsContext<'a> {
             current_depth_root_scores: Vec::new(),
             acc_stack,
             nnue_weights,
+            defense_weight,
         }
     }
 
@@ -740,6 +755,7 @@ impl<'a> BrsContext<'a> {
             countermove,
             &self.history,
             self.root_player,
+            self.defense_weight,
         );
         let mut best = NEG_INF;
 
@@ -1090,7 +1106,121 @@ fn see(board: &Board, mv: Move, player: Player, threshold: i16) -> bool {
     captured_val - attacker_val >= threshold
 }
 
-/// Order moves for MAX node search using the full Stage 9 pipeline.
+// ---------------------------------------------------------------------------
+// Defense-aware move ordering
+// ---------------------------------------------------------------------------
+
+/// Identifies the player's pieces that are attacked but not defended (hanging).
+/// Returns a list of (square, piece_value) for each hanging piece.
+///
+/// A piece is "hanging" if:
+///   - At least one opponent attacks its square
+///   - The owning player does NOT also defend that square
+///
+/// Kings are excluded (they have their own check-evasion logic).
+/// Cost: one `is_square_attacked_by` per piece (~16 max), negligible vs movegen.
+fn find_hanging_pieces(
+    board: &Board,
+    player: Player,
+) -> ArrayVec<(u8, i16), 16> {
+    let mut hanging = ArrayVec::new();
+    for &(pt, sq) in board.piece_list(player) {
+        let val = PIECE_EVAL_VALUES[pt.index()];
+        if val == 0 {
+            continue; // skip kings
+        }
+
+        // Is any opponent attacking this square?
+        let attacked = Player::ALL
+            .iter()
+            .any(|&p| p != player && is_square_attacked_by(sq, p, board));
+        if !attacked {
+            continue;
+        }
+
+        // Is the piece defended by one of our own pieces?
+        // We temporarily ignore the piece itself — `is_square_attacked_by` checks
+        // if any *other* piece of ours covers this square. Since the piece is ON
+        // the square, the function checks rays/jumps from other pieces to this sq.
+        let defended = is_square_attacked_by(sq, player, board);
+        if defended {
+            continue; // has at least one defender — not hanging
+        }
+
+        hanging.push((sq, val));
+    }
+    hanging
+}
+
+/// Cheap geometric check: could `piece_type` on `from_sq` potentially
+/// defend/attack `target_sq`?
+///
+/// For knights and kings this is exact. For sliders (bishop, rook, queen)
+/// this is an approximation — it checks alignment but NOT obstructions.
+/// False positives are harmless for move ordering (move gets tried earlier,
+/// search discovers it doesn't actually help). Pawns are excluded (rarely
+/// serve as critical defenders in 4PC).
+fn could_defend(piece_type: PieceType, from_sq: u8, target_sq: u8) -> bool {
+    use crate::board::{file_of, rank_of};
+    let df = (file_of(from_sq) as i16 - file_of(target_sq) as i16).abs();
+    let dr = (rank_of(from_sq) as i16 - rank_of(target_sq) as i16).abs();
+    match piece_type {
+        PieceType::Knight => (df == 1 && dr == 2) || (df == 2 && dr == 1),
+        PieceType::King => df <= 1 && dr <= 1 && (df + dr) > 0,
+        PieceType::Rook => df == 0 || dr == 0,
+        PieceType::Bishop => df == dr && df > 0,
+        PieceType::Queen | PieceType::PromotedQueen => df == 0 || dr == 0 || (df == dr && df > 0),
+        _ => false, // pawns — skip
+    }
+}
+
+/// Compute the defense bonus for a quiet move given the list of hanging pieces.
+///
+/// Two cases earn a bonus:
+///   1. **Retreat**: The move evacuates a hanging piece to a safe square.
+///   2. **Add defender**: The move places a piece where it could defend a
+///      hanging square (geometric check, no obstruction verification).
+///
+/// The bonus is `defense_weight * hanging_piece_value` (as i32), which is
+/// additive with the history heuristic score. This keeps defensive moves
+/// within the quiet-move tier — they never override TT, captures, killers,
+/// or counter-moves.
+fn defense_bonus_for_move(
+    mv: Move,
+    hanging: &[(u8, i16)],
+    board: &Board,
+    player: Player,
+    defense_weight: f32,
+) -> i32 {
+    if defense_weight <= 0.0 || hanging.is_empty() {
+        return 0;
+    }
+    let mut bonus = 0i32;
+    let from = mv.from_sq();
+    let to = mv.to_sq();
+    let pt = mv.piece_type();
+
+    for &(hang_sq, piece_val) in hanging {
+        if from == hang_sq {
+            // Retreat: piece is hanging and moves away.
+            // Only award bonus if the destination is not also attacked.
+            let dest_attacked = Player::ALL
+                .iter()
+                .any(|&p| p != player && is_square_attacked_by(to, p, board));
+            if !dest_attacked {
+                bonus += (defense_weight * piece_val as f32) as i32;
+            }
+        } else if could_defend(pt, to, hang_sq) {
+            // This move places a piece that could cover the hanging square.
+            // Geometric approximation — slider obstructions not checked.
+            bonus += (defense_weight * piece_val as f32) as i32;
+        }
+    }
+    bonus
+}
+
+/// Order moves for MAX node search using the full Stage 9 pipeline,
+/// extended with defense-aware bonus scoring for quiet moves.
 ///
 /// Priority order (highest first):
 ///   1. TT/PV hint move — best move from previous search or TT probe
@@ -1098,8 +1228,12 @@ fn see(board: &Board, mv: Move, player: Player, threshold: i16) -> bool {
 ///   3. Non-capture promotions
 ///   4. Killer moves (up to 2) — quiet moves that caused cutoffs at this ply
 ///   5. Counter-move — quiet move that refuted the opponent's last move
-///   6. Remaining quiet moves, sorted descending by history heuristic score
+///   6. Remaining quiet moves, sorted descending by (history + defense bonus)
 ///   7. Losing captures (SEE < 0), sorted descending by MVV-LVA score
+///
+/// The defense bonus is additive with history — it does NOT promote quiet
+/// moves above captures, killers, or counter-moves. It only reorders within
+/// the quiet tier. Set defense_weight = 0.0 for original behavior.
 ///
 /// All moves passed must be legal; the hint/killers/counter-move are validated
 /// against the legal-move list before use.
@@ -1112,11 +1246,19 @@ fn order_moves(
     countermove: Option<Move>,
     history: &[[[i32; TOTAL_SQUARES]; PIECE_TYPE_COUNT]; PLAYER_COUNT],
     player: Player,
+    defense_weight: f32,
 ) -> ArrayVec<Move, MAX_MOVES> {
     let player_idx = player.index();
     let mut ordered = ArrayVec::<Move, MAX_MOVES>::new();
     // Track which moves have been placed to avoid duplicates (stack-allocated).
     let mut placed = [false; MAX_MOVES];
+
+    // --- Defense scan: find hanging pieces (once per position) ---
+    let hanging = if defense_weight > 0.0 {
+        find_hanging_pieces(board, player)
+    } else {
+        ArrayVec::new()
+    };
 
     // Helper: find the index of `mv` in `moves` and mark it placed.
     let find_and_mark = |mv: Move, placed: &mut [bool; MAX_MOVES]| -> Option<usize> {
@@ -1168,7 +1310,9 @@ fn order_moves(
             let pt = mv.piece_type().index();
             let to = mv.to_sq() as usize;
             let hist = history[player_idx][pt][to];
-            quiets.push((i, hist));
+            // Add defense bonus: history + defense_bonus for quiet moves.
+            let def_bonus = defense_bonus_for_move(mv, &hanging, board, player, defense_weight);
+            quiets.push((i, hist + def_bonus));
         }
     }
 

@@ -238,6 +238,8 @@ impl HybridController {
         self.brs_frac_quiet_override = opts.brs_fraction_quiet;
         self.mcts_sims_override = opts.mcts_default_sims;
         self.brs_max_depth_override = opts.brs_max_depth;
+        // Defense-aware move ordering weight
+        self.brs.set_defense_weight(opts.defense_weight.unwrap_or(0.75));
     }
 
     /// Effective tactical margin (override or default constant).

@@ -91,6 +91,8 @@ fn order_moves(
 ```
 Pipeline: TT hint → winning caps (SEE≥0, MVV-LVA) → non-cap promotions → killers → counter-move → hist-sorted quiets → losing caps (SEE<0, MVV-LVA).
 
+11. **Defense-aware move ordering (defense_weight).** Quiet moves that retreat a hanging piece to safety or add a defender to a hanging square receive a bonus of `defense_weight * piece_value` in the ordering. Default bumped from 0.5 to **0.75** (2026-03-20) to prioritize defensive moves more aggressively in a points-based game. Tunable via `setoption name defense_weight value X` (range 0.0-2.0). Set to 0.0 for original behavior. The bonus only reorders within the quiet tier — does not promote quiets above captures, killers, or counter-moves. Moves that simultaneously defend AND attack naturally score higher because MVV-LVA/history already reward the attack component.
+
 ### Known Limitations
 
 **W6 — Simplified SEE (NEW, INFO):**

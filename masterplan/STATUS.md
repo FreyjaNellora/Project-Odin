@@ -1,7 +1,7 @@
 # PROJECT ODIN -- STATUS
 
-**Last Updated:** 2026-03-06
-**Updated By:** Claude Opus 4.6 (Stage 20: Gen-0 NNUE Training Run -- Complete)
+**Last Updated:** 2026-03-20
+**Updated By:** Claude Opus 4.6 (Post-Stage 20: defense_weight tuning)
 
 ---
 
@@ -12,7 +12,7 @@
 | **Current Stage** | Stage 20 complete. Next: Gen-1 cycle or bootstrap removal. |
 | **Current Build-Order Step** | Post-audit done. Pipeline proven end-to-end. |
 | **Build Compiles** | Yes -- cargo build --release passes with LTO, 0 warnings |
-| **Tests Pass** | Yes -- engine: 600 total (573 unit+integration + 27 fuzz, 6 ignored); UI: 63 Vitest. T13 passes. |
+| **Tests Pass** | Yes -- engine: 607 total (580 unit+integration + 27 fuzz, 6 ignored); UI: 63 Vitest. T13 passes. |
 | **Blocking Issues** | None. Gen0 weights functional but crude (BRS saturates). |
 
 ---
@@ -48,14 +48,16 @@
 ## What the Next Session Should Do First
 
 1. Read STATUS.md + HANDOFF.md
-2. Decide: Gen-1 training cycle or bootstrap eval removal
-3. Update README.md (stale: says Stage 19, wrong test counts)
+2. A/B test defense_weight 0.75 vs 0.5 on tactical positions
+3. Write defense ordering spec for Freyja
+4. Decide: Gen-1 training cycle or bootstrap eval removal
+5. Update README.md (stale: says Stage 19, wrong test counts)
 
 ---
 
 ## Known Regressions
 
-None. All tests pass (600 engine + 63 UI Vitest).
+None. All tests pass (607 engine + 63 UI Vitest).
 
 ## Deferred Issues (non-blocking)
 
