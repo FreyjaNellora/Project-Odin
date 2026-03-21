@@ -25,4 +25,21 @@ Thumbs.db
 
 # Claude Code local settings
 .claude/
+
+# Observer reports and self-play data (large, not for version control)
 observer/reports/
+observer/*.log
+observer/*.bin
+
+# Training data and model weights
+*.bin
+*.pt
+*.fnnue
+*.jsonl
+
+# Obsidian local state
+masterplan/.obsidian/workspace.json
+masterplan/.obsidian/graph.json
+
+# Local system profile (never commit — machine-specific)
+masterplan/SYSTEM_PROFILE.local.md
