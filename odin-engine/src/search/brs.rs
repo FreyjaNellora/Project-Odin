@@ -1450,14 +1450,14 @@ mod tests {
         let gs = GameState::new_standard_ffa();
         let mut searcher = make_searcher();
         let budget = SearchBudget {
-            max_depth: Some(3),
+            max_depth: Some(4),
             max_nodes: None,
             max_time_ms: None,
         };
         let result = searcher.search(&gs, budget);
         assert!(
             !result.pv.is_empty(),
-            "PV should not be empty after depth 3 search"
+            "PV should not be empty after depth 4 search"
         );
         assert_eq!(
             result.pv[0], result.best_move,

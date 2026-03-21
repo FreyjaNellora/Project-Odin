@@ -101,6 +101,10 @@ pub struct EngineOptions {
     // --- Chess960 (Stage 17) ---
     /// Enable Chess960 (Fischer Random) starting positions.
     pub chess960: bool,
+    // --- Defense-aware move ordering ---
+    /// Multiplier for defense bonus in move ordering. None = default (0.5).
+    /// 0.0 = disabled (current behavior). Range: 0.0 - 2.0.
+    pub defense_weight: Option<f32>,
 }
 
 impl Default for EngineOptions {
@@ -117,6 +121,7 @@ impl Default for EngineOptions {
             brs_max_depth: None,
             nnue_file: None,
             chess960: false,
+            defense_weight: None,
         }
     }
 }

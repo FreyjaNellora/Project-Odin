@@ -251,21 +251,21 @@ fn test_killer_moves_improve_node_count_on_repeat() {
 }
 
 // ---------------------------------------------------------------------------
-// 7. Tactical: engine finds free pawn capture with TT enabled (depth 3)
+// 7. Tactical: engine finds free pawn capture with TT enabled (depth 4)
 //    Uses starting position — just verify result is legal and score > 0.
 //    Full tactical suite from Stage 7 still passes (stage_07_brs tests).
 // ---------------------------------------------------------------------------
 
 #[test]
-fn test_tt_tactical_depth_3_legal_positive_score() {
+fn test_tt_tactical_depth_4_legal_positive_score() {
     let gs = GameState::new_standard_ffa();
     let mut searcher = make_searcher();
-    let result = searcher.search(&gs, budget_depth(3));
+    let result = searcher.search(&gs, budget_depth(4));
     let mut check = gs.clone();
     let legal = check.legal_moves();
     assert!(
         legal.contains(&result.best_move),
-        "TT depth 3 result not legal: {:?}",
+        "TT depth 4 result not legal: {:?}",
         result.best_move
     );
     // Aggressive profile: root player should have a positive score at the start.

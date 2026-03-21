@@ -213,6 +213,12 @@ impl OdinEngine {
                     self.options.brs_max_depth = Some(v.clamp(1, 20));
                 }
             }
+            // --- Defense-aware move ordering ---
+            "defense_weight" | "defenseweight" => {
+                if let Ok(v) = value.parse::<f32>() {
+                    self.options.defense_weight = Some(v.clamp(0.0, 2.0));
+                }
+            }
             // --- Chess960 (Stage 17) ---
             "chess960" => {
                 self.options.chess960 = value.eq_ignore_ascii_case("true")

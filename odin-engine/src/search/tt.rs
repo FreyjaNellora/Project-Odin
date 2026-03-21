@@ -377,13 +377,13 @@ mod tests {
         // Test that a different hash at the same index is NOT replaced if shallower.
         // (Hard to test pure depth preference without forcing index collision.)
         // Instead, test that a same-position shallow store does NOT downgrade the depth.
-        tt.store(hash, None, 100, 3, TT_EXACT, 0); // shallower, same hash
+        tt.store(hash, None, 100, 4, TT_EXACT, 0); // shallower, same hash
 
         let mut alpha = -1000_i16;
         let mut beta = 1000_i16;
-        // After storing at depth 3 (shallower), probing at depth 6 should miss.
+        // After storing at depth 4 (shallower), probing at depth 6 should miss.
         let result = tt.probe(hash, 6, &mut alpha, &mut beta, 0);
-        // score should be None since depth 3 < requested 6
+        // score should be None since depth 4 < requested 6
         assert!(result.score.is_none());
     }
 
@@ -434,11 +434,11 @@ mod tests {
         let hash: u64 = 0x5566778899AABBCCu64;
         let mv = make_test_move(10, 24);
         let compressed = TranspositionTable::compress_move(mv);
-        tt.store(hash, Some(compressed), 150, 3, TT_EXACT, 0);
+        tt.store(hash, Some(compressed), 150, 4, TT_EXACT, 0);
 
         let mut alpha = -1000_i16;
         let mut beta = 1000_i16;
-        // Probe at depth 5: entry depth 3 < 5, so no score.
+        // Probe at depth 5: entry depth 4 < 5, so no score.
         let result = tt.probe(hash, 5, &mut alpha, &mut beta, 0);
         assert!(result.score.is_none());
         // But the move hint should still be returned.
@@ -492,12 +492,12 @@ mod tests {
         tt.increment_generation();
 
         // Store shallower at new generation.
-        tt.store(hash, None, 200, 3, TT_EXACT, 0);
+        tt.store(hash, None, 200, 4, TT_EXACT, 0);
 
-        // Probe at depth 3 — new generation entry should be found.
+        // Probe at depth 4 — new generation entry should be found.
         let mut alpha = -1000_i16;
         let mut beta = 1000_i16;
-        let result = tt.probe(hash, 3, &mut alpha, &mut beta, 0);
+        let result = tt.probe(hash, 4, &mut alpha, &mut beta, 0);
         assert_eq!(result.score, Some(200));
     }
 

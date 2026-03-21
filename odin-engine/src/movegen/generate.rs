@@ -708,4 +708,301 @@ mod tests {
             "Green pawn on starting file should have 2 forward moves"
         );
     }
+
+    /// Exhaustive EP test for all 8 adjacent-player-corner combinations.
+    /// For each pair (capturer, pusher) near each corner, we walk the capturer
+    /// along the corner edge and verify EP is generated for every valid position.
+    ///
+    /// The 8 pairs (capturer → pusher, corner):
+    ///   Red → Blue  (SW)    Blue → Red  (SW)
+    ///   Blue → Yellow (NW)  Yellow → Blue (NW)
+    ///   Yellow → Green (NE) Green → Yellow (NE)
+    ///   Green → Red (SE)    Red → Green (SE)
+    #[test]
+    fn test_ep_near_all_corners_exhaustive() {
+        // For each test case: (capturer, pusher, capturer's king, pusher's king,
+        //   list of (capturer_sq, pusher_from, pusher_to, ep_target))
+        //
+        // Pawn configs:
+        //   Red:    moves +rank, starts rank 1, double to rank 3, captures at (±1 file, +1 rank)
+        //   Blue:   moves +file, starts file 1, double to file 3, captures at (+1 file, ±1 rank)
+        //   Yellow: moves -rank, starts rank 12, double to rank 10, captures at (±1 file, -1 rank)
+        //   Green:  moves -file, starts file 12, double to file 10, captures at (-1 file, ±1 rank)
+
+        struct EpCase {
+            capturer: Player,
+            pusher: Player,
+            capturer_sq: (u8, u8),  // (file, rank)
+            pusher_from: (u8, u8),
+            pusher_to: (u8, u8),
+            ep_target: (u8, u8),
+            label: &'static str,
+        }
+
+        let mut cases: Vec<EpCase> = Vec::new();
+
+        // === SW CORNER (files 0-2, ranks 0-2) ===
+
+        // Red captures Blue's eastward push (Blue pushes +file from file 1 to file 3)
+        // Blue pawns on file 1 (start), ranks 3-10. Double push to file 3. EP target file 2.
+        // Red pawn must be on file 3 (adjacent to Blue's landing), at rank where Red can
+        // capture diagonally to (file 2, rank±0) matching the EP target rank.
+        // Red captures at (-1 file, +1 rank), so Red at (3, ep_rank-1) captures to (2, ep_rank).
+        for r in 3..=10u8 {
+            // Blue pushes from (1, r) to (3, r), ep target (2, r)
+            // Red at (3, r-1) captures NW to (2, r) — only if r-1 >= 0 and (3, r-1) is valid
+            if r >= 1 {
+                let capturer_rank = r - 1;
+                if is_valid_square(square_from(3, capturer_rank).unwrap()) {
+                    cases.push(EpCase {
+                        capturer: Player::Red,
+                        pusher: Player::Blue,
+                        capturer_sq: (3, capturer_rank),
+                        pusher_from: (1, r),
+                        pusher_to: (3, r),
+                        ep_target: (2, r),
+                        label: "Red→Blue SW",
+                    });
+                }
+            }
+        }
+
+        // Blue captures Red's northward push (Red pushes +rank from rank 1 to rank 3)
+        // Red pawns on rank 1 (start), files 3-10. Double push to rank 3. EP target rank 2.
+        // Blue captures at (+1 file, ±1 rank), so Blue at (file-1, rank±1) captures to (file, 2).
+        // Blue at (ep_file-1, 2+1) = (ep_file-1, 3) captures to (ep_file, 2) via (+1, -1)
+        for f in 3..=10u8 {
+            // Red pushes from (f, 1) to (f, 3), ep target (f, 2)
+            // Blue at (f-1, 3) captures via (+1, -1) to (f, 2)
+            if f >= 1 {
+                let capturer_file = f - 1;
+                if is_valid_square(square_from(capturer_file, 3).unwrap()) {
+                    cases.push(EpCase {
+                        capturer: Player::Blue,
+                        pusher: Player::Red,
+                        capturer_sq: (capturer_file, 3),
+                        pusher_from: (f, 1),
+                        pusher_to: (f, 3),
+                        ep_target: (f, 2),
+                        label: "Blue→Red SW",
+                    });
+                }
+            }
+        }
+
+        // === NW CORNER (files 0-2, ranks 11-13) ===
+
+        // Blue captures Yellow's southward push (Yellow pushes -rank from rank 12 to rank 10)
+        // Yellow pawns on rank 12, files 3-10. EP target rank 11.
+        // Blue captures at (+1 file, +1 rank) to (ep_file, 11), Blue at (ep_file-1, 10)
+        for f in 3..=10u8 {
+            // Yellow pushes from (f, 12) to (f, 10), ep target (f, 11)
+            // Blue at (f-1, 10) captures via (+1, +1) to (f, 11)
+            if f >= 1 {
+                let capturer_file = f - 1;
+                if is_valid_square(square_from(capturer_file, 10).unwrap()) {
+                    cases.push(EpCase {
+                        capturer: Player::Blue,
+                        pusher: Player::Yellow,
+                        capturer_sq: (capturer_file, 10),
+                        pusher_from: (f, 12),
+                        pusher_to: (f, 10),
+                        ep_target: (f, 11),
+                        label: "Blue→Yellow NW",
+                    });
+                }
+            }
+        }
+
+        // Yellow captures Blue's eastward push near NW corner
+        // Blue pushes from file 1 to file 3, ranks 3-10. EP target file 2.
+        // Yellow captures at (+1 file, -1 rank), so Yellow at (1, ep_rank+1) captures to (2, ep_rank)
+        for r in 3..=10u8 {
+            // Blue pushes from (1, r) to (3, r), ep target (2, r)
+            // Yellow at (1, r+1) captures via (+1, -1) to (2, r) — only if r+1 <= 13
+            if r + 1 <= 13 {
+                let capturer_rank = r + 1;
+                if is_valid_square(square_from(1, capturer_rank).unwrap()) {
+                    cases.push(EpCase {
+                        capturer: Player::Yellow,
+                        pusher: Player::Blue,
+                        capturer_sq: (1, capturer_rank),
+                        pusher_from: (1, r),
+                        pusher_to: (3, r),
+                        ep_target: (2, r),
+                        label: "Yellow→Blue NW",
+                    });
+                }
+            }
+        }
+
+        // === NE CORNER (files 11-13, ranks 11-13) ===
+
+        // Yellow captures Green's westward push (Green pushes -file from file 12 to file 10)
+        // Green pawns on file 12, ranks 3-10. EP target file 11.
+        // Yellow captures at (-1 file, -1 rank), so Yellow at (12, ep_rank+1) captures to (11, ep_rank)
+        for r in 3..=10u8 {
+            // Green pushes from (12, r) to (10, r), ep target (11, r)
+            // Yellow at (12, r+1) captures via (-1, -1) to (11, r) — only if r+1 <= 13
+            if r + 1 <= 13 {
+                let capturer_rank = r + 1;
+                if is_valid_square(square_from(12, capturer_rank).unwrap()) {
+                    cases.push(EpCase {
+                        capturer: Player::Yellow,
+                        pusher: Player::Green,
+                        capturer_sq: (12, capturer_rank),
+                        pusher_from: (12, r),
+                        pusher_to: (10, r),
+                        ep_target: (11, r),
+                        label: "Yellow→Green NE",
+                    });
+                }
+            }
+        }
+
+        // Green captures Yellow's southward push near NE corner
+        // Yellow pushes from rank 12 to rank 10, files 3-10. EP target rank 11.
+        // Green captures at (-1 file, -1 rank), so Green at (ep_file+1, 12) captures to (ep_file, 11)
+        for f in 3..=10u8 {
+            // Yellow pushes from (f, 12) to (f, 10), ep target (f, 11)
+            // Green at (f+1, 12) captures via (-1, -1) to (f, 11) — only if f+1 <= 13
+            if f + 1 <= 13 {
+                let capturer_file = f + 1;
+                if is_valid_square(square_from(capturer_file, 12).unwrap()) {
+                    cases.push(EpCase {
+                        capturer: Player::Green,
+                        pusher: Player::Yellow,
+                        capturer_sq: (capturer_file, 12),
+                        pusher_from: (f, 12),
+                        pusher_to: (f, 10),
+                        ep_target: (f, 11),
+                        label: "Green→Yellow NE",
+                    });
+                }
+            }
+        }
+
+        // === SE CORNER (files 11-13, ranks 0-2) ===
+
+        // Green captures Red's northward push near SE corner
+        // Red pushes from rank 1 to rank 3, files 3-10. EP target rank 2.
+        // Green captures at (-1 file, +1 rank), so Green at (ep_file+1, 1) captures to (ep_file, 2)
+        for f in 3..=10u8 {
+            // Red pushes from (f, 1) to (f, 3), ep target (f, 2)
+            // Green at (f+1, 1) captures via (-1, +1) to (f, 2) — only if f+1 <= 13
+            if f + 1 <= 13 {
+                let capturer_file = f + 1;
+                if is_valid_square(square_from(capturer_file, 1).unwrap()) {
+                    cases.push(EpCase {
+                        capturer: Player::Green,
+                        pusher: Player::Red,
+                        capturer_sq: (capturer_file, 1),
+                        pusher_from: (f, 1),
+                        pusher_to: (f, 3),
+                        ep_target: (f, 2),
+                        label: "Green→Red SE",
+                    });
+                }
+            }
+        }
+
+        // Red captures Green's westward push near SE corner
+        // Green pushes from file 12 to file 10, ranks 3-10. EP target file 11.
+        // Red captures at (+1 file, +1 rank), so Red at (12, ep_rank-1) captures to (11, ep_rank)... wait
+        // Red captures at (-1, +1) and (+1, +1). To reach (11, r), Red at (12, r-1) via (-1, +1).
+        for r in 3..=10u8 {
+            // Green pushes from (12, r) to (10, r), ep target (11, r)
+            // Red at (12, r-1) captures via (-1, +1) to (11, r) — only if r-1 >= 0
+            if r >= 1 {
+                let capturer_rank = r - 1;
+                if is_valid_square(square_from(12, capturer_rank).unwrap()) {
+                    cases.push(EpCase {
+                        capturer: Player::Red,
+                        pusher: Player::Green,
+                        capturer_sq: (12, capturer_rank),
+                        pusher_from: (12, r),
+                        pusher_to: (10, r),
+                        ep_target: (11, r),
+                        label: "Red→Green SE",
+                    });
+                }
+            }
+        }
+
+        // Now run all cases
+        let mut passed = 0;
+        let mut failed = 0;
+        let mut skipped = 0;
+
+        for case in &cases {
+            // Validate all squares exist and are valid
+            let cap_sq = match square_from(case.capturer_sq.0, case.capturer_sq.1) {
+                Some(s) if is_valid_square(s) => s,
+                _ => { skipped += 1; continue; }
+            };
+            let push_from = match square_from(case.pusher_from.0, case.pusher_from.1) {
+                Some(s) if is_valid_square(s) => s,
+                _ => { skipped += 1; continue; }
+            };
+            let push_to = match square_from(case.pusher_to.0, case.pusher_to.1) {
+                Some(s) if is_valid_square(s) => s,
+                _ => { skipped += 1; continue; }
+            };
+            let ep_sq = match square_from(case.ep_target.0, case.ep_target.1) {
+                Some(s) if is_valid_square(s) => s,
+                _ => { skipped += 1; continue; }
+            };
+
+            // Build board: capturer pawn, pusher pawn at landing, kings, EP set
+            let mut board = Board::empty();
+            board.place_piece(cap_sq, Piece::new(PieceType::Pawn, case.capturer));
+            board.place_piece(push_to, Piece::new(PieceType::Pawn, case.pusher));
+
+            // Place kings far from the action
+            board.place_piece(
+                square_from(7, 0).unwrap(),
+                Piece::new(PieceType::King, Player::Red),
+            );
+            board.place_piece(
+                square_from(0, 7).unwrap(),
+                Piece::new(PieceType::King, Player::Blue),
+            );
+            board.place_piece(
+                square_from(7, 13).unwrap(),
+                Piece::new(PieceType::King, Player::Yellow),
+            );
+            board.place_piece(
+                square_from(13, 7).unwrap(),
+                Piece::new(PieceType::King, Player::Green),
+            );
+
+            board.set_en_passant(Some(ep_sq));
+            board.set_side_to_move(case.capturer);
+
+            let moves = generate_pseudo_legal(&board);
+            let ep_moves: Vec<_> = moves.iter().filter(|m| m.is_en_passant()).collect();
+
+            if ep_moves.len() == 1 && ep_moves[0].to_sq() == ep_sq {
+                passed += 1;
+            } else {
+                failed += 1;
+                eprintln!(
+                    "FAILED {}: capturer {:?} at ({},{}), pusher {:?} ({},{})→({},{}), ep ({},{}), got {} ep moves",
+                    case.label,
+                    case.capturer, case.capturer_sq.0, case.capturer_sq.1,
+                    case.pusher, case.pusher_from.0, case.pusher_from.1,
+                    case.pusher_to.0, case.pusher_to.1,
+                    case.ep_target.0, case.ep_target.1,
+                    ep_moves.len(),
+                );
+            }
+        }
+
+        eprintln!(
+            "EP corner test: {} passed, {} failed, {} skipped (invalid squares)",
+            passed, failed, skipped
+        );
+        assert_eq!(failed, 0, "{} EP corner cases failed", failed);
+        assert!(passed > 0, "no EP cases were tested");
+    }
 }

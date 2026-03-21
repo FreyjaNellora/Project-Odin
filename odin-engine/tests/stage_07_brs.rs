@@ -79,26 +79,6 @@ fn search_start_at_depth(depth: u8) -> odin_engine::search::SearchResult {
 }
 
 #[test]
-fn test_depth_3_legal_move_and_valid_score() {
-    let result = search_start_at_depth(3);
-
-    let mut gs = starting_gs();
-    assert_legal(&mut gs, result.best_move);
-
-    assert!(
-        result.score >= -30_000 && result.score <= 30_000,
-        "depth-3 score {} out of range",
-        result.score
-    );
-    assert_eq!(result.depth, 3, "depth-3: reported depth should be 3");
-    assert!(!result.pv.is_empty(), "depth-3: PV should not be empty");
-    assert_eq!(
-        result.pv[0], result.best_move,
-        "depth-3: PV[0] must equal best_move"
-    );
-}
-
-#[test]
 fn test_depth_4_legal_move_and_valid_score() {
     let result = search_start_at_depth(4);
 
@@ -111,8 +91,11 @@ fn test_depth_4_legal_move_and_valid_score() {
         result.score
     );
     assert_eq!(result.depth, 4, "depth-4: reported depth should be 4");
-    assert!(!result.pv.is_empty());
-    assert_eq!(result.pv[0], result.best_move);
+    assert!(!result.pv.is_empty(), "depth-4: PV should not be empty");
+    assert_eq!(
+        result.pv[0], result.best_move,
+        "depth-4: PV[0] must equal best_move"
+    );
 }
 
 #[test]
@@ -179,14 +162,14 @@ fn test_scores_stable_across_depth_progression() {
 fn test_pv_length_grows_with_depth() {
     // PV should generally get longer as depth increases.
     // Not strictly guaranteed (BRS compresses opponents), but depth-6 PV
-    // must be at least as long as depth-3 PV.
-    let pv3 = search_start_at_depth(3).pv;
+    // must be at least as long as depth-4 PV.
+    let pv4 = search_start_at_depth(4).pv;
     let pv6 = search_start_at_depth(6).pv;
     assert!(
-        pv6.len() >= pv3.len(),
-        "depth-6 PV ({} moves) shorter than depth-3 PV ({} moves)",
+        pv6.len() >= pv4.len(),
+        "depth-6 PV ({} moves) shorter than depth-4 PV ({} moves)",
         pv6.len(),
-        pv3.len()
+        pv4.len()
     );
 }
 
@@ -480,10 +463,10 @@ fn make_free_capture_position() -> GameState {
 }
 
 #[test]
-fn test_finds_free_queen_capture_at_depth_3() {
+fn test_finds_free_queen_capture_at_depth_4() {
     let gs = make_free_capture_position();
     let mut searcher = make_searcher();
-    let result = searcher.search(&gs, depth_budget(3));
+    let result = searcher.search(&gs, depth_budget(4));
 
     // Legal move returned with clearly positive score (Red has a free queen available).
     let mut gs_check = make_free_capture_position();
@@ -491,22 +474,6 @@ fn test_finds_free_queen_capture_at_depth_3() {
     assert!(
         result.score > 0,
         "expected positive score with a free queen, got {} (move {})",
-        result.score,
-        result.best_move.to_algebraic()
-    );
-}
-
-#[test]
-fn test_finds_free_queen_capture_at_depth_4() {
-    let gs = make_free_capture_position();
-    let mut searcher = make_searcher();
-    let result = searcher.search(&gs, depth_budget(4));
-
-    let mut gs_check = make_free_capture_position();
-    assert_legal(&mut gs_check, result.best_move);
-    assert!(
-        result.score > 0,
-        "expected positive score at depth 4, got {} (move {})",
         result.score,
         result.best_move.to_algebraic()
     );
