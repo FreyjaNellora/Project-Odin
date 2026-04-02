@@ -414,6 +414,48 @@ Huginn was retired in Stage 8. The `tracing` crate replaced it. See ADR-015.
 
 ---
 
+### ADR-018: Dual Governance Files -- Standard vs. Mythos
+
+**Date:** 2026-04-01
+**Status:** Active
+**Affects:** All sessions (governance infrastructure)
+
+**Decision:** Maintain two parallel sets of agent governance files:
+
+| File | For | Strategy |
+|---|---|---|
+| `CLAUDE.md` | All models (default) | Full procedural orientation with step-by-step instructions |
+| `CLAUDE_MYTHOS.md` | Mythos/frontier-class models | Goal-oriented orientation, same constraints |
+| `masterplan/AGENT_CONDUCT.md` | All models (default) | Full procedural rules, anti-spiral guardrails, multi-step lifecycles |
+| `masterplan/AGENT_CONDUCT_MYTHOS.md` | Mythos/frontier-class models | Condensed rules, same domain knowledge, same hard constraints |
+
+`CLAUDE.md` contains a model-tier router at the top directing frontier models to the `_MYTHOS` variants.
+
+**What the Mythos files KEEP verbatim:**
+- All hard constraints (search depth policy, First Law invariants, autonomy boundary tables)
+- All domain knowledge (naming conventions, named constants, pitfall tables in Section 2)
+- All approval gates (blocking issue escalation, stop-and-ask triggers)
+- All of Section 2 (audit checklist, 26 categories)
+- All of Section 4 (what tracing cannot catch)
+
+**What the Mythos files REMOVE or CONDENSE:**
+- Procedural step-by-step instructions (Stage Entry 7-step → one paragraph)
+- Prescribed file reading orders
+- Timing and sequencing ceremony
+- Anti-spiral debugging rules and flowcharts (condensed to 5 core principles)
+- Compensating guardrails that frontier models do not need
+
+**Alternatives considered:**
+- **Single file with model-conditional sections:** Harder to maintain, harder to read. Model-tier routing to separate files is cleaner.
+- **Remove procedural content from the main files:** Would regress coverage for weaker models. Dual-file preserves both audiences.
+- **No Mythos variant:** Frontier models can follow the standard files, but the procedure-heavy format adds unnecessary friction and can prime over-literal behavior.
+
+**Why this was chosen:** Procedural scaffolding compensates for known failure modes in weaker models (losing track of steps, skipping prep). Frontier models have those failure modes less often but can still be primed toward over-literal step-counting by procedure-heavy prompts. The Mythos files let the model reason from goals and constraints rather than execute a checklist. The domain knowledge (pitfall tables, constants, invariants) is preserved because that is information the model cannot derive from first principles.
+
+**Maintenance rule:** When AGENT_CONDUCT.md is updated with new domain knowledge (a new pitfall table, a new named constant, a new hard constraint), the corresponding content must be added to AGENT_CONDUCT_MYTHOS.md. When AGENT_CONDUCT.md adds new procedural scaffolding, evaluate whether it represents new knowledge (add to Mythos) or compensating procedure (omit from Mythos).
+
+---
+
 ## How to Add a New Decision
 
 Copy this template:

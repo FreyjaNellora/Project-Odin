@@ -2,7 +2,7 @@
 type: moc
 tags:
   - type/moc
-last_updated: 2026-03-06
+last_updated: 2026-04-01
 ---
 
 # Session Journal
@@ -12,6 +12,7 @@ Chronological index of build sessions. Each session note captures what was attem
 ## Sessions
 
 <!-- Add newest sessions at the top -->
+- **2026-04-01** [[Session-2026-04-01-Mythos-Governance]] -- Dual governance files created: CLAUDE_MYTHOS.md + AGENT_CONDUCT_MYTHOS.md. Model-tier router added to CLAUDE.md. ADR-018 added to DECISIONS.md. No engine code changed.
 - **2026-03-06** [[Session-2026-03-06-Stage-20-Gen0-Complete]] -- Stage 20 complete: datagen (40K samples), Kaggle GPU training, weights loaded, i32 overflow fixed, T13 passes. Pipeline proven end-to-end.
 - **2026-03-05** [[Session-2026-03-05-Stage-20-Entry]] -- Stage 20 entry: formal spec written in MASTERPLAN, pre-audit complete, datagen launched (1000 games depth 4). Kaggle account set up for GPU training.
 - **2026-02-27** [[Session-2026-02-27-Stage10-Cleanup-Tag]] -- Stage 10 cleanup: git push (18 commits), username anonymization, audit log + downstream log filled, tagged `stage-10-complete` / `v1.10`. Game analysis vs baselines.

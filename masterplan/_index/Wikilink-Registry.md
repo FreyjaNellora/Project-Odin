@@ -2,7 +2,7 @@
 type: moc
 tags:
   - type/moc
-last_updated: 2026-02-27
+last_updated: 2026-04-01
 ---
 
 # Wikilink Registry
@@ -21,7 +21,9 @@ Single source of truth for all `[[wikilink]]` targets in the vault. Before creat
 | `[[DECISIONS]]` | `DECISIONS.md` | Architectural decision records (ADRs) |
 | `[[STATUS]]` | `STATUS.md` | Current project state — what stage, what's blocked |
 | `[[HANDOFF]]` | `HANDOFF.md` | Session continuity — what happened, what's next |
-| `[[CLAUDE]]` | `CLAUDE.md` | Vault instructions for AI agents |
+| `[[CLAUDE]]` | `CLAUDE.md` | Vault instructions for AI agents (standard models) |
+| `[[CLAUDE_MYTHOS]]` | `../CLAUDE_MYTHOS.md` | Condensed orientation for Mythos/frontier-class models |
+| `[[AGENT_CONDUCT_MYTHOS]]` | `AGENT_CONDUCT_MYTHOS.md` | Condensed conduct rules for Mythos/frontier-class models |
 
 ## Index / Maps of Content
 
