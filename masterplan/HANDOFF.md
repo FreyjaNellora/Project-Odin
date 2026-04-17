@@ -1,16 +1,17 @@
-# HANDOFF -- Defense Weight Tuning
+# HANDOFF -- Voronoi Removal + Swarm Replaces Qsearch
 
-**Date:** 2026-03-20
-**Stage:** Post-Stage 20 tuning (defense_weight bump)
-**Next:** A/B test defense_weight 0.75 vs 0.5, write Freyja spec, Yggdrasil writeup
+**Date:** 2026-04-17
+**Stage:** Post-Stage 20 architectural changes
+**Next:** Odin vs Freyja duel (30 games), NNUE training pipeline improvements
 
 ---
 
 ## What Was Done This Session
 
-1. **Defense weight bumped from 0.5 to 0.75** -- `brs.rs` default and `hybrid.rs` fallback both updated. This prioritizes defensive move ordering (retreat hanging pieces, add defenders) more aggressively in the quiet-move tier.
-2. **All 607 tests pass** -- no regressions from the weight change.
-3. **Cross-corner EP test** -- 59/59 valid EP-near-corner cases pass (run earlier, confirmed this session).
+1. **Voronoi/influence grid removed** -- Deleted `influence/` module entirely. Swarm pipeline decoupled from influence grid. Pile-on (Layer 2) now uses attacker_counts² instead of influence². Swarm-delta rewritten to use is_square_attacked_by().
+2. **Quiescence search replaced with swarm leaf eval** -- `swarm_eval.rs` replaces 8-ply recursive qsearch at leaf nodes. Single-pass tactical assessment: hanging piece detection, static chain walk, commitment/overextension check.
+3. **Duel results: Swarm 9 wins, Qsearch 2 wins (11 games)** -- Swarm finishes games faster and more decisively. Early stopped due to clear result.
+4. **Committed and pushed to GitHub** -- `4a2e388`
 
 ---
 
