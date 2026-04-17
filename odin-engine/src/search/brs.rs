@@ -622,9 +622,11 @@ impl<'a> BrsContext<'a> {
             }
         }
 
-        // Leaf node: quiescence search.
+        // Leaf node: static eval + swarm tactical adjustment (replaces qsearch).
         if depth == 0 {
-            return self.quiescence(alpha, beta, MAX_QSEARCH_DEPTH);
+            let base = self.nnue_eval_scalar(self.root_player);
+            let swarm_adj = super::swarm_eval::swarm_leaf_eval(&self.gs, self.root_player);
+            return base.saturating_add(swarm_adj);
         }
 
         let current = self.gs.board().side_to_move();
